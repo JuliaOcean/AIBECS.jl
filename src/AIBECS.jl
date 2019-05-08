@@ -13,7 +13,6 @@ using JLD2
 
 include("PFDcode.jl")
 include("newTypes.jl")
-include("numericalJacobian.jl")
 include("CTKsolvers.jl")
 include("overload_solve.jl")
 include("multiTracer.jl")
