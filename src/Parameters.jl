@@ -188,7 +188,7 @@ function initialize_parameter_type(t)
         strerror = "Index of of bounds!"
         Base.getindex(p::Para, i::Int) = i < 1 || i > m ? error(strerror) : getfield(p, $optsymbols[i])
         Base.setindex!(p::Para, v, i::Int) = i < 1 || i > m ? error(strerror) : setfield!(p, $optsymbols[i], v)
-        # Convert p to λ and vice versa, needed by TransportMatrixTools!
+        # Convert p to λ and vice versa, needed by AIBECS!
         optvec(p::Para) = flatten(Vector, p)
         Base.:+(p::Para, v::Vector) = opt_para(p₀, optvec(p) + v)
         Base.:-(p::Para, v::Vector) = opt_para(p₀, optvec(p) - v)

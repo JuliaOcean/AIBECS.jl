@@ -1,4 +1,4 @@
-using TransportMatrixTools, Test
+using AIBECS, Test
 
 # 4-box model tests
 include("build_4box_model_circulation.jl") # define constants T, grd, and wet3d
