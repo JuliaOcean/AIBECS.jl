@@ -1,32 +1,9 @@
-"""
-    buildIbelow(wet3d, iwet)
+# Reexport SinkingParticles as they are useful outside too
+@reexport module SinkingParticles
 
-Build the shifted-diagonal sparse matrix of the indices of below neighbours.
+using LinearAlgebra, SparseArrays
+using ..GridTools
 
-Ibelow[i,j] = 1 if the box represented by the linear index i
-lies directly below the box represented by the linear index j.
-"""
-function buildIbelow(wet3d, iwet)
-    nlat, nlon, ndepth = size(wet3d)
-    n = nlon * nlat * (ndepth + 1)
-    In = sparse(I, n, n)
-    idx = zeros(Int64, nlat, nlon, ndepth + 1)
-    idx[:] = 1:n
-    idx .= idx[:, :, [2:ndepth + 1; 1]]      # downward shift
-    return In[idx[:], :][iwet, iwet]
-end
-
-"""
-    buildIabove(wet3d, iwet)
-
-Build the shifted-diagonal sparse matrix of the indices of above neighbours.
-
-Iabove[i,j] = 1 if the box represented by the linear index i
-lies directly above the box represented by the linear index j.
-"""
-buildIabove(wet3d, iwet) = copy(transpose(buildIbelow(wet3d, iwet)))
-
-buildv3d(grd) = grd["DXT3d"] .* grd["DYT3d"] .* grd["DZT3d"]
 
 """
     buildPFD(w, DIV, Iabove)
@@ -103,3 +80,7 @@ The `FLUX` operator is defined by
     FLUX * x = w * x(above) ≃ Φ.
 """
 buildFLUX(w, Iabove) = sparse(Diagonal(w)) * Iabove
+
+export buildDIV, buildPFD, buildFLUX
+
+end

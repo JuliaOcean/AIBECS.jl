@@ -4,7 +4,8 @@ Generate 𝐹 and ∇ₓ𝐹 from user input
 =============================================#
 
 # Create F and ∇ₓF automatically from Ts and Gs only
-function state_function_and_Jacobian(Ts, Gs, nt, nb)
+function state_function_and_Jacobian(Ts, Gs, nb)
+    nt = length(Ts)
     tracers(v) = [v[j:j+nb-1] for j in 1:nb:nb*nt]
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
     G(x, p) = reduce(vcat, [Gⱼ(tracers(x)..., p) for Gⱼ in Gs]) # nonlinear part
@@ -32,6 +33,7 @@ Generate 𝑓 and ∇ₓ𝑓 from user input
 =============================================#
 
 function mismatch_function_and_Jacobian(ωs, μx, σ²x, v, ωp, μp, σ²p)
+    nt, nb = length(ωs), length(v)
     tracers(x) = [x[j:j+nb-1] for j in 1:nb:nb*nt]
     f(x, p) = ωp * mismatch(p, μp, σ²p) +
         sum([ωⱼ * mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
@@ -51,6 +53,8 @@ function mismatch(x, xobs, σ²xobs, v)
     return 0.5 * δx' * W * δx / (xobs' * W * xobs)
 end
 
+mismatch(x, ::Missing, args...) = 0
+
 """
     ∇mismatch(x, xobs, σ²xobs, v)
 
@@ -61,18 +65,30 @@ function ∇mismatch(x, xobs, σ²xobs, v)
     W = Diagonal(v ./ σ²xobs)
     return (W * δx)' / (xobs' * W * xobs)
 end
+∇mismatch(x, ::Missing, args...) = zeros(length(x))'
 
 # TODO
 # Talk about it with FP
+# Assumptions: 
+# 1. The prior distributions of the parameters, p, are log-normal
+# 2. The values `mean_obs` and `variance_obs` are the non-log mean and variance,
+# Then the mean and variance of the prior of log(p) are
+# logμ = log(μ / √(1 + σ² / μ²))
+# logσ² = log(1 + σ² / μ²)
+# These are the values we use for the mismatch
 """
-    mismatch(p, logpobs, σ²logpobs)
+    mismatch(p, m, v)
 
-    Mismatch of the log of model parameters `p` against observed (log) mean, `logpobs`, given observed (log) variance, `σ²logpobs`.
+Returns the mismatch of the model parameters `p` against observations.
+Assumes priors have a log-normal distributions.
+`m` and `v` are the non-log mean and variances,
+and are converted to their log counterparts in the mismatch formula.
 """
-function mismatch(p, logpobs, σ²logpobs)
-    println("parameter mismatch to be checked!")
-    δλ = log.(p) - logpobs
-    W = Diagonal(1 ./ σ²logpobs)
+function mismatch(p, m, v)
+    μ = log.(m ./ sqrt.(1 .+ m ./ v.^2))
+    σ² = log.(1 .+ v ./ m.^2)
+    δλ = log.(optvec(p)) .- μ
+    W = Diagonal(1 ./ σ²)
     return 0.5 * δλ' * W * δλ
 end
 

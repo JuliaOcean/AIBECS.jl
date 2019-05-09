@@ -1,7 +1,9 @@
-module SixBoxModelCirculation
-#= 
-The 6-box model is used because the code to bin WOA data
-requires a regular grid.
+module SixBoxModel
+#=
+This module serves to load the 6-box model matrix and grid.
+The 6-box model is used because it makes it easier to build
+operators for sinking particles in a regular grid,
+and because the code to bin WOA data requires a regular grid.
 These are the indices of the 6-box model:
 
 ┌───────┬────────────────────────┐
@@ -20,8 +22,8 @@ The boxes are grouped as indicated:
 - 4 + 5 + 6 represents the deep box
 =#
 
-using SparseArrays, SuiteSparse
-using DataDeps, JLD2, FileIO
+using LinearAlgebra, SparseArrays
+using ..GridTools
 
 build_wet3d() = trues(2, 1, 3)
 
@@ -105,15 +107,20 @@ function build_T(grd)
             T[dest, orig] -= Mixing[orig, dest] # remove at destination
         end
     end
-    v3d = buildv3d(grd)
+    v3d = array_of_volumes(grd)
     v = vec(v3d) # Fine here because every point is wet :)
-    V⁻¹ = d₀(v.^(-1))
+    V⁻¹ = sparse(Diagonal(v.^(-1)))
     T = V⁻¹ * T
     return T
 end
 
+"""
+    load
+
+Returns wet3d, grd, and T (in that order).
+"""
 function load()
-    println("loading 6-box-model circulation")
+    println("loading 6-box model")
     wet3d = build_wet3d()
     grd = build_grd()
     T = build_T(grd)
@@ -121,4 +128,6 @@ function load()
 end
 
 end
+
+export SixBoxModel
 

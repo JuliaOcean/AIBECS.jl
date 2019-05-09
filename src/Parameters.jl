@@ -2,15 +2,40 @@
 # the default parameter
 
 #=============================================
-Format of DataFrame to be supplied by the user
-
-julia> Parameters_table = DataFrame()
-
-julia> Parameters_table.symbol =
-    [
-)
+Example use:
+t = empty_parameter_table()    # initialize table of parameters
+add_parameter!(t, :umax, 1e-3u"mmol/m^3/d",
+    optimizable = true,
+    description = "Maximum uptake rate (Michaelis-Menten)",
+    LaTeX = "U_\\mathrm{max}")
+add_parameter!(t, :ku, 1e-1u"mmol/m^3",
+    optimizable = true,
+    description = "Half-saturation constant (Michaelis-Menten)",
+    LaTeX = "k_\\vec{u}")
+add_parameter!(t, :w₀, 1u"m/d",
+    optimizable = true,
+    description = "Sinking velocity at surface",
+    LaTeX = "w_0")
+add_parameter!(t, :w′, 1u"d^-1",
+    optimizable = true,
+    description = "Vertical gradient of sinking velocity",
+    LaTeX = "w'")
+add_parameter!(t, :κ, 0.25u"d^-1",
+    optimizable = true,
+    description = "Remineralization rate constant",
+    LaTeX = "\\kappa")
+add_parameter!(t, :DINgeo, 2.3u"mmol/m^3",
+    optimizable = true,
+    description = "Mean DIN concentration",
+    LaTeX = "\\xNUT^\\obs")
+add_parameter!(t, :τg, 1u"Myr",
+    description = "Geological restoring timescale",
+    LaTeX = "\\tau_\\mathrm{geo}")
+add_parameter!(t, :ω, 1e-4u"1",
+    description = "Relative weight of cost of parameters (Hyper parameter)",
+    LaTeX = "\\omega")
+initialize_parameter_type(t)   # Generate the parameter type
 =============================================#
-
 
 function empty_parameter_table()
     return DataFrame(
@@ -27,31 +52,52 @@ function empty_parameter_table()
 end
 export empty_parameter_table
 
-function new_parameter(
-        symbol::Symbol,
-        quantity::Quantity;
-        mean_obs=NaN,
-        variance_obs=NaN,
-        optimizable=false,
-        description="",
-        LaTeX=""
-    )
-    if optimizable && (isnan(mean_obs) || isnan(variance_obs))
-        error("If the parameter is optimizable you need to give a prior mean and variance!")
-    else
-        return [symbol,
-            ustrip(upreferred(quantity)),
-            unit(upreferred(quantity)),
-            unit(quantity),
-            mean_obs,
-            variance_obs,
-            optimizable,
-            description,
-            LaTeX]
-    end
-end
+"""
+    new_parameter(symbol::Symbol,
+                  quantity;
+                  mean_obs=ustrip(upreferred(quantity)),
+                  variance_obs=ustrip(upreferred(quantity))^2,
+                  optimizable=false,
+                  description="",
+                  LaTeX="")
+
+Creats a parameter (to be added to the parameters table).
+If keyword argument `optimizable = false`, then observation mean and
+variance are set to `NaN`.
+Otherwise, these are set to keyword arguments `mean_obs` (and `variance_obs`)
+if supplied, or to `quantity` (and its square), after converting it to
+the preferred unit and stripping it of said unit if not.
+Example: TODO
+"""
+new_parameter(symbol::Symbol,
+              quantity;
+              mean_obs=ustrip(upreferred(quantity)),
+              variance_obs=ustrip(upreferred(quantity))^2,
+              optimizable=false,
+              description="",
+              LaTeX="") = [symbol,
+                           ustrip(upreferred(quantity)),
+                           unit(upreferred(quantity)),
+                           unit(quantity),
+                           optimizable ? mean_obs : NaN,
+                           optimizable ? variance_obs : NaN,
+                           optimizable,
+                           description,
+                           LaTeX]
 export new_parameter
 
+"""
+    add_parameter!(t::DataFrame, args...; kwargs...)
+
+Adds a parameter to the parameters table `t`.
+If keyword argument `optimizable = false`, then observation mean and
+variance are set to `NaN`.
+Otherwise, these are set to keyword arguments `mean_obs` (and `variance_obs`)
+if supplied, or to `quantity` (and its square), after converting it to
+the preferred unit and stripping it of said unit if not.
+Example: TODO
+Note for future edit of the docs: Don't repeat yourself between add and new param functions
+"""
 function add_parameter!(t::DataFrame, args...; kwargs...)
     if any(t[:symbol] .== args[1])
         error("Parameter $(args[1]) already exists! (Maybe delete it first?)")
@@ -74,55 +120,8 @@ end
 export delete_parameter!
 
 #====
-Dummy generation
-=====#
-#t = empty_parameter_table()
-#add_parameter!(t, :α, 1.0u"mmol/m^3")
-#add_parameter!(t, :β, 2.0u"mmol/m^3"; mean_obs = 2.0, variance_obs = 3.0, optimizable = false)
-#add_parameter!(t, :ϵ, 3.0u"mmol/m^3"; mean_obs = 2.0, variance_obs = 3.0, optimizable = true)
-#add_parameter!(t, :τ, 4.0u"mmol/l"; mean_obs = 2.0, variance_obs = 3.0, optimizable = false)
-#add_parameter!(t, :γ, 5.0u"mol/m^3"; mean_obs = 2.0, variance_obs = 3.0, optimizable = true)
-#add_parameter!(t, :λ, 6.0u"mmol/m^3/s"; mean_obs = 2.0, variance_obs = 3.0, optimizable = false)
-#add_parameter!(t, :Γ, 7.0u"mmol/m^3/d"; mean_obs = 2.0, variance_obs = 3.0, optimizable = true)
-#add_parameter!(t, :Ω, 8.0u"mmol/m^2"; mean_obs = 2.0, variance_obs = 3.0, optimizable = true)
-#====
-end Dummy generation
-=====#
-
-
-#====
-Generate Constants
-====#
-
-#function generate_constants(t)
-#    for i in findall(t[:optimizable] .== false)
-#        @eval $(t[:symbol][i]) = $(t[:value][i])
-#    end
-#end
-#
-#macro generate_Para(t)
-#    filter(row -> row[:optimizable] == true, t)[:value]
-#end
-#
-#macro make_Para(t)
-#    println("Getting there?")
-#    topt = $t[:optimizable]
-#    println("Maybe?")
-#    iopt = findall(topt)
-#    println(iopt)
-#    fields = [:( $(t[:symbol][i])::U ) for i in iopt]
-#    println(fields)
-#    esc(quote @with_kw struct Para{U} <: AbstractVector{U}
-#        $(fields...)
-#        end
-#    end)
-#end
-
-#====
 Generate Para
 ====#
-
-
 
 import Flatten: flattenable
 
@@ -134,6 +133,7 @@ macro make_struct(struct_name, schema...)
     end)
 end
 
+
 function initialize_parameter_type(t)
     symbols = t[:symbol]
     optimizables = t[:optimizable]
@@ -144,6 +144,10 @@ function initialize_parameter_type(t)
     printunits = t[:printunit]
     baseunits = t[:unit]
     values = t[:value]
+
+    μs = [μ for (μ, opt) in zip(t[:mean_obs], optimizables) if opt]
+    σ²s = [σ² for (σ², opt) in zip(t[:variance_obs], optimizables) if opt]
+
     @eval begin
         # Printing functionality
         function Base.show(io::IO, p::Para)
@@ -160,14 +164,13 @@ function initialize_parameter_type(t)
             end
         end
         Base.show(io::IO, ::MIME"text/plain", p::Para) = Base.show(io, p)
-
-
         # constants
         const p₀ = Para($values...)
-        export p₀
         const m = length(fieldnameflatten(p₀))
-        export m
         const m_all = length(fieldnames(typeof(p₀)))
+        const mean_pobs = $μs
+        const variance_pobs = $σ²s
+        export p₀, m, mean_pobs, variance_pobs, m_all
         # overloads
         Base.length(p::Para) = length(fieldnameflatten(p))
         # Make Para an iterable for the parameters to be able to `collect` it into a vector
@@ -181,6 +184,8 @@ function initialize_parameter_type(t)
             Flatten.reconstruct(convert(Tᵥ, p), v)
         end
         opt_para(v) = opt_para(p₀, v)
+        optvec(p::Para) = flatten(Vector, p)
+        export optvec
         # Testing equality and approx
         Base.:≈(p₁::Para, p₂::Para) = vec(p₁) ≈ vec(p₂)
         Base.:(==)(p₁::Para, p₂::Para) = vec(p₁) == vec(p₂)
@@ -188,8 +193,7 @@ function initialize_parameter_type(t)
         strerror = "Index of of bounds!"
         Base.getindex(p::Para, i::Int) = i < 1 || i > m ? error(strerror) : getfield(p, $optsymbols[i])
         Base.setindex!(p::Para, v, i::Int) = i < 1 || i > m ? error(strerror) : setfield!(p, $optsymbols[i], v)
-        # Convert p to λ and vice versa, needed by AIBECS!
-        optvec(p::Para) = flatten(Vector, p)
+        # base overloads
         Base.:+(p::Para, v::Vector) = opt_para(p₀, optvec(p) + v)
         Base.:-(p::Para, v::Vector) = opt_para(p₀, optvec(p) - v)
         Base.:+(p₁::Para, p₂::Para) = opt_para(p₀, optvec(p₁) + optvec(p₂))
@@ -233,21 +237,4 @@ function unicodify(U::Unitful.Units)
     return str
 end
 
-#====
-Dummy generation
-=====#
-#make_Para_struct(t)
-#p₀
-#v1 = vec(p₀)
-#v2 = optvec(p₀)
-#p₀ + v2
-#p₀ - v2 / 2
-#p₀ + ε * ones(4)
-#3p₀
-#ε * p₀
-#p₀[1]
-#p₀[4]
-#p₀ + ε₁ * v2
-#====
-end Dummy generation
-=====#
+
