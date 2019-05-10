@@ -120,10 +120,11 @@ end
 Returns wet3d, grd, and T (in that order).
 """
 function load()
-    println("loading 6-box model")
+    print("Loading 6-box model")
     wet3d = build_wet3d()
     grd = build_grd()
     T = build_T(grd)
+    println(" ✅")
     return wet3d, grd, T
 end
 

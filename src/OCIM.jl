@@ -50,13 +50,14 @@ end
 Returns wet3d, grd, and T (in that order) from FigShare repository.
 """
 function load()
-    println("loading OCIM1 with JLD2")
+    print("Loading OCIM1 with JLD2")
     register_OCIM1()
     jld2_file = @datadep_str string("MatricesForJAMES/", "OCIM1_CTL.jld2")
     @load jld2_file vars
     T = -vars["output"]["TR"] * ustrip(upreferred(u"1/yr")) # convert from yr⁻¹ to s⁻¹ (SI)
     grd = vars["output"]["grid"]
     wet3d = vars["output"]["M3d"]
+    println(" ✅")
     return wet3d, grd, T
 end
 

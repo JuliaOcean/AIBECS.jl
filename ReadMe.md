@@ -7,49 +7,90 @@ The ideal tool for exploring global marine biogeochemical cycles.
 
 # AIBECS
 
+<p>
+  <img src="https://img.shields.io/badge/stability-experimental-orange.svg">
+</p>
+<p>
+  <a href="https://doi.org/<DOI_NUMBER>">
+    <img src="https://zenodo.org/badge/DOI/<DOI_NUMBER>.svg" alt="DOI">
+  </a>
+  <a href="https://github.com/briochemc/AIBECS.jl/blob/master/LICENSE">
+    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg">
+  </a>
+</p>
+<p>
+  <a href="https://briochemc.github.io/AIBECS.jl/stable/">
+    <img src=https://img.shields.io/badge/docs-stable-blue.svg>
+  </a>
+  <a href="https://briochemc.github.io/AIBECS.jl/latest/">
+    <img src=https://img.shields.io/badge/docs-dev-blue.svg>
+  </a>
+</p>
+<p>
+  <a href="https://travis-ci.com/briochemc/AIBECS.jl">
+    <img alt="Build Status" src="https://travis-ci.com/briochemc/AIBECS.jl.svg?branch=master">
+  </a>
+  <a href='https://coveralls.io/github/briochemc/AIBECS.jl'>
+    <img src='https://coveralls.io/repos/github/briochemc/AIBECS.jl/badge.svg' alt='Coverage Status' />
+  </a>
+</p>
+<p>
+  <a href="https://ci.appveyor.com/project/briochemc/AIBECS-jl">
+    <img alt="Build Status" src="https://ci.appveyor.com/api/projects/status/prm2xfd6q5pba1om?svg=true">
+  </a>
+  <a href="https://codecov.io/gh/briochemc/AIBECS.jl">
+    <img src="https://codecov.io/gh/briochemc/AIBECS.jl/branch/master/graph/badge.svg" />
+  </a>
+</p>
+
+
+
+
+
+
 **AIBECS** (for **A**lgebraic **I**mplicit **B**iogeochemical **E**lemental **C**ycling **S**ystem, pronounced like the cool [ibex](https://en.wikipedia.org/wiki/Ibex)) is a Julia package that provides ocean biogeochmistry modelers with an easy-to-use interface for creating and running models of the ocean system.
 
 AIBECS is a system because it allows you to chose some biogeochemical tracers, define their interactions, select an ocean circulation and *Voilà!* — your model is ready to run.
 
 ## Getting started
 
-We have prepared basic Jupyter notebooks to get you started with AIBECS:
-- modeling the ideal mean age
+We are currently working on the documentation along with some simple Jupyter notebooks to get you started with AIBECS:
+- modeling the ideal mean age (amlost ready)
+- ventilation tracers (coming soon)
+- coupled nutrients (coming soon)
+
 
 ## Motivation
 
-Rsearchers spend a significant amount of time developing models or tools to answer scientific questions.
-Under the publish-or-perish pressure, they often develop subpar code that either already exists somewhere else, contains mistakes, or simply does not work as they think it does.
-A solution is to package reusable code as open-source software to perform those tasks, hopefully allowing researchers to focus on science rather than on technical development.
-Said code should be easy to read, fast, open-source, and available to anyone to use for free — for which [Julia](https://julialang.org) is perfectly suited!
-
-The motivation for this particular package came in part from the development of the [AWESOME OCIM](https://github.com/hengdiliang/AWESOME-OCIM-v1.1) by [Seth John](https://dornsife.usc.edu/cf/earth/faculty_display.cfm?Person_ID=1063621) and others.
+The idea for this package came about in part from the [AWESOME OCIM](https://github.com/hengdiliang/AWESOME-OCIM-v1.1) by [Seth John](https://dornsife.usc.edu/cf/earth/faculty_display.cfm?Person_ID=1063621) and others.
 The idea behind the AWESOME OCIM is that modeling simple global steady-state marine biogeochemical tracers should be an easy task.
-The AWSEOME OCIM uses a sparse "transport" matrix to represent the ocean circulation from the output of the **O**cean **C**irculation **I**nverse **M**odel (OCIM) by [Tim DeVries](https://tdevries.eri.ucsb.edu).
-(The OCIM matrices and references can be found on Tim's website [here](https://tdevries.eri.ucsb.edu/models-and-data-products/).)
-However awesome it is the AWESOME OCIM lacks a few good things, which motivated this package.
-A non-exhaustive list of these reasons is listed here:
-- it uses MATLAB, which is not available to everyone. 
-    Julia provides the perfect free alternative, with better performance and better syntax. 
-- it allows only for linear systems. 
-    But OCIM users regularly model nonlinear mechanisms, and use Newton-type solvers to run simulations.
-    AIBECS uses such solvers under the hood, without you worrying about them.
-    Additionally, having these solvers in an open package that is thoroughly tested greatly reduces the chance of bugs.
-- it does not allow for coupling of tracers, which is fundamental to our understanding of global marine biogeochmical cycles.
-    AIBECS aims to provide the easiest possible interface for you to create multi-tracer models.
-- it does not allow you to run optimizations of your model parameters.
-    Arguably, using the fast simulations that are afforded by steady-state circulations (or seasonally steady ones like the matrices under development in the CYCLOCIM project) should standardize objective optimization of model parameters constrained by available observational data (see, e.g., [Pasquier and Holzer, 2017](https://www.biogeosciences.net/14/4125/2017/))
+The AWSEOME OCIM provides a MATLAB GUI to model biogeochemical tracers embedded in a sparse "transport" matrix circulation, AKA the **O**cean **C**irculation **I**nverse **M**odel (OCIM) by [Tim DeVries](https://tdevries.eri.ucsb.edu).
+(OCIM matrices and references can be found on Tim's website [here](https://tdevries.eri.ucsb.edu/models-and-data-products/).)
+However awesome it is, the AWESOME OCIM lacks some important features, which motivated this package.
+A non-exhaustive list of some of the features that we were looking for:
+- Use something else than MATLAB, which is not available to everyone.
+    [Julia](https://julialang.org) provides the perfect free alternative, with better performance and better syntax.
+- Allow for nonlinear systems.
+    OCIM users regularly model nonlinear mechanisms, and use Newton-type solvers to run simulations.
+    The AIBECS makes it easy to model nonlinear mechanisms by providing solvers under the hood, so that you don't have to worry about them.
+    Additionally, having these solvers in an open package that is thoroughly tested greatly reduces the chance of bugs!
+- Allow for coupling of tracers, which is fundamental to our understanding of global marine biogeochmical cycles.
+    The AIBECS aims to provide the easiest possible interface for you to create multi-tracer models.
+    In the tests (and soon in the documentation), should be some examples of multiple and nonlinear tracer model implementations.
+- Allow optimizations of model parameters.
+    Arguably, using the fast simulations that are afforded by steady-state circulationsshould standardize objective optimization of model parameters constrained by available observational data (see, e.g., [Pasquier and Holzer, 2017](https://www.biogeosciences.net/14/4125/2017/))
     With AIBECS, we developed a state-of-the-art autodifferentation tool, the [F-1 method](https://github.com/briochemc/F1Method.jl) (see Pasquier et al., in preparation).
-    It was developed specifically for this type of optimizations to run as fast as possible, i.e., it allows you to compute gradient and Hessians of an objective function as fast as if you had gone through the trouble of deriving each second-order derivative by hand!
-- it only uses the OCIM circulation.
-    AIBECS aims to provide a single API to load any transport matrix for the ocean circulation, as long as the matrix creator make it available publicly.
-- it uses prescribed observational data that may have been preprocessed in ways you would not want it to be.
-    Instead, AIBECS aims to allow you to download raw observational data and process it as you wish to constrain your model.
-- its plots are not publication-ready.
-    Eventually, AIBECS will provide its users with a plotting interface that can be used to directly produce flawless vectorized figures for your publications.
+    It was developed specifically for this type of optimizations to run as fast as possible, i.e., it allows you to compute gradient and Hessians of an objective function as fast as if you had gone through the trouble of deriving each second-order derivative by hand! 
+    (In the future, monthly circulation matrices, see, e.g., the CYCLOCIM project, should be available from AIBECS) 
+- Use other circulations than the output of the OCIM.
+    AIBECS aims to provide a simple API for you to load any transport matrix for the ocean circulation, as long as the matrix creator made it publicly available.
+- Plotting publication-quality figures.
+    Every modeler has reinvented the wheel when it comes to plotting.
+    But it should not be this way.
+    Eventually, AIBECS will provide users with a plotting interface that can be used to directly produce flawless vectorized figures for your publications.
 
 We emphasize that this package is under active development, so that not all the features advertized above are implemented.
-(Plotting publication-quality figures will likely be a feature that takes time, considering the current state of plotting in Julia.)
+(Plotting publication-quality figures will likely be a feature that takes time, considering the current state of plotting in Julia!)
 
 
 ## The Maths
@@ -66,29 +107,16 @@ A typical example is if the model is linear, i.e, if
 <img src="https://latex.codecogs.com/svg.latex?&space;\boldsymbol{F}(\boldsymbol{x},&space;\boldsymbol{p},&space;t)&space;=&space;\mathbf{A}\,\boldsymbol{x}" title="Eq2"/>
 
 then the model's steady state can be computed in a single matrix inversion.
+(That's what the AWESOME OCIM does.)
 However, AIBECS also works for nonlinear steady-state problems, i.e., where
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=\boldsymbol{F}(\boldsymbol{x},&space;\boldsymbol{p})&space;=&space;0" target="_blank"><img src="https://latex.codecogs.com/svg.latex?\boldsymbol{F}(\boldsymbol{x},&space;\boldsymbol{p})&space;=&space;0" title="\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0" /></a>
 
 In this case, AIBECS can use a state-of-the-art Newton type of solver to find the steady-state solution for you.
 
-## Features / TODO list
-
-List of features to be implemented.
-This is work in progress and serves me as a TODO list as I develop the package.
-
--  [x] Load OCIM's transport matrix and grid information.
--  [x] Develop a biogeochemical model for tracer(s)—This task inherently must be the user's responsibility. However it may be possible to simplify this part of the workflow.
--  [ ] Steady-state solvers:
-    - [x] Newton for cases where `F` is nonlinear and small (solver code adapted from C.T. Kelley (2003))
-    - [ ] Newton-Krylov if nonlinear and big.
--  [ ] Time-stepper.
--  [x] Optimize biogeochemical parameters by minimizing some objective function (has been moved out of the package)
--  [ ] Generate linear equivalent model and diagnostics ([Pasquier and Holzer, 2018](https://www.biogeosciences.net/15/7177/2018/)).
--  [ ] Plot stuff.
-
 
 ## References
 
 Please cite us of you use this package.
-If available, use the CITATION.bib file.
+After the first release, their should be a citable DOI produced by Zenodo.
+The reference information wil also eventually be available in the CITATION.bib file.
