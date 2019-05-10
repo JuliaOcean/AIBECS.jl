@@ -1,11 +1,13 @@
 
-<img src="https://user-images.githubusercontent.com/4486578/57189839-c422db00-6f56-11e9-9e1d-26c8d9208702.png" alt="logo" title="AIBECS_logo" align="center" height="400"/>
+<img src="https://user-images.githubusercontent.com/4486578/57189839-c422db00-6f56-11e9-9e1d-26c8d9208702.png" alt="logo" title="AIBECS_logo" align="right" height="400"/>
 
 
-The ideal tool for exploring global marine biogeochemical cycles.
 
 
 # AIBECS
+
+*The ideal tool for exploring global marine biogeochemical cycles.*
+
 
 <p>
   <img src="https://img.shields.io/badge/stability-experimental-orange.svg">
