@@ -97,7 +97,7 @@ We emphasize that this package is under active development, so that not all the 
 
 ## The Maths
 
-In AIBECS, global biogeochemical cycles are represented by discretized nonlinear partial differential equations that take the generic form
+AIBECS represents global biogeochemical cycles with a discretized system of nonlinear partial differential equations that takes the generic form
 
 ```julia
 ∂x/∂t = F(x,p)
@@ -107,21 +107,20 @@ where `x` is a column vector of the model state variables (i.e., the tracers) an
 (For now, AIBECS only handles steady models, for which `F` does not depend on time.)
 
 This package was developed for models to exploit techniques from linear algebra.
-A typical example is if the model is linear (or affine to be specific), i.e., if
+A typical example is if the model is linear (affine), i.e., if
 
 ```julia
 F(x,p,t) = A * x + b
 ```
 
-then the model's steady state can be computed in a single use of "backslash", via `s = A \ -b`.
+In that case, the model's steady state solution can be computed in a single use of "backslash", via `s = A \ -b`.
 (That's what the AWESOME OCIM does.)
 
-However, AIBECS also works for nonlinear steady-state problems, i.e., where `F(x,p)` is nonlinear, covering a much larger applications!
-In this case, AIBECS can use a state-of-the-art Newton type of solver to find the steady-state solution for you.
-(The solver was adapted from the quasi-Newton solver written in MATLAB by C.T. Kelley)
+However, AIBECS also works for nonlinear problems, i.e., when `F(x,p)` is nonlinear, covering a much larger range of models!
+In this case, AIBECS uses a state-of-the-art Newton-type solver to find the steady-state solution for you, which is much faster than time-stepping the system until it reaches equilibrium.
+(See, e.g., the work of C.T. Kelley.)
 
 ## References
 
 Please cite us of you use this package.
-After the first release, their should be a citable DOI produced by Zenodo.
-The reference information wil also eventually be available in the CITATION.bib file.
+The references under bibtex format are available in the [CITATION.bib](./CITATION.bib) file.
