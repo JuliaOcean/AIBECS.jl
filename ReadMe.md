@@ -80,7 +80,7 @@ A non-exhaustive list of some of the features that we were looking for:
     The AIBECS aims to provide the easiest possible interface for you to create multi-tracer models.
     In the tests (and soon in the documentation), should be some examples of multiple and nonlinear tracer model implementations.
 - Allow optimizations of model parameters.
-    Arguably, using the fast simulations that are afforded by steady-state circulationsshould standardize objective optimization of model parameters constrained by available observational data (see, e.g., [Pasquier and Holzer, 2017](https://www.biogeosciences.net/14/4125/2017/))
+    Arguably, using the fast simulations that are afforded by steady-state circulations should standardize objective optimization of model parameters constrained by available observational data (see, e.g., [Pasquier and Holzer, 2017](https://www.biogeosciences.net/14/4125/2017/)).
     With AIBECS, we developed a state-of-the-art autodifferentation tool, the [F-1 method](https://github.com/briochemc/F1Method.jl) (see Pasquier et al., in preparation).
     It was developed specifically for this type of optimizations to run as fast as possible, i.e., it allows you to compute gradient and Hessians of an objective function as fast as if you had gone through the trouble of deriving each second-order derivative by hand! 
     (In the future, monthly circulation matrices, see, e.g., the CYCLOCIM project, should be available from AIBECS) 
@@ -99,23 +99,26 @@ We emphasize that this package is under active development, so that not all the 
 
 In AIBECS, global biogeochemical cycles are represented by discretized nonlinear partial differential equations that take the generic form
 
-<img src="https://latex.codecogs.com/svg.latex?&space;\frac{\partial&space;\boldsymbol{x}}{\partial&space;t}&space;=&space;\boldsymbol{F}(\boldsymbol{x},&space;\boldsymbol{p},&space;t)" title="Eq1"/>
+```julia
+∂x/∂t = F(x,p)
+```
 
-where <img src="https://latex.codecogs.com/svg.latex?\inline&space;\large&space;\boldsymbol{x}" title="\boldsymbol{x}" /> is a column vector of the model state variables (i.e., the tracers) and <img src="https://latex.codecogs.com/svg.latex?\inline&space;\large&space;\boldsymbol{p}" title="p"/> is a vector of model parameters.
+where `x` is a column vector of the model state variables (i.e., the tracers) and `p` is a vector of model parameters.
+(For now, AIBECS only handles steady models, for which `F` does not depend on time.)
 
 This package was developed for models to exploit techniques from linear algebra.
-A typical example is if the model is linear, i.e, if
+A typical example is if the model is linear (or affine to be specific), i.e., if
 
-<img src="https://latex.codecogs.com/svg.latex?&space;\boldsymbol{F}(\boldsymbol{x},&space;\boldsymbol{p},&space;t)&space;=&space;\mathbf{A}\,\boldsymbol{x}" title="Eq2"/>
+```julia
+F(x,p,t) = A * x + b
+```
 
-then the model's steady state can be computed in a single matrix inversion.
+then the model's steady state can be computed in a single use of "backslash", via `s = A \ -b`.
 (That's what the AWESOME OCIM does.)
-However, AIBECS also works for nonlinear steady-state problems, i.e., where
 
-<a href="https://www.codecogs.com/eqnedit.php?latex=\boldsymbol{F}(\boldsymbol{x},&space;\boldsymbol{p})&space;=&space;0" target="_blank"><img src="https://latex.codecogs.com/svg.latex?\boldsymbol{F}(\boldsymbol{x},&space;\boldsymbol{p})&space;=&space;0" title="\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0" /></a>
-
+However, AIBECS also works for nonlinear steady-state problems, i.e., where `F(x,p)` is nonlinear, covering a much larger applications!
 In this case, AIBECS can use a state-of-the-art Newton type of solver to find the steady-state solution for you.
-
+(The solver was adapted from the quasi-Newton solver written in MATLAB by C.T. Kelley)
 
 ## References
 
