@@ -29,18 +29,31 @@ function local_jacobian_row(Gⱼ, x, p, nt, nb)
 end
 
 #=============================================
-Generate 𝑓 and ∇ₓ𝑓 from user input
+Generate 𝑓 and derivatives from user input
 =============================================#
 
-function mismatch_function_and_Jacobian(ωs, μx, σ²x, v, ωp, μp, σ²p)
+function generate_objective(ωs, μx, σ²x, v, ωp, μp, σ²p)
     nt, nb = length(ωs), length(v)
     tracers(x) = [x[j:j+nb-1] for j in 1:nb:nb*nt]
     f(x, p) = ωp * mismatch(p, μp, σ²p) +
         sum([ωⱼ * mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
-    ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
-    return f, ∇ₓf
+    return f
 end
-export mismatch_function_and_Jacobian
+
+function generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, μp, σ²p)
+    nt, nb = length(ωs), length(v)
+    tracers(x) = [x[j:j+nb-1] for j in 1:nb:nb*nt]
+    ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
+    return ∇ₓf
+end
+
+function generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, μp, σ²p)
+    nt, nb = length(ωs), length(v)
+    tracers(x) = [x[j:j+nb-1] for j in 1:nb:nb*nt]
+    ∇ₚf(x, p) = ωp * ∇mismatch(p, μp, σ²p)
+    return ∇ₚf
+end
+export generate_objective, generate_∇ₓobjective, generate_∇ₚobjective
 
 """
     mismatch(x, xobs, σ²xobs, v)
@@ -91,6 +104,14 @@ function mismatch(p, m, v)
     W = Diagonal(1 ./ σ²)
     return 0.5 * δλ' * W * δλ
 end
+function ∇mismatch(p, m, v)
+    μ = log.(m ./ sqrt.(1 .+ m ./ v.^2))
+    σ² = log.(1 .+ v ./ m.^2)
+    δλ = log.(optvec(p)) .- μ
+    W = Diagonal(1 ./ σ²)
+    return (W * δλ ./ optvec(p))'
+end
+
 
 #=============================================
 Generate multi-tracer norm

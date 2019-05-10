@@ -2,8 +2,6 @@
 @reexport module GridTools
 
 using LinearAlgebra, SparseArrays
-using WorldOceanAtlasTools
-WOA = WorldOceanAtlasTools
 
 #===================================
 Off-diaongal matrices
@@ -99,62 +97,36 @@ Functions return weighted norms
 ===================================#
 
 """
-    vnorm²(x, v)
+    weighted_norm²(x, w)
 
-Returns the square of the volume-weighted norm of tracer `x` using volumes `v`.
+Returns the square of the weighted norm of `x` using weights `w`.
 """
-vnorm²(x, v) = transpose(x) * Diagonal(v) * x
-
-"""
-    vnorm(x, v)
-
-Returns the volume-weighted norm of tracer `x` using volumes `v`.
-"""
-vnorm(x, v) = sqrt(vnorm²(x, v))
+weighted_norm²(x, w) = transpose(x) * Diagonal(w) * x
 
 """
-    vmean(x, v)
+    weighted_norm(x, v)
 
-Returns the volume-weighted mean of tracer `x` using volumes `v`.
+Returns the weighted norm of `x` using weights `w`.
 """
-vmean(x, v) = transpose(v) * x / sum(v)
+weighted_norm(x, w) = sqrt(weighted_norm²(x, w))
 
 """
-    vmean(x, v, i)
+    weighted_mean(x, w)
 
-Returns the volume-weighted mean of tracer `x` using volumes `v`, but only over indices `i`.
+Returns the weighted mean of `x` using weights `w`.
+"""
+weighted_mean(x, w) = transpose(w) * x / sum(w)
+
+"""
+    vmean(x, w, I)
+
+Returns the weighted mean of `x` using weights `w`, but only over indices `I`.
 This is useful to get the observed mean.
 (Because there are some grid boxes without observations.)
 """
-vmean(x, v, i) = transpose(v[i]) * x[i] / sum(v[i])
+weighted_mean(x, w, I) = transpose(w[I]) * x[I] / sum(w[I])
 
-#===================================
-Functions for the World Ocean Atlas
-TODO
-===================================#
-
-"""
-    observed_mean_and_variance(wet3d, grd, tracer;
-                               product_year = 2018, # default WOA18
-                               period = "Annual",   # default annual
-                               resolution = "1°",   # default 1°×1° resolution
-                               field = "an")        # default "objectively analyzed mean"
-
-Returns the observed mean and variance of the tracer `tracer` fit to the `grd` grid.
-AIBECS only uses the World Ocean Atlas for that at the moment.
-Specifically, AIBECS uses the WorldOceanAtlasTools package.
-However, this function will likely change since other observational datasets are available.
-"""
-function observed_mean_and_variance(wet3d, grd, tracer;
-                                    product_year = 2018, # default WOA18
-                                    period = "Annual",   # default annual
-                                    resolution = "1°",   # default 1°×1° resolution
-                                    field = "an")        # default "objectively analyzed mean"
-    χ_3D, σ²_3D = WOA.fit_to_grid(grd, product_year, tracer, period, resolution, field)
-    iwet = indices_of_wet_boxes(wet3d)
-    return μ_3d[iwet], σ²_3d[iwet]
-end
-export observed_mean_and_variance
+export weighted_norm²
 
 end
 
