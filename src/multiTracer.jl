@@ -25,7 +25,7 @@ end
 function local_jacobian_row(Gⱼ, x, p, nt, nb)
     e(j) = kron([j == k for k in 1:nt], trues(nb))
     tracers(v) = [v[j:j+nb-1] for j in 1:nb:nb*nt]
-    return reduce(hcat, [spdiagm(0 => 𝔇(Gⱼ(tracers(x + ε * e(j))..., p))) for j in 1:nt])
+    return reduce(hcat, [sparse(Diagonal(𝔇(Gⱼ(tracers(x + ε * e(j))..., p)))) for j in 1:nt])
 end
 
 #=============================================
