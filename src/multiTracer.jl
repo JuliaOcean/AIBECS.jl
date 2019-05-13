@@ -63,7 +63,7 @@ Volume-weighted mismatch of modelled tracer `x` against observed mean, `xobs`, g
 function mismatch(x, xobs, σ²xobs, v)
     δx = x - xobs
     W = Diagonal(v ./ σ²xobs)
-    return 0.5 * δx' * W * δx / (xobs' * W * xobs)
+    return 0.5 * transpose(δx) * W * δx / (transpose(xobs) * W * xobs)
 end
 
 mismatch(x, ::Missing, args...) = 0
@@ -76,9 +76,9 @@ Adjoint of the gradient of `mismatch(x, xobs, σ²xobs, v)`.
 function ∇mismatch(x, xobs, σ²xobs, v)
     δx = x - xobs
     W = Diagonal(v ./ σ²xobs)
-    return (W * δx)' / (xobs' * W * xobs)
+    return transpose(W * δx) / (transpose(xobs) * W * xobs)
 end
-∇mismatch(x, ::Missing, args...) = zeros(length(x))'
+∇mismatch(x, ::Missing, args...) = transpose(zeros(length(x)))
 
 # TODO
 # Talk about it with FP
@@ -102,14 +102,14 @@ function mismatch(p, m, v)
     σ² = log.(1 .+ v ./ m.^2)
     δλ = log.(optvec(p)) .- μ
     W = Diagonal(1 ./ σ²)
-    return 0.5 * δλ' * W * δλ
+    return 0.5 * transpose(δλ) * W * δλ
 end
 function ∇mismatch(p, m, v)
     μ = log.(m ./ sqrt.(1 .+ m ./ v.^2))
     σ² = log.(1 .+ v ./ m.^2)
     δλ = log.(optvec(p)) .- μ
     W = Diagonal(1 ./ σ²)
-    return (W * δλ ./ optvec(p))'
+    return transpose(W * δλ ./ optvec(p))
 end
 
 
