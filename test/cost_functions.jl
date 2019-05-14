@@ -1,6 +1,6 @@
 # Hyper parameters
 ωs = [1.0, 0.0]
-ωp = 1e-4
+ωp = 1e-7
 # PO₄ mean and variance of observations fom WOA18
 WOA = WorldOceanAtlasTools
 μDIPobs3D, σ²DIPobs3D = WOA.fit_to_grid(grd, 2018, "phosphate", "annual", "1°", "an")

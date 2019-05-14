@@ -16,7 +16,7 @@ Sources minus sinks
 # Geological Restoring
 function geores(DIP, p)
     τg, DIPgeo = p.τg, p.DIPgeo
-    return (DIPgeo .- DIP) ./ τg
+    return (DIPgeo .- DIP) / τg
 end
 # Uptake of phosphate (DIP)
 relu(x) = (x .≥ 0) .* x
@@ -31,8 +31,8 @@ function remineralization(POP, p)
     return κ * POP
 end
 # Add them up into sms functions (Sources Minus Sinks)
-sms_DIP(DIP, POP, p) = geores(DIP, p) .- uptake(DIP, p) .+ remineralization(POP, p)
-sms_POP(DIP, POP, p) = uptake(DIP, p) .- remineralization(POP, p)
+sms_DIP(DIP, POP, p) = geores(DIP, p) - uptake(DIP, p) + remineralization(POP, p)
+sms_POP(DIP, POP, p) = uptake(DIP, p) - remineralization(POP, p)
 sms_all = (sms_DIP, sms_POP) # bundles all the source-sink functions in a tuple
 
 #===========================================
