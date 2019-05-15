@@ -33,4 +33,9 @@ Tests
     @testset "Derivative w.r.t the parameters, p" begin
         @test size(∇ₚf₀) == (1, m)
     end
+    @testset "Lognormal <-> Normal" begin
+        mm, nn = rand(10), rand(10)
+        @test AIBECS.LNm(AIBECS.LNμ(mm, vv), AIBECS.LNσ²(mm, vv)) ≈ mm
+        @test AIBECS.LNv(AIBECS.LNμ(mm, vv), AIBECS.LNσ²(mm, vv)) ≈ vv
+    end
 end

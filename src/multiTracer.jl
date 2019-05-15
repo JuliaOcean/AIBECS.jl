@@ -98,20 +98,25 @@ Assumes priors have a log-normal distributions.
 and are converted to their log counterparts in the mismatch formula.
 """
 function mismatch(p, m, v)
-    μ = log.(m ./ sqrt.(1 .+ m ./ v.^2))
-    σ² = log.(1 .+ v ./ m.^2)
+    μ = LNμ(m, v)
+    σ² = LNσ²(m, v)
     δλ = log.(optvec(p)) .- μ
     W = Diagonal(1 ./ σ²)
     return 0.5 * transpose(δλ) * W * δλ
 end
 function ∇mismatch(p, m, v)
-    μ = log.(m ./ sqrt.(1 .+ m ./ v.^2))
-    σ² = log.(1 .+ v ./ m.^2)
+    μ = LNμ(m, v)
+    σ² = LNσ²(m, v)
     δλ = log.(optvec(p)) .- μ
     W = Diagonal(1 ./ σ²)
     return transpose(W * δλ ./ optvec(p))
 end
 
+# Lognormal mean and variance and variance conversions (from Wikipedia)
+LNμ(m, v) = log.(m ./ sqrt.(1 .+ v ./ m.^2))
+LNσ²(m, v) = log.(1 .+ v ./ m.^2)
+LNm(μ, σ²) = exp.(μ + σ² / 2)
+LNv(μ, σ²) = (exp.(σ²) .- 1) .* exp.(2μ + σ²)
 
 #=============================================
 Generate multi-tracer norm

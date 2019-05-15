@@ -20,11 +20,11 @@ function geores(x, p)
     return (xgeo .- x) / τg
 end
 # Uptake of phosphate (DIP)
-soft_relu(x, p) = 0.5 * (tanh.(x / p.α) .+ 1) .* x
+relu(x) = (x .≥ 0) .* x
 function uptake(DIP, p)
-    Umax, ku, z₀ = p.Umax, p.ku, p.z₀
-    DIP⁺ = soft_relu(DIP, p)
-    return Umax * DIP⁺ ./ (DIP⁺ .+ ku) .* (z .≤ z₀)
+    τu, ku, z₀ = p.τu, p.ku, p.z₀
+    DIP⁺ = relu(DIP)
+    return 1/τu * DIP⁺.^2 ./ (DIP⁺ .+ ku) .* (z .≤ z₀)
 end
 # Remineralization DOP into DIP
 function remineralization(DOP, p)
