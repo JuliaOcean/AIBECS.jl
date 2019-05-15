@@ -1,10 +1,11 @@
 # Build the parameters type and p₀
 t = empty_parameter_table()    # initialize table of parameters
-add_parameter!(t, :xgeo, 2.3u"mmol/m^3",
+add_parameter!(t, :xgeo, 2.17u"mmol/m^3",
+    variance_obs = ustrip(upreferred(0.1 * 2.17u"mmol/m^3"))^2,
     optimizable = true,
     description = "Geological mean P concentration",
     LaTeX = "\\state^\\mathrm{geo}")
-add_parameter!(t, :τg, 1.0u"kyr",
+add_parameter!(t, :τg, 1.0u"Myr",
     description = "Geological restoring timescale",
     LaTeX = "\\tau_\\mathrm{geo}")
 add_parameter!(t, :Umax, 24.0u"μmol/m^3/d",
@@ -18,18 +19,28 @@ add_parameter!(t, :ku, 10.0u"μmol/m^3",
 add_parameter!(t, :z₀, 80.0u"m",
     description = "Depth of the euphotic layer base",
     LaTeX = "z_0")
+add_parameter!(t, :α, 1e-7u"mmol/m^3",
+    description = "Smoothing scale",
+    LaTeX = "\\alpha")
 add_parameter!(t, :w₀, 1.0u"m/d",
     optimizable = true,
     description = "Sinking velocity at surface",
     LaTeX = "w_0")
-add_parameter!(t, :w′, 0.0352u"d^-1",
+add_parameter!(t, :w′, 1/4.4625u"d",
     optimizable = true,
     description = "Vertical gradient of sinking velocity",
     LaTeX = "w'")
-add_parameter!(t, :κ, 0.0302u"d^-1",
+add_parameter!(t, :κDOP, 1/0.25u"yr",
     optimizable = true,
-    description = "Remineralization rate constant",
+    description = "Remineralization rate constant (DOP to DIP)",
     LaTeX = "\\kappa")
+add_parameter!(t, :κPOP, 1/5.25u"d",
+    optimizable = true,
+    description = "Dissolution rate constant (POP to DOP)",
+    LaTeX = "\\kappa")
+add_parameter!(t, :σ, 0.3u"1",
+    description = "Fraction of quick local uptake recycling",
+    LaTeX = "\\sigma")
 initialize_Parameters_type(t)   # Generate the parameter type
 
 @testset "Parameters" begin

@@ -2,13 +2,14 @@
 Transport matrices
 ===========================================#
 T_DIP(p) = T_Circulation
+T_DOP(p) = T_Circulation
 const S₀ = buildPFD(ones(nb), DIV, Iabove)
 const S′ = buildPFD(ztop, DIV, Iabove)
 function T_POP(p)
     w₀, w′ = p.w₀, p.w′
     return w₀ * S₀ + w′ * S′
 end
-T_all = (T_DIP, T_POP)
+T_all = (T_DIP, T_DOP, T_POP)
 
 #===========================================
 Sources minus sinks
@@ -19,21 +20,35 @@ function geores(x, p)
     return (xgeo .- x) / τg
 end
 # Uptake of phosphate (DIP)
-relu(x) = (x .≥ 0) .* x
+soft_relu(x, p) = 0.5 * (tanh.(x / p.α) .+ 1) .* x
 function uptake(DIP, p)
     Umax, ku, z₀ = p.Umax, p.ku, p.z₀
-    DIP⁺ = relu(DIP)
+    DIP⁺ = soft_relu(DIP, p)
     return Umax * DIP⁺ ./ (DIP⁺ .+ ku) .* (z .≤ z₀)
 end
-# Remineralization of particulate organic phosphorus (POP)
-function remineralization(POP, p)
-    κ = p.κ
-    return κ * relu(POP)
+# Remineralization DOP into DIP
+function remineralization(DOP, p)
+    κDOP = p.κDOP
+    return κDOP * DOP
+end
+# Dissolution of POP into DOP
+function dissolution(POP, p)
+    κPOP = p.κPOP
+    return κPOP * POP
 end
 # Add them up into sms functions (Sources Minus Sinks)
-sms_DIP(DIP, POP, p) = -uptake(DIP, p) + remineralization(POP, p) + geores(DIP, p)
-sms_POP(DIP, POP, p) =  uptake(DIP, p) - remineralization(POP, p) + geores(POP, p)
-sms_all = (sms_DIP, sms_POP) # bundles all the source-sink functions in a tuple
+function sms_DIP(DIP, DOP, POP, p)
+    return -uptake(DIP, p) + remineralization(DOP, p) + geores(DIP, p)
+end
+function sms_DOP(DIP, DOP, POP, p)
+    σ = p.σ
+    return σ * uptake(DIP, p) - remineralization(DOP, p) + dissolution(POP, p)
+end
+function sms_POP(DIP, DOP, POP, p)
+    σ = p.σ
+    return (1 - σ) * uptake(DIP, p) - dissolution(POP, p)
+end
+sms_all = (sms_DIP, sms_DOP, sms_POP) # bundles all the source-sink functions in a tuple
 
 #===========================================
 AIBECS F and ∇ₓF
