@@ -14,9 +14,9 @@ T_all = (T_DIP, T_POP)
 Sources minus sinks
 ===========================================#
 # Geological Restoring
-function geores(DIP, p)
-    τg, DIPgeo = p.τg, p.DIPgeo
-    return (DIPgeo .- DIP) / τg
+function geores(x, p)
+    τg, xgeo = p.τg, p.xgeo
+    return (xgeo .- x) / τg
 end
 # Uptake of phosphate (DIP)
 relu(x) = (x .≥ 0) .* x
@@ -31,8 +31,8 @@ function remineralization(POP, p)
     return κ * relu(POP)
 end
 # Add them up into sms functions (Sources Minus Sinks)
-sms_DIP(DIP, POP, p) = geores(DIP, p) - uptake(DIP, p) + remineralization(POP, p)
-sms_POP(DIP, POP, p) = uptake(DIP, p) - remineralization(POP, p)
+sms_DIP(DIP, POP, p) = -uptake(DIP, p) + remineralization(POP, p) + geores(DIP, p)
+sms_POP(DIP, POP, p) =  uptake(DIP, p) - remineralization(POP, p) + geores(POP, p)
 sms_all = (sms_DIP, sms_POP) # bundles all the source-sink functions in a tuple
 
 #===========================================
@@ -48,9 +48,9 @@ Tests
     @testset "Particle Flux Divergence is conservative" begin
         @test norm(v) / norm(T_POP(p₀)' * v) > ustrip(upreferred(1u"Myr"))
     end
-    x = p₀.DIPgeo * kron([1, 0.1], ones(nb))
     nt = length(T_all)
     n = nt * nb
+    x = p₀.xgeo * ones(n)
     @testset "State function" begin
         F₀ = F(x, p₀)
         v_all = repeat(v, nt)

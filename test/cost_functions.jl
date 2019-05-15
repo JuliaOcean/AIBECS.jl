@@ -17,9 +17,9 @@ Tests
 ===========================================#
 
 @testset "Mismatch / cost functions" begin
-    x₀ = p₀.DIPgeo * kron([1, 0.1], ones(nb))
     nt = length(T_all)
     n = nt * nb
+    x₀ = p₀.xgeo * ones(n)
     f₀ = f(x₀, p₀)
     ∇ₓf₀ = ∇ₓf(x₀, p₀)
     ∇ₚf₀ = ∇ₚf(x₀, p₀)

@@ -3,8 +3,10 @@
 algs = [CTKAlg]
 
 @testset "Solvers" begin
+    nt = length(T_all)
+    n = nt * nb
+    x₀ = p₀.xgeo * ones(n)
     @testset "$string(alg)" for alg in algs
-        x₀ = p₀.DIPgeo * kron([1, 0.1], ones(nb))
         @test alg <: DiffEqBase.AbstractSteadyStateAlgorithm
         @testset "$(nx₀)x₀, $(np₀)p₀" for nx₀ in 1:2, np₀ in 1:2
             prob = SteadyStateProblem(F, ∇ₓF, nx₀ * x₀, np₀ * p₀)
