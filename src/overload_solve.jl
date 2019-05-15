@@ -70,4 +70,4 @@ function DiffEqBase.SteadyStateProblem(F, ∇ₓF, x, p)
     return DiffEqBase.SteadyStateProblem(f, x, p)
 end
 
-export solve, SteadyStateProblem, CTKAlg
+export solve, SteadyStateProblem, CTKAlg, CTKAlg2

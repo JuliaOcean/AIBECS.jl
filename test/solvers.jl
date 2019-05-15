@@ -1,6 +1,6 @@
 
 # List of available algorithms for AIBECS
-algs = [CTKAlg]
+algs = [CTKAlg, CTKAlg2]
 
 @testset "Solvers" begin
     nt = length(T_all)
