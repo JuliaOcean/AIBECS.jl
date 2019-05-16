@@ -33,7 +33,7 @@ add_parameter!(t, :κPOP, 1/5.25u"d",
 add_parameter!(t, :σ, 0.3u"1",
     description = "Fraction of quick local uptake recycling",
     LaTeX = "\\sigma")
-add_parameter!(t, :τu, 30u"d",
+add_parameter!(t, :τu, 30.0u"d",
     optimizable = true,
     description = "Maximum uptake rate timescale",
     LaTeX = "\\tau_\\vec{u}")
