@@ -10,7 +10,7 @@ add_parameter!(t, :τg, 1.0u"Myr",
 add_parameter!(t, :ku, 10.0u"μmol/m^3",
     optimizable = true,
     description = "Half-saturation constant (Michaelis-Menten)",
-    LaTeX = "k_\\vec{u}")
+    LaTeX = "k_{\\vec{u}}")
 add_parameter!(t, :z₀, 80.0u"m",
     description = "Depth of the euphotic layer base",
     LaTeX = "z_0")
@@ -36,7 +36,7 @@ add_parameter!(t, :σ, 0.3u"1",
 add_parameter!(t, :τu, 30.0u"d",
     optimizable = true,
     description = "Maximum uptake rate timescale",
-    LaTeX = "\\tau_\\vec{u}")
+    LaTeX = "\\tau_{\\vec{u}}")
 initialize_Parameters_type(t)   # Generate the parameter type
 
 @testset "Parameters" begin
