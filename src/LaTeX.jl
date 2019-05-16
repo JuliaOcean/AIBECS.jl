@@ -8,43 +8,41 @@ module LaTeX
 
 using Printf
 
-
-
 function print_header(str_lengths)
-l_L, l_D, l_U = str_lengths
-headtop =
-"""
-\\begin{table*}[t]
-    \\caption{
-    }
-    \\begin{tabular}{lp{10cm}lll}
-        \\tophline
-"""
-str_L1 = rpad("", l_L+2)
-str_L2 = rpad("Symbol", l_L+2)
-str_D1 = rpad("", l_D)
-str_D2 = rpad("Description", l_D)
-str_U1 = rpad("", l_U)
-str_U2 = rpad("Unit", l_U)
-str_IV1 = rpad("Initial", 8)
-str_IV2 = rpad("value", 8)
-str_FV1 = rpad("Optimal", 8)
-str_FV2 = rpad("value", 8)
-str_1 = string("        ", str_L1, " & ", str_D1, " & ", str_IV1, " & ", str_FV1, " & ", str_U1, " \\\\\n")
-str_2 = string("        ", str_L2, " & ", str_D2, " & ", str_IV2, " & ", str_FV2, " & ", str_U2, " \\\\\n")
-headbot =
-"""
-        \\middlehline
-"""
-return string(headtop, str_1, str_2, headbot)
+    l_L, l_D, l_U = str_lengths
+    headtop =
+    """
+    \\begin{table*}[t]
+        \\caption{
+        }
+        \\begin{tabular}{lp{10cm}lll}
+            \\tophline
+    """
+    str_L1 = rpad("", l_L+2)
+    str_L2 = rpad("Symbol", l_L+2)
+    str_D1 = rpad("", l_D)
+    str_D2 = rpad("Description", l_D)
+    str_U1 = rpad("", l_U)
+    str_U2 = rpad("Unit", l_U)
+    str_IV1 = rpad("Initial", 8)
+    str_IV2 = rpad("value", 8)
+    str_FV1 = rpad("Optimal", 8)
+    str_FV2 = rpad("value", 8)
+    str_1 = string("        ", str_L1, " & ", str_D1, " & ", str_IV1, " & ", str_FV1, " & ", str_U1, " \\\\\n")
+    str_2 = string("        ", str_L2, " & ", str_D2, " & ", str_IV2, " & ", str_FV2, " & ", str_U2, " \\\\\n")
+    headbot =
+    """
+            \\middlehline
+    """
+    return string(headtop, str_1, str_2, headbot)
 end
 
 function print_footer()
-"""
-        \\bottomhline
-    \\end{tabular}
-\\end{table*}
-"""
+    """
+            \\bottomhline
+        \\end{tabular}
+    \\end{table*}
+    """
 end
 
 function print_row(t, p, i, str_lengths)
@@ -66,7 +64,12 @@ function string_lengths(t)
 end
 
 
+"""
+    print_table(t, p)
 
+Print the LaTeX table for the parameters.
+Uses Copernicus' `\\unit` command for units
+"""
 function print_table(t, p)
     body = ""
     str_lengths = string_lengths(t)
