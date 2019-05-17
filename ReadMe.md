@@ -13,8 +13,8 @@
   <img src="https://img.shields.io/badge/stability-experimental-orange.svg">
 </p>
 <p>
-  <a href="https://doi.org/<DOI_NUMBER>">
-    <img src="https://zenodo.org/badge/DOI/<DOI_NUMBER>.svg" alt="DOI">
+  <a href="https://doi.org/10.5281/zenodo.2864051">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.2864051.svg" alt="DOI">
   </a>
   <a href="https://github.com/briochemc/AIBECS.jl/blob/master/LICENSE">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg">
