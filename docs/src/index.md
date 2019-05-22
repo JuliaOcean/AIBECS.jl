@@ -1,13 +1,15 @@
-
-<img src="https://user-images.githubusercontent.com/4486578/57189839-c422db00-6f56-11e9-9e1d-26c8d9208702.png" alt="logo" title="AIBECS_logo" align="right" width="275"/>
+```@raw html
+<img src="https://user-images.githubusercontent.com/4486578/57189839-c422db00-6f56-11e9-9e1d-26c8d9208702.png" alt="logo" title="AIBECS_logo" align="right" width="200"/>
+```
 
 # AIBECS.jl
+
+**Algebraic Implicit Biogeochemistry Element-Cycling System**
 
 (Work in Progress)
 
 ## Introduction
 
-AIBECS stands for the **Algebraic Implicit Biogeochemistry Element-Cycling System**.
 AIBECS may be pronounced like the cool [ibex](https://en.wikipedia.org/wiki/Ibex) (if you have a french accent).
 AIBECS is a new software written in [Julia](https://julialang.org) to easily create some marine biogeochmistry models in just a few commands.
 

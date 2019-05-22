@@ -1,109 +1,184 @@
-# ## Ideal mean age
-#
-# **Prerequisites**: If this is the first time you are using AIBECS, make sure you have installed the required packages required this example:
-# - [AIBECS](https://github.com/briochemc/AIBECS.jl)
-# - [PyPlot.jl (update link)]()
-# - [PyCall.jl (update link)]()
-# - [Conda.jl (update link)]() + `conda install cartopy`
 
-# We start by making sure Julia knows that we are going to use the AIBECS package:
+
+
+# # Ideal mean age
+
+# ## The model
+#
+# We will simulate the ideal mean age of water.
+# That is, the average amount of time since a water parcel had last contact with the surface.
+
+# ### Tracer equation
+#
+# The ideal mean age is transported with water, is equal to $0$ at the surface, and increases by one second every second everywhere.
+# In other words, the 3D field of the age, $a$, is governed by the tracer equation
+#
+# $$\frac{\partial a}{\partial t} = - \nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] a + 1,$$
+#
+# where $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$ is a differential operator that represents the transport by the ocean circulation.
+# ($\boldsymbol{u}$ is the 3D vector field for the advection and $\mathbf{K}$ is the diffusivity matrix.)
+# In the equation above, we also assume that there is the boundary condition that $a=0$ at the surface.
+
+# ### Discretized tracer equation
+#
+# In AIBECS, the linear differential operator defined by $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$ is approximated by a constant matrix $\mathbf{T}$ when discretizing the continuous 3D ocean onto the model grid.
+# This matrix can be small (e.g., for models with a few boxes), or large, like for the OCIM (more on the OCIM later).
+# Similarly, the continuous 3D field of the age, $a$, is discretized into a column-vector, $\boldsymbol{a}$.
+# (We represent scalars in italic, vectors in bold italic, and matrices in upstraight bold.)
+
+# In the discrete case, we replace the boundary condition (that $a = 0$ at the surface) by imposing $\boldsymbol{a} = 0$ in the surface layer of the model grid.
+# In practice, this is done by restoring $\boldsymbol{a}$ to $0$ with a very short timescale.
+# The tracer equation thgus takes the form of
+#
+# $$\frac{\partial\boldsymbol{a}}{\partial t} = -\mathbf{T} \, \boldsymbol{a} + 1 - \boldsymbol{a} / \tau,$$
+#
+# where $\tau$ will be chosen to be very small, ensuring that $\boldsymbol{a}$ is very close to $0$ at the surface.
+# The first term represents the transport by the ocean circulation, the second term the source of 1 second per second everywhere, and the last term the fast relaxation.
+
+# ### Steady-state
+
+# The steady-state is the equilibrium that would be reached if we wait long enough for $a$ to not change anymore.
+# Mathematically, the steady-state is also the state for which
+#
+# $$\frac{\partial a}{\partial t} = 0.$$
+
+# Computationally, in the discrete case, this means that we just need to solve
+# 
+# $$0 = -\mathbf{T} \, \boldsymbol{a} + 1 - \boldsymbol{a} / \tau$$
+# 
+# to find $\boldsymbol{a}$.
+# More specifically, we need to solve
+#
+# $$(\mathbf{T} + \mathbf{I} / \tau) \, \boldsymbol{a} = 1.$$
+
+# Now that we have the equations laid down, let us chose the circulation transport matrix, $\mathbf{T}$.
+
+# ## Using AIBECS
+
+#
+#md # !!! note
+#md #     If this is the first time you are trying AIBECS, make sure you go through the prerequisites!
+#nb # > **Note**
+#nb # > If this is the first time you are trying AIBECS, make sure you go through the prerequisites!
+#
+
+# AIBECS can interpret tracer equations as long as you arrange them under the generic form:
+#
+# $$\frac{\partial \boldsymbol{x}}{\partial t} = \boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}),$$
+#
+# where $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p})$ is the rate of change of the state and $\boldsymbol{p}$ is the vector of model parameters.
+# We only track the age here, so that the entire state of the system is determined by the age itself.
+# In other words, here, $\boldsymbol{x} = \boldsymbol{a}$.
+
+# We will use AIBECS to find the steady-state of the system.
+# For AIBECS, this translates into finding the solution of $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$.
+
+# We start by telling Julia that we want to use the AIBECS package via
 
 using AIBECS
 
-# If it's the first time you are running this line, the package will need precompiling.
-# This may take a minute or two.
-# Just be patient :)
-# You should see a `Warning` for the `Flatten` package — just disregard it...
-# If you get an error though, please send me a copy of the output/error message, and I will try to troubleshoot it.
-
-# ### Set up the model
+#md # !!! note
+#md #     If it's the first time you are running this line, the package will need precompiling.
+#md #     This may take a minute or two.
+#md #     (Just be patient... Or read on while you wait!)
 #
-# Let's start with a very simple model.
-# We will simulate the ideal mean age of water.
-# That is, the average amount of time since a water parcel had last contact with the surface.
-# Here the "surface" will be the top layer of the model grid.
-# So, we have one tracer, the age, which we will denote by `age` in Julia.
-# But before diving into the equations, let us chose the circulation.
+#nb # > **Note**
+#nb # > If it's the first time you are running this line, the package will need precompiling.
+#nb # > This may take a minute or two.
+#nb # > (Just be patient... Or read on while you wait!)
+#
+#md # !!! note
+#md #     You should see a `Warning` for the `Flatten` package — just disregard it...
+#md #     If you get an error though, please send me a copy of the output/error message, and I will try to troubleshoot it.
+#nb # > **Note**
+#nb # > You should see a `Warning` for the `Flatten` package — just disregard it...
+#nb # > If you get an error though, please send me a copy of the output/error message, and I will try to troubleshoot it.
 
-# #### The circulation
+
+
+# ### The circulation
 #
 # We will use the circulation output from the Ocean Circulation Inverse Model (OCIM) version 1.1.
-# Basically, the OCIM provides scientists, like you and me, with a big sparse matrix that represents the global ocean circulation (advection and diffusion).
+# Basically, the OCIM provides researchers and oceanographers with a big sparse matrix that represents the global ocean circulation (advection and diffusion), which allows them to efficiently simulate the transport of passive tracers, like the age.
 # (For more details, see Tim DeVries's [website](https://tdevries.eri.ucsb.edu/models-and-data-products/) and references therein.)
 # With AIBECS, the OCIM circulation can be loaded really easily, by simply typing
 
-const wet3d, grd, T_OCIM = AIBECS.OCIM1.load() ;
+const wet3d, grd, T_OCIM = AIBECS.OCIM1.load()
+typeof(T_OCIM), size(T_OCIM)
 
 # Here, I have used the `const` prefix to tell Julia these are constants (it helps Julia's compiler)
-# I also use a semicolon, `;`, to suppress the output.
-# Anyway, Julia may ask you to download the OCIM matrix for you, in which case you should say yes (i.e., type `y`).
-# Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
-# Additionally to downloading the OCIM file, the last command loads 3 variables in the Julia workspace:
-# - `grd` contains information about the 3D grid of the OCIM circulation, like the latitude, longitude, and depth of each grid boxes. `grd` is a dictionary (a `Dict` in Julia, equivalent to a `struct` in MATLAB).
-# - `wet3d` is a 3D array of the model grid, filled with `1`'s at "wet" grid boxes and `0`'s and "land" grid boxes.
-# - `T_OCIM` is the transport matrix representing advection and diffusion.
 #
-# Let's check that `T_OCIM` is what we think it is, by using the `typeof` command (which tells you, well, the "type" of things):
-
-typeof(T_OCIM)
-
-# Great, it's a sparse matrix! (CSC just means that it is stored in Compressed Sparse Column format.)
-
-# We can get its size with the `size` command:
-
-size(T_OCIM)
-
-# Yes, it's quite a big matrix!
-# (But it is sparse, so it has very few non-zero entries.)
+#md # !!! note
+#md #     Julia may ask you to download the OCIM matrix for you, in which case you should say yes (i.e., type `y`).
+#md #     Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
+#nb # > **Note**
+#nb # > Julia may ask you to download the OCIM matrix for you, in which case you should say yes (i.e., type `y`).
+#nb # > Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
 #
+# Additionally to downloading the OCIM file, the `load()` command loads 3 variables in the Julia workspace:
+# - `wet3d` — a 3D array of the model grid, filled with `1`'s at "wet" grid boxes and `0`'s and "land" grid boxes.
+# - `grd` — a dictionary containing information about the 3D grid of the OCIM circulation, like the latitude, longitude, and depth of each grid boxes. `grd` is a dictionary (i.e., a `Dict` in Julia, which is equivalent to a `struct` in MATLAB or a `dict` in python).
+# - `T_OCIM` — the transport matrix representing advection and diffusion.
+#
+# The second line in command above tells you the type and the size of `T_OCIM`.
+# It is a sparse matrix (CSC just means that it is stored in Compressed Sparse Column format) and is quite big!
+#md # !!! note
+#md #     A sparse matrix is just a matrix with very few non-zero entries.
+#md #     Computationally, sparse matrices are stored differently than full matrices to save memory (no need to save all those zeros), and are much faster to use too!
+#nb # > **Note**
+#nb # > A sparse matrix is just a matrix with very few non-zero entries.
+#nb # > Computationally, sparse matrices are stored differently than full matrices to save memory (no need to save all those zeros), and are much faster to use too!
+
 # Anyway, this looks good, so let's move on with setting up the model!
 #
-# The state of the model, $\boldsymbol{x}$, is entirely defined by one tracer: the age (denoted by the `age` variable).
-# The age is transported along with water parcels, so its transport matrix is the ocean circulation matrix that we just loaded: `T_OCIM`.
-# We tell AIBECS that by first writing the transport matrix for the age as a function of the parameters (although there are no parameters in this simple model).
+# We have already loaded the transport matrix, `T_OCIM`, for the ocean circulation, but we must tell AIBECS that it applies to the age.
+# To do that, we define a function of the parameters (although there are no parameters involved in this case, this is just the way AIBECS works for the moment).
 
 T_age(p) = T_OCIM
 
 # (Functions in Julia can be created in one line, just as above.)
+# That's it for the circulation.
+# Now, let's define the local sources and sinks.
 
-# #### The local sources and sinks
+# ### The local sources and sinks
 #
-# Now what are the local sources and sinks of `age`?
-# The age increases by $1$ second every second and everywhere.
-# So its source is $1$ (seconds per seconds means it is unitless) everywhere.
+# We will denote the age, $\boldsymbol{a}$, by the variable `age` in Julia.
+# (It's good practice to use explicit names!)
+# We need to translate the local sources and sinks in our discretized state function $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p})$ into Julia code.
+
+# #### The source
+#
+# Remember the age increases by $1$ second every second and everywhere.
+# So its source function is equal to, well, `1`! (seconds per seconds means it is unitless).
 # Let's create the local source function:
 
 source_age(age, p) = 1
 
-# The age is also $0$ at the surface.
-# To enforce that, we restore the age very fast to $0$ at the surface.
+# #### The sink
+#
+# Recall that the age must also be $0$ at the surface.
+# And that we implement this boundary condition by restoring the age very fast to $0$ in the surface layer.
 # This will act as the sink for the age.
-# But first, we need to figure out where "the surface" is.
-# To do that, AIBECS can generate a number of useful constants for you, like the vector of depths or the vector of volumes.
-# These are computed this way
+# But first, we need to figure out where "the surface layer" is.
+# To do that, AIBECS can generate a number of useful constants for you.
+# (You can see the list of functions by typing `varinfo(AIBECS)` at the REPL.)
+# Here we will use the vector of grid box depths, `z`, which AIBECS can generate for us via
 
-const iwet = indices_of_wet_boxes(wet3d)
-const nb = number_of_wet_boxes(wet3d)
-const v = vector_of_volumes(wet3d, grd)
 const z = vector_of_depths(wet3d, grd)
-const ztop = vector_of_top_depths(wet3d, grd)
-
-# Here, we will only use `iwet`, `nb`, and `z`.
-# Just for your informtation, these are:
-# - `iwet` — the vector of the indices of the wet boxes, i.e., those boxes from the 3D ocean that are, well, not land.
-# - `nb` — the number of wet grid boxes. Here, this is also the length of the state vector `x`, because there is only one tracer, `age`.
-# - `v` — the vector of grid box volumnes.
-# - `z` — the vector of grid box depths.
-# - `ztop` — the vector of the depths of the top of the grid boxes.
 
 # So what is the top layer?
 # Let's investigate what's the minimum depth:
 
 minimum(z)
 
-# So the surface layer in the OCIM grid has its center at about 18m depth.
+# The surface layer in the OCIM grid has its center at about $18\,$m depth.
 # We can create a mask of the surface layer via `z .< 20`.
 # (This will return a vector of `0`s and `1`s, depending on whether the depth, `z`, is less than `20`.)
+#
+#md # !!! note
+#md #     In Julia (like in MATLAB), placing a dot, `.`, in front of operators is a convenient way to do element-wise operations.
+#nb # > **Note**
+#nb # > In Julia (like in MATLAB), placing a dot, `.`, in front of operators is a convenient way to do element-wise operations.
 #
 # Then, we implement the local sink by restoring the age to `0` with a timescale `τ`, via
 
@@ -112,88 +187,111 @@ function sink_age(age, p)
     return age .* (z .< 20) / τ
 end
 
-# (Julia allows you to use unicode for your functions and variables, like for `τ`.)
+#md # !!! note
+#md #     Julia allows you to use unicode for your functions and variables, like for `τ`.
+#nb # > **Note**
+#nb # > Julia allows you to use unicode for your functions and variables, like for `τ`.
+#
 # Here, we have defined a Julia function using the `function` keyword because the sink is a bit more complicated, so that we needed two lines to define it.
-# The first line unpacks the model parameters, which is just `τ` in this case.
+# The first line unpacks the model parameters, which is just the restoring timescale, `τ`, in this case.
 # We will chose the value for `τ` later.
+
+# #### Net sources and sinks
 #
-# In the function `sink_age`, you might notice that we used a `.*` and `.<` instead of simply `*` and `<`.
-# This is called "broadcast" in Julia, and it means it is an element-wise operation.
-# Hence, `sink_age` will be large wherever `age` is large, but only at the surface, where `z .< 20`, which is exactly what we want.
-#
-# Now the sources minus the sinks is simply created by
+# The sources minus the sinks are simply defined by
 
 sms_age(age, p) = source_age(age, p) .- sink_age(age, p)
 
-# where we have used `.-` instead just `-` (to "broadcase" the age source, which is just the scalar `1`).
+# #### Model parameters
 #
-# Finally, the last step for the set up is to define $\boldsymbol{F}$.
-# Using AIBECS, this is done via
-
-T_matrices = (T_age,)           # bundles all the transport matrices in a tuple
-sources_minus_sinks = (sms_age,) # bundles all the source-sink functions in a tuple
-F, ∇ₓF = state_function_and_Jacobian(T_matrices, sources_minus_sinks, nb) # generates the state function (and its Jacobian!)
-
-# That's it!
-# We have just created a model of the mean age.
-# The first 2 lines in the cell above are just telling AIBECS
-# - what transport matrices it should use for the transport of these tracers, and
-# - and what local sources and sinks should be appplied to these tracers
-#
-# > Side note: This interface was developed for multiple tracers, and might look a bit odd for a single tracer.
-# > (The `(x,)` syntax returns a tuple of one element — the comma is necessary because without it, `(x)` would be just like `x` with brackets around it.)
-
-# The last line creates two functions:
-# - `F` — the numerical version of the **state function**, $\boldsymbol{F}$, of our model of the mean age, and
-# - `∇ₓF` — the **Jacobian matrix** of the state function, i.e., $\nabla_{\boldsymbol{x}}\boldsymbol{F}$.
-# Yes, AIBECS just automatically created an exact derivative of your input, using autodifferentiation via dual numbers.
-# (I'd be very excited to detail how this is implemented here, but it is an entirely different discussion.)
-#
-# The Jacobian, `∇ₓF` is essential to solving the steady-state equation $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$ fast.
-# Specifically, solving $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$ is done via Newton's method.
-# By starting from an initial guess, that you will have to provide, it will iterate over this recursion relation
-#
-# $$\boldsymbol{x}_{k+1} = \boldsymbol{x}_{k} - \nabla_{\boldsymbol{x}}\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p})^{-1} \boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) $$
-#
-# until if finds a solution.
-# Now I should note that here, our age model is linear in $x$ (or `age` in our code), so that the solution will be found in a single iteration, or a sinle "matrix inversion".
-
-# Anyway, AIBECS is nice, and comes bundled with an algorithm and an API to solve for the steady-state, so you don't have to worry about all these cumbersome details!
-# But before we do so, we must first define the parameter... And AIBECS also comes with an API for that!
+# We must define the parameters... And AIBECS comes with an API for that!
 
 t = empty_parameter_table()    # initialize table of parameters
 add_parameter!(t, :τ, 1u"s")   # add the parameter we want (τ = 1s)
 initialize_Parameters_type(t)  # Generate the parameter type
+t
 
 # The lines above created a table that contains all the info for my parameters, and a corresponding parameter vector, `p₀`.
 # Note, in particular, that we gave our parameter `τ` a unit.
 # Yes, Julia comes with some nice functionality to deal with units directly!
-#
-# Let us have a look at the table `t` and the parameter `p₀`
-
-t
 
 p₀
 
 # Here we did not really need to create `p₀` as a parameters vector, since it has only one element, `τ`, in it.
 # However, we are here to learn, and this structure and functionality comes in very handy when one deals with many parameters.
 # (And as you can imagine, having all the parameters in a nice table ready for being used in a publication comes quite handy!)
+
+
+
+# #### State function and Jacobian
 #
-# Anyway, now let's finish our model, and set an initial guess for the age.
-# Let's assume the age is `1` (seconds) everywhere ():
+# Finally, the last step for the set up is to define $\boldsymbol{F}$.
+# Using AIBECS, this is done via
+
+const nb = number_of_wet_boxes(wet3d)  # number of wet boxes
+T_matrices = (T_age,)           # bundles all the transport matrices in a tuple
+sources_minus_sinks = (sms_age,) # bundles all the source-sink functions in a tuple
+F, ∇ₓF = state_function_and_Jacobian(T_matrices, sources_minus_sinks, nb) # generates the state function (and its Jacobian!)
+
+# That's it!
+# We have just created a model of the mean age.
+#
+# The first line above defines the number of wet grid boxes, `nb`. 
+# Here, this is also the length of the state vector `x`, because there is only one tracer, `age`.
+#
+# Lines 2 and 3 are just telling AIBECS
+# - what transport matrices it should use for the transport of these tracers, and
+# - and what local sources and sinks should be appplied to these tracers
+#
+#md # !!! note
+#md #     The `(x,)` syntax returns a tuple of one element — the comma is necessary because without it, `(x)` would be just like `x` with brackets around it.
+#md #     This interface of AIBECS was developed for case with multiple tracers in mind, and might look a bit odd for a single tracer.
+#md #     But in the future, this might be cleaned up to be easier to work with single tracers.
+#nb # > **Note**
+#nb # > The `(x,)` syntax returns a tuple of one element — the comma is necessary because without it, `(x)` would be just like `x` with brackets around it.
+#nb # > This interface of AIBECS was developed for case with multiple tracers in mind, and might look a bit odd for a single tracer.
+#nb # > But in the future, this might be cleaned up to be easier to work with single tracers.
+
+# The fourth line creates two functions:
+# - `F` — the numerical version of the **state function**, $\boldsymbol{F}$, of our model of the mean age, and
+# - `∇ₓF` — the **Jacobian matrix** of the state function, i.e., $\nabla_{\boldsymbol{x}}\boldsymbol{F}$.
+# Yes, AIBECS just automatically created an exact derivative of your input, using autodifferentiation via dual numbers.
+# (I'd be very excited to detail how this is implemented here, but it is an entirely different discussion.)
+
+
+
+# #### Solving for the steady-state
+#
+# The Jacobian, `∇ₓF` is essential to solving the steady-state equation $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$ fast.
+# Specifically, solving $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$ is done via Newton's method.
+# By starting from an initial guess, that you will have to provide, it will iterate over this recursion relation
+#
+# $$\boldsymbol{x}_{k+1} = \boldsymbol{x}_{k} - \nabla_{\boldsymbol{x}}\boldsymbol{F}(\boldsymbol{x}_{k}, \boldsymbol{p})^{-1} \boldsymbol{F}(\boldsymbol{x}_{k}, \boldsymbol{p})$$
+#
+# until $\boldsymbol{F}(\boldsymbol{x}_{k}, \boldsymbol{p})$ is sufficiently small.
+# Now I should note that here, our age model is linear in $x$ (or `age` in our code), so that the solution will be found in a single iteration, or a sinle "matrix inversion", as could be seen from our steady-state equation for $\boldsymbol{a}$.
+
+#md # !!! note
+#md #     AIBECS comes with a built-in algorithm and an API to solve for the steady-state, so you don't have to worry about all these details!
+#nb # > **Note**
+#nb # > AIBECS comes with a built-in algorithm and an API to solve for the steady-state, so you don't have to worry about all these details!
+
+# ##### Define the Steady-state problem in AIBECS
+#
+# Let's assume the age is `1` (seconds) everywhere (as an initial guess):
 
 x₀ = ones(nb)
 
 # the `ones` function creates a vector of `1`s of the size you give it (the number of wet grid boxes, `nb`, here, which we defined as a constant earlier).
 
-# ### Run the simulation, i.e., solve for the steady state
-#
 # First, we create an instance of the steady-state problem, via
 
 prob = SteadyStateProblem(F, ∇ₓF, x₀, p₀)
 
 # where we have simply provided the state function, $\boldsymbol{F}$, the Jacobian, $\nabla_{\boldsymbol{x}}\boldsymbol{F}$, the initial guess and the parameters.
 # The `SteadyStateProblem` function is a standard "DiffEqBase" constructor that I have overloaded in my package so that you can easily generate the model here.
+
+# ##### Solve for the steady-state with AIBECS
 #
 # Finally, we can find the solution in litterally one line, via the `solve` function:
 
@@ -209,34 +307,39 @@ age = solve(prob, CTKAlg())
 # Everyone here deserves a nice tap on the shoulder — Good job!
 # Now let's see what this age looks like on a map
 
-# ### Make some figures
-#
-# We will plot a horizontal slice of the age at about 1000m depth.
 
-# First, we must take `age`, and rearrange it into the 3D grid.
-# For that we use `iwet`, which we defined as a constant above (recall `iwet` is the vector of the indices of wet points in the 3D grid).
-#
-# We can now rearrange `age` in these few lines of code:
 
-age_3D = NaN * wet3d # creates a 3D array of NaNs
+
+# ## Figures
+#
+# We will plot a horizontal slice of the age at about 1000m depth using Cartopy.
+
+# First, we must rearrange `age` into the 3D model grid.
+# For that we will need the vector of the indices of wet points in the 3D grid, which we will denote by `iwet`, and which AIBECS generates via
+
+const iwet = indices_of_wet_boxes(wet3d)
+
+# We then rearrange the column vector `age` into a 3D array via
+
+age_3D = NaN * wet3d # creates a 3D array of NaNs of the same size as `wet3d`
 age_3D[iwet] = age   # Fills the wet grid boxes with the age values
 size(age_3D)         # Just to check the size of age_3D
 
-# Thus, `age_3D` is a 3D-array of which I just showed you the size, which corresponds to the OCIM grid.
-#
-# Now we must find the index of the depth that is closest to 1000m.
+# The last line just shows you the size of `age_3D`, which is a 3D-array as expected.
+
+# Now let us find the index of the depth that is closest to $1000\,$m.
 # To do that we must use the depth information contained in `grd`.
 # Let us first create a small vector of the depths of the grid:
 
 depth = vec(grd["zt"])
 
-# So we could count the index of the entry we want, or we could use the `findfirst` function, like below.
-# (Feel free to change the value of `iz` if you want to see a slice at another depth.)
+# We could count the index of the entry we want, but here we will use the `findfirst` function to find the first depth index that is greater than 1000m.
+#nb # (Feel free to change the value of `iz` if you want to see a slice at another depth.)
 
 iz = findfirst(depth .> 1000)
 iz, depth[iz]
 
-# So the 13-th layer lies at 1104m, which should do the trick for us.
+# We get `iz = 13`, which is a layer that lies at 1104m, close to 1000m like we wanted.
 #
 # Finally, we need the latitude and longitudes of the grid, contained in `grd`.
 # As for `depth`, we can use the OCIM's `grd` output:
@@ -245,36 +348,42 @@ lat, lon = vec(grd["yt"]), vec(grd["xt"])
 
 # So these are the latitudes and longitudes of the map we are about to plot.
 
-# A last thing we can do is convert the age from seconds, `u"s"`, to years, `u"yr"`, thanks to the Unitful package 
-# (loaded automatically by AIBECS).
+# A last thing we can do is convert the age from seconds, `u"s"`, to years, `u"yr"`, because the age is large.
+# This can be done via the Unitful package (loaded automatically by AIBECS).
 
 age_3d_1000m_yr = age_3D[:,:,iz] * ustrip(1.0u"s" |> u"yr")
 
 # Finally! Let's have a look at this ideal mean age!
-# To make figures, we will use Cartopy (that you should have `add`ed if you went through the README correctly).
+# To make figures, here, we use Cartopy.
+#nb # (You should have installed Cartopy if you went through the prerequisites correctly).
 # To use it we simply type
 
 ENV["MPLBACKEND"]="qt5agg"
 using PyPlot, PyCall
 
-# The first line is needed for Mac users. It's a bug that should eventually be resolved, but for now this seems to make it work.
-# 
-# We then import cartopy, define a new plot, add some coastlines because they are pretty, and add our slice of age at 1000m depth to it via
+#md # !!! note
+#md #     The first line is needed for Mac users.
+#md #     It's a bug that should eventually be resolved, but for now this seems to make it work.
+#nb # > **Note**
+#nb # > The first line is needed for Mac users.
+#nb # > It's a bug that should eventually be resolved, but for now this seems to make it work.
 
+
+# We import cartopy, define a new plot, add some coastlines because they are pretty, and add our slice of age at 1000m depth to it via
+
+clf()
 ccrs = pyimport("cartopy.crs")
 ax = subplot(projection=ccrs.Robinson(central_longitude=-155.0))
 ax.coastlines()
-# making it cyclic for Cartopy
-lon_cyc = [lon; 360+lon[1]] 
+lon_cyc = [lon; 360+lon[1]] # making it cyclic for Cartopy
 age_cyc = hcat(age_3d_1000m_yr, age_3d_1000m_yr[:,1])
-# And plot
 p = contourf(lon_cyc, lat, age_cyc, levels=0:100:1200, transform=ccrs.PlateCarree(), zorder=-1)
 colorbar(p, orientation="horizontal")
-gcf()
+gcf() # gets the current figure to display
 
 # That's it!
 # Good job!
-# 
-# At 1000m, the age ranges from a few years below deep water formation regions (Wedell Sea, North Atlantic), and reaches a dozen of centuries in the North Pacific! 
+#
+# At 1000m, the age ranges from a few years below deep water formation regions (Wedell Sea, North Atlantic), and reaches a dozen of centuries in the North Pacific!
 # This is pretty good for so little work!
 

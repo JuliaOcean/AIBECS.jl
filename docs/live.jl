@@ -6,10 +6,10 @@ sw = LiveServer.SimpleWatcher()
 EXAMPLEDIR = joinpath(@__DIR__, "src", "examples")
 EXAMPLES_jl = [f for f in readdir(EXAMPLEDIR) if endswith(f, ".jl")]
 SOURCES = [
-    joinpath(@__DIR__, "make.jl")
-    joinpath(@__DIR__, "src", "index.md")
-    joinpath(@__DIR__, "src", "prerequisites.md")
-    [joinpath(EXAMPLEDIR, example) for example in EXAMPLES_jl]
+    abspath(joinpath(@__DIR__, "make.jl"))
+    abspath(joinpath(@__DIR__, "src", "index.md"))
+    abspath(joinpath(@__DIR__, "src", "prerequisites.md"))
+    [abspath(joinpath(EXAMPLEDIR, example)) for example in EXAMPLES_jl]
 ]
 
 append!(sw.watchedfiles, LiveServer.WatchedFile.(SOURCES))
@@ -17,14 +17,15 @@ append!(sw.watchedfiles, LiveServer.WatchedFile.(SOURCES))
 function callback(x)
     # only trigger for source files to avoid infinite loop
     if x in SOURCES
-        include(joinpath(@__DIR__, "make.jl"))
+        include(abspath(joinpath(@__DIR__, "make.jl")))
+        LiveServer.file_changed_callback(x)
     end
 end
 
-callback(joinpath(@__DIR__, "make.jl")) # make sure files exist
+callback(abspath(joinpath(@__DIR__, "make.jl"))) # make sure files exist
 LiveServer.set_callback!(sw, callback)
 
-LiveServer.serve(sw; dir = joinpath(@__DIR__, "build"), verbose=true)
+LiveServer.serve(sw; dir = abspath(joinpath(@__DIR__, "build")), verbose=true)
 
 
 
