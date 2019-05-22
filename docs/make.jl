@@ -1,4 +1,5 @@
 using Documenter, AIBECS
+ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 
 # Generate examples
 include("generate.jl")
