@@ -355,8 +355,12 @@ age_3d_1000m_yr = age_3D[:,:,iz] * ustrip(1.0u"s" |> u"yr")
 
 # Finally! Let's have a look at this ideal mean age!
 # To make figures, here, we use Cartopy.
-#nb # (You should have installed Cartopy if you went through the prerequisites correctly).
 # To use it we simply type
+
+using Conda
+Conda.add("Cartopy")
+
+# to install Cartopy, and then run PyPlot via
 
 ENV["MPLBACKEND"]="qt5agg"
 using PyPlot, PyCall
