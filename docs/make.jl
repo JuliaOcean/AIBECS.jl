@@ -1,5 +1,6 @@
 using Documenter, AIBECS
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
+using Conda; Conda.add("Cartopy")
 
 # Generate examples
 include("generate.jl")
