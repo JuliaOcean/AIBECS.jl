@@ -5,7 +5,7 @@
 # - [PyPlot.jl (update link)]()
 # - [PyCall.jl (update link)]()
 # - [Conda.jl (update link)]() + `conda install cartopy`
-#
+
 # We start by making sure Julia knows that we are going to use the AIBECS package:
 
 using AIBECS
@@ -270,9 +270,11 @@ age_cyc = hcat(age_3d_1000m_yr, age_3d_1000m_yr[:,1])
 # And plot
 p = contourf(lon_cyc, lat, age_cyc, levels=0:100:1200, transform=ccrs.PlateCarree(), zorder=-1)
 colorbar(p, orientation="horizontal")
+gcf()
 
 # That's it!
 # Good job!
 # 
 # At 1000m, the age ranges from a few years below deep water formation regions (Wedell Sea, North Atlantic), and reaches a dozen of centuries in the North Pacific! 
 # This is pretty good for so little work!
+

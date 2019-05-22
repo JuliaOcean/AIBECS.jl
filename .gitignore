@@ -1,4 +1,6 @@
 Manifest.toml
 docs/build/
 
-examples/*md
+examples/markdowns/
+examples/notebooks/
+examples/scripts/
