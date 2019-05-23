@@ -17,6 +17,7 @@ matrix:
 notifications:
   email: false
 
+
 #script: # the default script is equivalent to the following
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 #  - julia -e 'Pkg.clone(pwd()); Pkg.build("AIBECS"); Pkg.test("AIBECS"; coverage=true)';
@@ -28,16 +29,14 @@ after_success:
 jobs:
   include:
     - stage: "Documentation"
-      julia: 1.0
+      julia: nightly
       os: linux
-      addons:
-        apt:
-          packages:
-            - python3-matplotlib
-            - python3-cartopy
-        env:
-          matrix:
-            - PYTHON=python3 # python 3.5
+      before_script:
+        - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
+                                    Pkg.add("Conda"); using Conda;
+                                    Conda.add("matplotlib"); Conda.add("cartopy")';
+        - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
+                                    Pkg.add("PyCall"); ENV["PYTHON"]=""; Pkg.build("PyCall")' 
       script:
         - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
                                     Pkg.develop(PackageSpec(path=pwd()))'
