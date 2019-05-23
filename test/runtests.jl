@@ -16,6 +16,7 @@ Circulation = SixBoxModel
     include("setup.jl")
     include("parameters.jl")
     include("bgc_functions.jl")
+    include("gridtools.jl")
     include("cost_functions.jl")
     include("solvers.jl")
     include("derivatives.jl")

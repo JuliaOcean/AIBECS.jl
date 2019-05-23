@@ -1,12 +1,19 @@
 
+
+
+
 #=============================================
 Generate 𝐹 and ∇ₓ𝐹 from user input
 =============================================#
 
-# Create F and ∇ₓF automatically from Ts and Gs only
+"""
+    F, ∇ₓF = state_function_and_Jacobian(Ts, Gs, nb)
+
+Returns the state function `F` and its jacobian, `∇ₓF`.
+"""
 function state_function_and_Jacobian(Ts, Gs, nb)
     nt = length(Ts)
-    tracers(v) = [v[j:j+nb-1] for j in 1:nb:nb*nt]
+    tracers(x) = state_to_tracers(x, nb, nt)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
     G(x, p) = reduce(vcat, [Gⱼ(tracers(x)..., p) for Gⱼ in Gs]) # nonlinear part
     F(x, p) = -T(p) * x + G(x, p)                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
@@ -24,7 +31,7 @@ end
 
 function local_jacobian_row(Gⱼ, x, p, nt, nb)
     e(j) = kron([j == k for k in 1:nt], trues(nb))
-    tracers(v) = [v[j:j+nb-1] for j in 1:nb:nb*nt]
+    tracers(x) = state_to_tracers(x, nb, nt)
     return reduce(hcat, [sparse(Diagonal(𝔇(Gⱼ(tracers(x + ε * e(j))..., p)))) for j in 1:nt])
 end
 
@@ -34,7 +41,7 @@ Generate 𝑓 and derivatives from user input
 
 function generate_objective(ωs, μx, σ²x, v, ωp, μp, σ²p)
     nt, nb = length(ωs), length(v)
-    tracers(x) = [x[j:j+nb-1] for j in 1:nb:nb*nt]
+    tracers(x) = state_to_tracers(x, nb, nt)
     f(x, p) = ωp * mismatch(p, μp, σ²p) +
         sum([ωⱼ * mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
     return f
@@ -42,14 +49,14 @@ end
 
 function generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, μp, σ²p)
     nt, nb = length(ωs), length(v)
-    tracers(x) = [x[j:j+nb-1] for j in 1:nb:nb*nt]
+    tracers(x) = state_to_tracers(x, nb, nt)
     ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
     return ∇ₓf
 end
 
 function generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, μp, σ²p)
     nt, nb = length(ωs), length(v)
-    tracers(x) = [x[j:j+nb-1] for j in 1:nb:nb*nt]
+    tracers(x) = state_to_tracers(x, nb, nt)
     ∇ₚf(x, p) = ωp * ∇mismatch(p, μp, σ²p)
     return ∇ₚf
 end

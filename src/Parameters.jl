@@ -73,8 +73,7 @@ delete_parameter!(t::DataFrame, i) = deleterows!(t, i)
 function delete_parameter!(t::DataFrame, s::Symbol)
     i = findfirst(t[:symbol] .== s)
     if isnothing(i)
-        println("Parameter $s did not exist. No deletions")
-        return t
+        error("Parameter $s does not exist in that table.")
     else
         deleterows!(t, i)
     end

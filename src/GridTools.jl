@@ -125,8 +125,43 @@ This is useful to get the observed mean.
 (Because there are some grid boxes without observations.)
 """
 weighted_mean(x, w, I) = transpose(w[I]) * x[I] / sum(w[I])
-
 export weighted_norm²
+
+#===================================
+1D Vector <-> 3D array conversions
+===================================#
+
+"""
+    rearrange_into_3Darray(x, wet3d)
+
+Returns a 3D array of `x` rearranged to the `true` entries of `wet3d`.
+Entries where `wet3d` is `false` are filled with `NaN`s.
+"""
+function rearrange_into_3Darray(x, wet3d)
+    iwet = indices_of_wet_boxes(wet3d)
+    x3d = fill(NaN, size(wet3d))
+    x3d[iwet] .= x
+    return x3d
+end
+
+"""
+    rearrange_into_1Dvector(x3d, wet3d)
+
+Returns a 1D vector of `x3d` from the linear indices where `wet3d` is `true`.
+"""
+function rearrange_into_1Dvector(x3d, wet3d)
+    iwet = indices_of_wet_boxes(wet3d)
+    return x3d[iwet]
+end
+export rearrange_into_3Darray, rearrange_into_1Dvector
+
+#=============================================
+unpacking of multi-tracers
+=============================================#
+
+state_to_tracers(x, nb, nt) = ntuple(i -> x[(i-1)*nb+1 : i*nb], nt)
+tracers_to_state(xs) = reduce(vcat, xs)
+export state_to_tracers, tracers_to_state
 
 end
 

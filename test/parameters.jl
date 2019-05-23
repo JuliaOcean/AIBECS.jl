@@ -37,6 +37,10 @@ add_parameter!(t, :τu, 30.0u"d",
     optimizable = true,
     description = "Maximum uptake rate timescale",
     LaTeX = "\\tau_\\vec{u}")
+add_parameter!(t, :foo, 1.0u"m")
+delete_parameter!(t, :foo)
+add_parameter!(t, :foo, 1.0u"m")
+delete_parameter!(t, size(t, 1))
 initialize_Parameters_type(t)   # Generate the parameter type
 const p₀ = Parameters()
 const m_all = length(fieldnames(typeof(p₀)))
@@ -45,8 +49,18 @@ const m = length(p₀)
 @testset "Parameters" begin
     @test t isa DataFrames.DataFrame
     @test_throws ErrorException initialize_Parameters_type(t)
+    @test_throws ErrorException add_parameter!(t, :τu, 30.0u"d")
+    @test_throws ErrorException delete_parameter!(t, :not_a_parameter)
     @test size(t) == (m_all, 9) # m_all is # of params
     @test size(p₀) == (m,)
     @test length(p₀) == m
+    println(p₀)
     @test p₀ isa AIBECS.Parameters{Float64}
+    using DualNumbers, HyperDualNumbers
+    println(p₀ * im)
+    @test p₀ * im isa AIBECS.Parameters{Complex{Float64}}
+    println(p₀ * ε)
+    @test p₀ * ε isa AIBECS.Parameters{Dual{Float64}}
+    println(p₀ * ε₁)
+    @test p₀ * ε₁ isa AIBECS.Parameters{Hyper{Float64}}
 end
