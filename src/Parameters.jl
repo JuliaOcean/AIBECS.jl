@@ -72,7 +72,7 @@ export add_parameter!
 delete_parameter!(t::DataFrame, i) = deleterows!(t, i)
 function delete_parameter!(t::DataFrame, s::Symbol)
     i = findfirst(t[:symbol] .== s)
-    if isnothing(i)
+    if i isa Nothing
         error("Parameter $s does not exist in that table.")
     else
         deleterows!(t, i)
@@ -80,9 +80,9 @@ function delete_parameter!(t::DataFrame, s::Symbol)
 end
 export delete_parameter!
 
-#====
+#==================
 Generate Parameters
-====#
+==================#
 
 import Flatten: flattenable
 
