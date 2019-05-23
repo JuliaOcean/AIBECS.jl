@@ -8,9 +8,9 @@ WOA = WorldOceanAtlasTools
 const μx = (μDIPobs, missing, missing)
 const σ²x = (σ²DIPobs, missing, missing)
 # generate mismatch functions
-f = generate_objective(ωs, μx, σ²x, v, ωp, mean_pobs, variance_pobs)
-∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_pobs, variance_pobs)
-∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_pobs, variance_pobs)
+f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p₀), variance_obs(p₀))
+∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs(p₀), variance_obs(p₀))
+∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_obs(p₀), variance_obs(p₀))
 
 #===========================================
 Tests

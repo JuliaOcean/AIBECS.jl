@@ -38,9 +38,13 @@ add_parameter!(t, :τu, 30.0u"d",
     description = "Maximum uptake rate timescale",
     LaTeX = "\\tau_\\vec{u}")
 initialize_Parameters_type(t)   # Generate the parameter type
+const p₀ = Parameters()
+const m_all = length(fieldnames(typeof(p₀)))
+const m = length(p₀)
 
 @testset "Parameters" begin
     @test t isa DataFrames.DataFrame
+    @test_throws ErrorException initialize_Parameters_type(t)
     @test size(t) == (m_all, 9) # m_all is # of params
     @test size(p₀) == (m,)
     @test length(p₀) == m

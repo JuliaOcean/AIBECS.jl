@@ -95,13 +95,45 @@ macro make_struct(struct_name, schema...)
     end)
 end
 
+"""
+    initialize_Parameters_type(t, PName="Parameters")
 
-function initialize_Parameters_type(t)
+Generate the type called after `PName` and all its functionality with it.
+It is recommended to use upper camel case for `PName` as for all user-defined Julia types.
+`PName` defaults to `"Parameters"`.
+
+For example, use
+```
+julia> initialize_Parameters_type(t) # creates Parameters
+```
+or
+```
+julia> initialize_Parameters_type(t, "MyPara") # creates MyPara
+```
+
+"""
+function initialize_Parameters_type(t, PName="Parameters")
+    if isdefined(@__MODULE__, Symbol(PName))
+        error(
+              """
+              The name `$PName` is already used. Chose a different one.
+              You can specify the name of the new parameters type via the syntax:
+
+              julia> initialize_Parameters_type(t, PName)
+
+              See examples in the documentation of `initialize_Parameters_type`.
+              (Type `?` and then `initialize_Parameters_type` to see the help.)
+              """
+             )
+    end
     symbols = t[:symbol]
     optimizables = t[:optimizable]
+    m = length(optimizables)
+    m_all = size(t, 1)
     optsymbols = symbols[optimizables]
     schema = [(Symbol(x),Symbol(y)) for (x,y) in zip(symbols, optimizables)]
-    eval( :(@make_struct $(:Parameters) $schema))
+    Parameters = Symbol(PName)
+    eval( :(@make_struct $Parameters $schema))
 
     printunits = t[:printunit]
     baseunits = t[:unit]
@@ -112,7 +144,7 @@ function initialize_Parameters_type(t)
 
     @eval begin
         # Printing functionality
-        function Base.show(io::IO, p::Parameters)
+        function Base.show(io::IO, p::$Parameters)
             println(typeof(p))
             for (s, pu, bu, opt) in zip($symbols, $printunits, $baseunits, $optimizables)
                 v = getfield(p, s)
@@ -125,46 +157,44 @@ function initialize_Parameters_type(t)
                 print_type(io, s, val, ppu, optstr)
             end
         end
-        Base.show(io::IO, ::MIME"text/plain", p::Parameters) = Base.show(io, p)
+        Base.show(io::IO, ::MIME"text/plain", p::$Parameters) = Base.show(io, p)
         # constants
-        const p₀ = Parameters($values...)
-        const m = length(fieldnameflatten(p₀))
-        const m_all = length(fieldnames(typeof(p₀)))
-        const mean_pobs = $μs
-        const variance_pobs = $σ²s
-        export p₀, m, mean_pobs, variance_pobs, m_all
+        $Parameters() = $Parameters($values...)
+        mean_obs(::$Parameters) = $μs
+        variance_obs(::$Parameters) = $σ²s
+        export $Parameters, mean_obs, variance_obs
         # overloads
-        Base.length(p::Parameters) = length(fieldnameflatten(p))
-        Base.size(p::Parameters) = (length(p),) # ForwardDiff requirement
-        # Make Parameters an iterable for the parameters to be able to `collect` it into a vector
-        Base.iterate(p::Parameters, i=1) = i > m_all ? nothing : (getfield(p, i), i + 1)
+        Base.length(p::$Parameters) = length(fieldnameflatten(p))
+        Base.size(p::$Parameters) = (length(p),) # ForwardDiff requirement
+        # Make $Parameters an iterable for the $Parameters to be able to `collect` it into a vector
+        Base.iterate(p::$Parameters, i=1) = i > $m_all ? nothing : (getfield(p, i), i + 1)
         # Convert p to a vector and vice versa
-        Base.vec(p::Parameters) = collect((p...,))
-        Base.copy(p::Parameters) = Parameters(vec(p)...)
-        Base.convert(::Type{Parameters{T1}}, p::Parameters{T2}) where {T1, T2} = Parameters(convert(Vector{T1}, vec(p))...)
-        Base.convert(::Type{Parameters{T}}, p::Parameters{T}) where T = p
+        Base.vec(p::$Parameters) = collect((p...,))
+        Base.copy(p::$Parameters) = $Parameters(vec(p)...)
+        Base.convert(::Type{$Parameters{T1}}, p::$Parameters{T2}) where {T1, T2} = $Parameters(convert(Vector{T1}, vec(p))...)
+        Base.convert(::Type{$Parameters{T}}, p::$Parameters{T}) where T = p
         opt_para(p, v) = Flatten.reconstruct(p, v)
-        function opt_para(p::Parameters{Tₚ}, v::Vector{Tᵥ}) where {Tₚ, Tᵥ}
-            Flatten.reconstruct(convert(Parameters{Tᵥ}, p), v)
+        function opt_para(p::$Parameters{Tₚ}, v::Vector{Tᵥ}) where {Tₚ, Tᵥ}
+            Flatten.reconstruct(convert($Parameters{Tᵥ}, p), v)
         end
-        opt_para(v) = opt_para(p₀, v)
-        optvec(p::Parameters) = flatten(Vector, p)
+        opt_para(v) = opt_para($Parameters(), v)
+        optvec(p::$Parameters) = flatten(Vector, p)
         optvec(v) = v # ForwardDiff requirement
         export optvec
         # Testing equality and approx
-        Base.:≈(p₁::Parameters, p₂::Parameters) = vec(p₁) ≈ vec(p₂)
-        Base.:(==)(p₁::Parameters, p₂::Parameters) = vec(p₁) == vec(p₂)
+        Base.:≈(p₁::$Parameters, p₂::$Parameters) = vec(p₁) ≈ vec(p₂)
+        Base.:(==)(p₁::$Parameters, p₂::$Parameters) = vec(p₁) == vec(p₂)
         # Overloads for being a subtype of Vector
         strerror = "Index of of bounds!"
-        Base.getindex(p::Parameters, i::Int) = i < 1 || i > m ? error(strerror) : getfield(p, $optsymbols[i])
-        Base.setindex!(p::Parameters, v, i::Int) = i < 1 || i > m ? error(strerror) : setfield!(p, $optsymbols[i], v)
+        Base.getindex(p::$Parameters, i::Int) = i < 1 || i > $m ? error(strerror) : getfield(p, $optsymbols[i])
+        Base.setindex!(p::$Parameters, v, i::Int) = i < 1 || i > $m ? error(strerror) : setfield!(p, $optsymbols[i], v)
         # base overloads
-        Base.:+(p::Parameters, v::Vector) = opt_para(p₀, optvec(p) + v)
-        Base.:-(p::Parameters, v::Vector) = opt_para(p₀, optvec(p) - v)
-        Base.:+(p₁::Parameters, p₂::Parameters) = opt_para(p₀, optvec(p₁) + optvec(p₂))
-        Base.:-(p₁::Parameters, p₂::Parameters) = opt_para(p₀, optvec(p₁) - optvec(p₂))
-        Base.:*(s::Number, p::Parameters) = opt_para(p₀, s * optvec(p))
-        Base.:*(p::Parameters, s::Number) = s * p
+        Base.:+(p::$Parameters, v::Vector) = opt_para(optvec(p) + v)
+        Base.:-(p::$Parameters, v::Vector) = opt_para(optvec(p) - v)
+        Base.:+(p₁::$Parameters, p₂::$Parameters) = opt_para(optvec(p₁) + optvec(p₂))
+        Base.:-(p₁::$Parameters, p₂::$Parameters) = opt_para(optvec(p₁) - optvec(p₂))
+        Base.:*(s::Number, p::$Parameters) = opt_para(s * optvec(p))
+        Base.:*(p::$Parameters, s::Number) = s * p
     end
 end
 export initialize_Parameters_type
