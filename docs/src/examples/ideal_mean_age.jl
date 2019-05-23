@@ -1,10 +1,18 @@
 
 
 
+#---------------------------------------------------------
 # # Ideal mean age
+#---------------------------------------------------------
 
+#md # !!! tip
+#md #     This example is also available as a Jupyter notebook:
+#md #     [`ideal_mean_age.ipynb`](@__NBVIEWER_ROOT_URL__examples/generated/ideal_mean_age.ipynb)
+
+#---------------------------------------------------------
 # ## The model
-#
+#---------------------------------------------------------
+
 # We will simulate the ideal mean age of water.
 # That is, the average amount of time since a water parcel had last contact with the surface.
 
@@ -19,8 +27,10 @@
 # ($\boldsymbol{u}$ is the 3D vector field for the advection and $\mathbf{K}$ is the diffusivity matrix.)
 # In the equation above, we also assume that there is the boundary condition that $a=0$ at the surface.
 
+#---------------------------------
 # ### Discretized tracer equation
-#
+#---------------------------------
+
 # In AIBECS, the linear differential operator defined by $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$ is approximated by a constant matrix $\mathbf{T}$ when discretizing the continuous 3D ocean onto the model grid.
 # This matrix can be small (e.g., for models with a few boxes), or large, like for the OCIM (more on the OCIM later).
 # Similarly, the continuous 3D field of the age, $a$, is discretized into a column-vector, $\boldsymbol{a}$.
@@ -35,7 +45,9 @@
 # where $\tau$ will be chosen to be very small, ensuring that $\boldsymbol{a}$ is very close to $0$ at the surface.
 # The first term represents the transport by the ocean circulation, the second term the source of 1 second per second everywhere, and the last term the fast relaxation.
 
+#---------------------------------
 # ### Steady-state
+#---------------------------------
 
 # The steady-state is the equilibrium that would be reached if we wait long enough for $a$ to not change anymore.
 # Mathematically, the steady-state is also the state for which
@@ -43,9 +55,9 @@
 # $$\frac{\partial a}{\partial t} = 0.$$
 
 # Computationally, in the discrete case, this means that we just need to solve
-# 
+#
 # $$0 = -\mathbf{T} \, \boldsymbol{a} + 1 - \boldsymbol{a} / \tau$$
-# 
+#
 # to find $\boldsymbol{a}$.
 # More specifically, we need to solve
 #
@@ -53,7 +65,9 @@
 
 # Now that we have the equations laid down, let us chose the circulation transport matrix, $\mathbf{T}$.
 
+#---------------------------------------------------------
 # ## Using AIBECS
+#---------------------------------------------------------
 
 #
 #md # !!! note
@@ -96,8 +110,10 @@ using AIBECS
 
 
 
+#---------------------------------
 # ### The circulation
-#
+#---------------------------------
+
 # We will use the circulation output from the Ocean Circulation Inverse Model (OCIM) version 1.1.
 # Basically, the OCIM provides researchers and oceanographers with a big sparse matrix that represents the global ocean circulation (advection and diffusion), which allows them to efficiently simulate the transport of passive tracers, like the age.
 # (For more details, see Tim DeVries's [website](https://tdevries.eri.ucsb.edu/models-and-data-products/) and references therein.)
@@ -140,14 +156,17 @@ T_age(p) = T_OCIM
 # That's it for the circulation.
 # Now, let's define the local sources and sinks.
 
+#---------------------------------
 # ### The local sources and sinks
-#
+#---------------------------------
+
 # We will denote the age, $\boldsymbol{a}$, by the variable `age` in Julia.
 # (It's good practice to use explicit names!)
 # We need to translate the local sources and sinks in our discretized state function $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p})$ into Julia code.
 
 # #### The source
-#
+#--------------------------
+
 # Remember the age increases by $1$ second every second and everywhere.
 # So its source function is equal to, well, `1`! (seconds per seconds means it is unitless).
 # Let's create the local source function:
@@ -155,7 +174,8 @@ T_age(p) = T_OCIM
 source_age(age, p) = 1
 
 # #### The sink
-#
+#--------------------------
+
 # Recall that the age must also be $0$ at the surface.
 # And that we implement this boundary condition by restoring the age very fast to $0$ in the surface layer.
 # This will act as the sink for the age.
@@ -197,13 +217,15 @@ end
 # We will chose the value for `τ` later.
 
 # #### Net sources and sinks
-#
+#--------------------------
+
 # The sources minus the sinks are simply defined by
 
 sms_age(age, p) = source_age(age, p) .- sink_age(age, p)
 
 # #### Model parameters
-#
+#--------------------------
+
 # We must define the parameters... And AIBECS comes with an API for that!
 
 t = empty_parameter_table()    # initialize table of parameters
@@ -211,11 +233,12 @@ add_parameter!(t, :τ, 1u"s")   # add the parameter we want (τ = 1s)
 initialize_Parameters_type(t)  # Generate the parameter type
 t
 
-# The lines above created a table that contains all the info for my parameters, and a corresponding parameter vector, `p₀`.
 # Note, in particular, that we gave our parameter `τ` a unit.
 # Yes, Julia comes with some nice functionality to deal with units directly!
+# The lines above created a table that contains all the info for generating the parameters vector, $\boldsymbol{p}$.
+# For AIBECS, we will denote it by `p₀`:
 
-p₀
+p₀ = Parameters()
 
 # Here we did not really need to create `p₀` as a parameters vector, since it has only one element, `τ`, in it.
 # However, we are here to learn, and this structure and functionality comes in very handy when one deals with many parameters.
@@ -224,20 +247,30 @@ p₀
 
 
 # #### State function and Jacobian
-#
+#--------------------------
+
+# Similarly to `p₀`, let's create a state `x₀` to start with.
+# The vector `x₀` will be our initial guess for the state.
+# Let's assume that the age is `1` (seconds) everywhere (as an initial guess):
+
+const nb = number_of_wet_boxes(wet3d)  # number of wet boxes
+x₀ = ones(nb)
+
+# The first line above defines the number of wet grid boxes, `nb`.
+# Here, this is also the length of the state vector `x`, because there is only one tracer, `age`.
+# In the second line, the `ones` function creates a vector of `1`s of the size you give it (the number of wet grid boxes, `nb`, here, which we defined as a constant earlier).
+
 # Finally, the last step for the set up is to define $\boldsymbol{F}$.
 # Using AIBECS, this is done via
 
-const nb = number_of_wet_boxes(wet3d)  # number of wet boxes
 T_matrices = (T_age,)           # bundles all the transport matrices in a tuple
 sources_minus_sinks = (sms_age,) # bundles all the source-sink functions in a tuple
 F, ∇ₓF = state_function_and_Jacobian(T_matrices, sources_minus_sinks, nb) # generates the state function (and its Jacobian!)
+F(x₀,p₀)
 
 # That's it!
 # We have just created a model of the mean age.
 #
-# The first line above defines the number of wet grid boxes, `nb`. 
-# Here, this is also the length of the state vector `x`, because there is only one tracer, `age`.
 #
 # Lines 2 and 3 are just telling AIBECS
 # - what transport matrices it should use for the transport of these tracers, and
@@ -258,10 +291,11 @@ F, ∇ₓF = state_function_and_Jacobian(T_matrices, sources_minus_sinks, nb) # 
 # Yes, AIBECS just automatically created an exact derivative of your input, using autodifferentiation via dual numbers.
 # (I'd be very excited to detail how this is implemented here, but it is an entirely different discussion.)
 
-
+# The last line just checks that our generated `F` works with our initial guess `x₀` and parameter vector `p₀`.
 
 # #### Solving for the steady-state
-#
+#--------------------------
+
 # The Jacobian, `∇ₓF` is essential to solving the steady-state equation $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$ fast.
 # Specifically, solving $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$ is done via Newton's method.
 # By starting from an initial guess, that you will have to provide, it will iterate over this recursion relation
@@ -276,13 +310,9 @@ F, ∇ₓF = state_function_and_Jacobian(T_matrices, sources_minus_sinks, nb) # 
 #nb # > **Note**
 #nb # > AIBECS comes with a built-in algorithm and an API to solve for the steady-state, so you don't have to worry about all these details!
 
+
+
 # ##### Define the Steady-state problem in AIBECS
-#
-# Let's assume the age is `1` (seconds) everywhere (as an initial guess):
-
-x₀ = ones(nb)
-
-# the `ones` function creates a vector of `1`s of the size you give it (the number of wet grid boxes, `nb`, here, which we defined as a constant earlier).
 
 # First, we create an instance of the steady-state problem, via
 
@@ -291,8 +321,10 @@ prob = SteadyStateProblem(F, ∇ₓF, x₀, p₀)
 # where we have simply provided the state function, $\boldsymbol{F}$, the Jacobian, $\nabla_{\boldsymbol{x}}\boldsymbol{F}$, the initial guess and the parameters.
 # The `SteadyStateProblem` function is a standard "DiffEqBase" constructor that I have overloaded in my package so that you can easily generate the model here.
 
+
+
 # ##### Solve for the steady-state with AIBECS
-#
+
 # Finally, we can find the solution in litterally one line, via the `solve` function:
 
 age = solve(prob, CTKAlg())
@@ -310,8 +342,10 @@ age = solve(prob, CTKAlg())
 
 
 
+#---------------------------------------------------------
 # ## Figures
-#
+#---------------------------------------------------------
+
 # We will plot a horizontal slice of the age at about 1000m depth using Cartopy.
 
 # First, we must rearrange `age` into the 3D model grid.
