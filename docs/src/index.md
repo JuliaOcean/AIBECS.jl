@@ -21,8 +21,8 @@ AIBECS is not just a single model.
 It's a **system** that allows you to create a global steady-state biogeochmistry model with just a few simple commands.
 Basically, you just need to tell AIBECS
 - (i) which ocean circulation to use (from simple toy models of just a few boxes to more complicated global models of the circulation),
-- (ii) what elements you want to model/track and how each tracer gets converted into other tracers, and
-- (iii) chose some model parameters to start with.
+- (ii) what elements you want to model/track and 
+- (iii) how each tracer gets converted into other tracers.
 Once the model is set up, you can run simulations.
 
 AIBECS relies on many tools from linear algebra to run simulations and perform optimizations really fast.

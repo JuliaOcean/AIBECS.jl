@@ -9,6 +9,7 @@ SOURCES = [
     abspath(joinpath(@__DIR__, "make.jl"))
     abspath(joinpath(@__DIR__, "src", "index.md"))
     abspath(joinpath(@__DIR__, "src", "prerequisites.md"))
+    abspath(joinpath(@__DIR__, "src", "functions.md"))
     [abspath(joinpath(EXAMPLEDIR, example)) for example in EXAMPLES_jl]
 ]
 

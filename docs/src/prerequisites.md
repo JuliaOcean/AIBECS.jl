@@ -53,83 +53,87 @@ julia>
 
 The packages you should install are:
 
-- **AIBECS** (mandatory)
+#### [AIBECS](https://github.com/briochemc/AIBECS.jl)
 
-    To create a global steady-state biogeochemistry model, we will be using the [AIBECS](https://github.com/briochemc/AIBECS.jl) package.
-    You install it, via
+To create a global steady-state biogeochemistry model, we will be using the [AIBECS](https://github.com/briochemc/AIBECS.jl) package.
+You install it, via
 
+```julia
+add AIBECS
+```
+
+in `pkg` mode, which should look like
+
+```julia
+(v1.1) pkg> add AIBECS
+```
+
+This should only take a few seconds.
+
+#### [Cartopy](https://scitools.org.uk/cartopy/docs/latest/)
+
+In order to plot things, i.e., to look at the output of the beautiful work you will be doing with AIBECS, you will need a plotting package.
+For good-looking maps, I suggest using Python's [Cartopy](https://scitools.org.uk/cartopy/docs/latest/) because, well, it looks pretty.
+A few steps are necessary to install it:
+
+Install the [**Conda**](https://github.com/JuliaPy/Conda.jl) package.
+
+In `pkg` mode, do
+
+```julia
+(v1.1) pkg> add Conda
+```
+
+Install [**Cartopy**](https://scitools.org.uk/cartopy/docs/latest/) using Conda (within Julia).
+
+In REPL mode (i.e., *not* in `pkg` mode — press `delete` to get there from `pkg` mode), do
+
+```julia
+julia> using Conda; Conda.add("Cartopy")
+```
+
+Install [**PyPlot**](https://github.com/JuliaPy/PyPlot.jl) via
+
+```julia
+(v1.1) pkg> add PyPlot
+```
+
+Intall [**PyCall**](https://github.com/JuliaPy/PyCall.jl) via
+
+```julia
+(v1.1) pkg> add PyCall
+```
+
+This should only take a few seconds as well.
+
+!!! note
+    You may want to install Cartopy differently, or even use a different plotting package.
+    This is merely a suggestion that has worked well for me.
+
+#### [IJulia](https://github.com/JuliaLang/IJulia.jl)
+
+For running the notebooks, I suggest using the [IJulia](https://github.com/JuliaLang/IJulia.jl) package.
+Specifically, IJulia allows you to launch JupyterLab from Julia.
+To install it, in `pkg` mode, type `add IJulia` (and press return), and you should see something like:
+
+```julia
+(v1.1) pkg> add IJulia
+```
+
+This should only take a few seconds as well.
+
+!!! note
+    [IJulia](https://github.com/JuliaLang/IJulia.jl) is recommended but *not* mandatory to run the notebooks.
+    You could install JupyterLab outside of Julia and use that instead.
+
+!!! note
+    You may need to build **CodecZlib** to run the notebooks.
+    If you see an error mentioning you should build it, then build it!
+    It's easy, just go in `pkg` mode and type `build CodecZlib`.
+    It should look like this:
     ```julia
-    add AIBECS
+    (v1.1) pkg> build CodecZlib
     ```
-
-    in `pkg` mode, which should look like
-
-    ```julia
-    (v1.1) pkg> add AIBECS
-    ```
-
-    This should only take a few seconds.
-
-- If you want nice-looking maps, install **Cartopy**
-
-    In order to plot things, i.e., to look at the output of the beautiful work you will be doing with AIBECS, you will need a plotting package.
-    I suggest using Python's [Cartopy](https://scitools.org.uk/cartopy/docs/latest/) because, well, it looks pretty.
-    You can install it via the `Conda` package from within Julia.
-    Install it via `add Conda` in `pkg` mode.
-    You should see something like:
-
-    ```julia
-    (v1.1) pkg> add Conda
-    ```
-
-    Then back to the normal REPL mode (press `escape` to get the normal Julia REPL prompt), install cartopy within conda (within Julia) via
-
-    ```julia
-    julia> using Conda
-
-    julia> Conda.add("Cartopy")
-    ```
-
-
-    Then Install PyPlot:
-    ```julia
-    (v1.1) pkg> add PyPlot
-    ```
-
-    And PyCall:
-    ```julia
-    (v1.1) pkg> add PyCall
-    ```
-
-    This should only take a few seconds as well.
-
-    !!! note
-        You may want to install Cartopy differently, or even use a different plotting package.
-        This is merely a suggestion that has worked well for me.
-
-- If you want to run the notebooks, install **IJulia**
-
-    The [IJulia](https://github.com/JuliaLang/IJulia.jl) package allows you to launch JupyterLab from Julia.
-    To install it, in `pkg` mode, type `add IJulia` (and press return), and you should see something like:
-
-    ```julia
-    (v1.1) pkg> add IJulia
-    ```
-
-    This should only take a few seconds as well.
-
-    !!! note
-        You could install JupyterLab externally to Julia and use that instead.
-        The solution proposed here is to facilitate usage for those who do not already have or know how to install JupyterLab.
-
-    !!! note
-        You may need to build **CodecZlib** to run the notebooks.
-        If you see an error mentioning you should build it, then build it!
-        It's easy, just go in `pkg` mode and type `build CodecZlib`.
-        It should look like this:
-        ```julia
-        (v1.1) pkg> build CodecZlib
-        ```
 
 If you followed all these steps you should be able to use the notebooks!
 

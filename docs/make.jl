@@ -17,15 +17,10 @@ makedocs(
     pages = Any[
         "Home" => "index.md",
         "Prerequisites" => "prerequisites.md",
-        "Examples" => GENERATEDEXAMPLES
+        "Examples" => GENERATEDEXAMPLES,
+        "Function index" => "functions.md"
         ]
 )
-
-# make sure there are no *.vtu files left around from the build
-# Still do not know what these are
-cd(joinpath(@__DIR__, "build", "examples", "generated")) do
-    foreach(file -> endswith(file, ".vtu") && rm(file), readdir())
-end
 
 # Deploy
 deploydocs(
