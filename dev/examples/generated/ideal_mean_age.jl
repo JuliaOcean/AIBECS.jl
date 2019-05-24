@@ -20,10 +20,10 @@ sms_age(age, p) = source_age(age, p) .- sink_age(age, p)
 
 t = empty_parameter_table()    # initialize table of parameters
 add_parameter!(t, :τ, 1u"s")   # add the parameter we want (τ = 1s)
-initialize_Parameters_type(t)  # Generate the parameter type
+initialize_Parameters_type(t, "IdealAgeParameters")  # Generate the parameter type
 t
 
-p₀ = Parameters()
+p₀ = IdealAgeParameters()
 
 const nb = number_of_wet_boxes(wet3d)  # number of wet boxes
 x₀ = ones(nb)

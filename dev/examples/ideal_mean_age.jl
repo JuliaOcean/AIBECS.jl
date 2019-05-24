@@ -1,6 +1,4 @@
 
-
-
 #---------------------------------------------------------
 # # Ideal mean age
 #---------------------------------------------------------
@@ -69,12 +67,10 @@
 # ## Using AIBECS
 #---------------------------------------------------------
 
-#
 #md # !!! note
 #md #     If this is the first time you are trying AIBECS, make sure you go through the prerequisites!
 #nb # > **Note**
 #nb # > If this is the first time you are trying AIBECS, make sure you go through the prerequisites!
-#
 
 # AIBECS can interpret tracer equations as long as you arrange them under the generic form:
 #
@@ -230,16 +226,17 @@ sms_age(age, p) = source_age(age, p) .- sink_age(age, p)
 
 t = empty_parameter_table()    # initialize table of parameters
 add_parameter!(t, :τ, 1u"s")   # add the parameter we want (τ = 1s)
-initialize_Parameters_type(t)  # Generate the parameter type
+initialize_Parameters_type(t, "IdealAgeParameters")  # Generate the parameter type
 t
 
 # Note, in particular, that we gave our parameter `τ` a unit.
 # Yes, Julia comes with some nice functionality to deal with units directly!
 # The lines above created a table that contains all the info for generating the parameters vector, $\boldsymbol{p}$.
-# For AIBECS, we will denote it by `p₀`:
+# To generate the parameters in AIBECS we do:
 
-p₀ = Parameters()
+p₀ = IdealAgeParameters()
 
+# where we have used the constructor `IdealAgeParameters`, whose name we defined in the previous cell.
 # Here we did not really need to create `p₀` as a parameters vector, since it has only one element, `τ`, in it.
 # However, we are here to learn, and this structure and functionality comes in very handy when one deals with many parameters.
 # (And as you can imagine, having all the parameters in a nice table ready for being used in a publication comes quite handy!)
