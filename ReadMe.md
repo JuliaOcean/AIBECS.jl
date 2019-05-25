@@ -124,3 +124,7 @@ In this case, AIBECS uses a state-of-the-art Newton-type solver to find the stea
 
 Please cite us of you use this package.
 The references under bibtex format are available in the [CITATION.bib](./CITATION.bib) file.
+
+<img src="https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png" alt="NSF" title="NSF_logo" align="right" height="50"/>
+
+The authors acknowledge funding from the Department of Energy grant DE-SC0016539 and from the National Science Foundation grant 1658380
