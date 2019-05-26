@@ -36,49 +36,47 @@ TRdiv += sparse([6,6], [6,2], dV[6] \ [MIX, -MIX], 8, 8)
 TRdiv = TRdiv[iwet,iwet]
 Matrix(TRdiv)
 
-sec_per_year = 365*24*60*60
-κ = 50 / 10sec_per_year     # m/s
-λ  = 1 / (5730sec_per_year / log(2)); # 1/s
+sec_per_year = 365*24*60*60 # s / yr
+λ = 50 / 10sec_per_year     # m / s
+Λ = λ / h * Diagonal(srf)
 
-Λ = sparse(Diagonal(srf)) / h         # air-sea loss operator
-M = TRdiv + κ * Λ + λ * I
+Λ = λ / h * sparse(Diagonal(srf))
 
-s = κ * Λ * ones(5);             # air-sea source rate
+τ = 5730sec_per_year / log(2)  # s
 
-function euler_backward(J, s, tspan, x0, n)
-    dt = (tspan[2] - tspan[1]) / (n - 1)
-    A = I - dt * J
-    X = zeros(5, n)
-    T = zeros(n)
-    X[:,1] .= x0
-    T[1] = tspan[1]
-    for i in 2:n
-        X[:,i] .= A \ (X[:,i-1] + dt * s)
-        T[i] = T[i-1] + dt
+M = TRdiv + Λ + I / τ
+
+s = Λ * ones(5) # air-sea source rate
+
+euler_backward_step(R, δt, M, s) = (I + δt * M) \ (R + δt * s)
+
+function euler_backward(R₀, ΔT, n, M, s)
+    R_hist = [R₀]
+    δt = Δt / n
+    for i in 1:n
+        push!(R_hist, euler_backward_step(R_hist[end], δt, M, s))
     end
-    return X, T
+    return reduce(hcat, R_hist), 0:δt:Δt
 end
 
-tspan = [0, 7500]
-x0 = ones(5)
-X, T = euler_backward(-sec_per_year * M, sec_per_year * s, tspan, x0, 10000)
+Δt = 7500 * sec_per_year # 7500 years
+R₀ = ones(5)             #
+R_hist, t_hist = euler_backward(R₀, Δt, 10000, M, s) # runs the simulation
 
 using PyPlot
 clf()
-c14age = -log.(X) ./ (λ * sec_per_year)
-plot(T, c14age')
+C14age_hist = -log.(R_hist) * τ / sec_per_year
+plot(t_hist, C14age_hist')
 xlabel("simulation time (years)")
 ylabel("¹⁴C age (years)")
 legend("box " .* string.(iwet))
 title("Simulation of the evolution of ¹⁴C age with Euler-backward time steps")
-gcf();
+gcf()
 
-R = M \ s
+R_final = M \ s
 
-c14age_steady_state = -log.(R) / (λ * sec_per_year)
-for i in 1:5
-    println("box $(iwet[i]): $(round(c14age_steady_state[i])) years")
-end
+C14age_final = -log.(R_final) * τ / sec_per_year
+println.("box ", iwet, ": ", round.(C14age_final), " years");
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
 
