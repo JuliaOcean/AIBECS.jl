@@ -107,93 +107,131 @@ TRdiv = TRdiv[iwet,iwet]
 Matrix(TRdiv)
 
 #---------------------------------------------------------
-# ## From Equation to Code
+# ## Radiocarbon
 #---------------------------------------------------------
 
 # Radiocarbon, ¹⁴C, is produced by cosmic rays in the lower stratosphere and upper troposphere.
-# It quickly reacts with oxygen to produce ¹⁴CO₂, which is then mixed throughout the troposphere and enters the ocean through air-sea gas exchange.
-# Because the halflife of radiocarbon is only 5730 years a significant amount of deday can occur before the dissolved inorganic radiocarbon (DI¹⁴C) can mix uniformally throughout the ocean.
+# It quickly reacts with oxygen to produce ¹⁴CO₂, which is then mixed throughout the troposphere and enters the ocean through air–sea gas exchange.
+# Because the halflife of radiocarbon is only 5730 years a significant amount of decay can occur before the dissolved inorganic radiocarbon (DI¹⁴C) can mix uniformally throughout the ocean.
 # As such the ¹⁴C serves as a tracer label for water that was recently in contact with the atmosphere.
 
 # ### Tracer Equation
 
 # Mathematically, the ¹⁴C tracer concentration, denoted $R$ (for Radiocarbon), satisfies the following tracer equation:
 #
-# $$\frac{\partial R}{\partial t} = - \nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] R + \Lambda(R - [^{14}C]_\mathsf{atm}) - \kappa R$$
+# $$\frac{\partial R}{\partial t} + \nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] R = \Lambda(R_\mathsf{atm} - R) - R / \tau,$$
 #
+# where $\Lambda(R_\mathsf{atm} - R)$ represents the air–sea exchanges and $R / \tau$ the radioactive decay rate.
+# ($\tau$ is the radioactive decay timescale.)
 # The discretized tracer is thus given by
 #
-# $$\frac{\partial \boldsymbol{R}}{\partial t} = - \mathbf{T} \boldsymbol{R} + \Lambda(\boldsymbol{R} - [^{14}C]_\mathsf{atm}) - \kappa \boldsymbol{R}$$
+# $$\frac{\partial \boldsymbol{R}}{\partial t} + \mathbf{T} \boldsymbol{R} = \mathbf{\Lambda}(R_\mathsf{atm} - \boldsymbol{R}) - \boldsymbol{R} / \tau$$
 #
-# We can rearrange that equation as
+# where $\mathbf{\Lambda}$ is a diagonal matrix with diagonal elements equal to zero except for surface-layer boxes.
+# We can rearrange this equation as
 #
-# $$\frac{dR}{dt} + \left[\mathbf{T}+\lambda\mathbf{I}+\kappa\boldsymbol{\Lambda}\right]R = \boldsymbol{s},$$
+# $$\frac{\partial \boldsymbol{R}}{\partial t} + \underbrace{\left[ \mathbf{T} + \mathbf{\Lambda} + \mathbf{I} / \tau \right]}_{\mathbf{M}} \, \boldsymbol{R} = \boldsymbol{s},$$
 #
-# where $\boldsymbol{s} = \kappa\boldsymbol{\Lambda}\boldsymbol{1}$ effectively acts as a fixed source of Radiocarbon from the atmosphere.
-
+# where $\boldsymbol{s} = \mathbf{\Lambda} \, \boldsymbol{1} \, R_\mathsf{atm}$ effectively acts as a fixed source of Radiocarbon from the atmosphere.
+# (Here we multiply $\boldsymbol{1}$, a vector of 1's, to the scalar value of $R_\mathsf{atm}$ to make sure the matrix $\mathbf{\Lambda}$ is applied to a vector, and not a scalar.)
+#
+# The matrix $\mathbf{M} = \mathbf{T} + \mathbf{\Lambda} + \mathbf{I} / \tau$ simplifies notation even more:
+#
+# $$\frac{\partial \boldsymbol{R}}{\partial t} + \mathbf{M} \, \boldsymbol{R} = \boldsymbol{s}.$$
 
 # ### Translation to Julia Code
 
-# Here we will perform an idealized radiocarbon simulation in our model and use `TRdiv` for the transport matrix $\mathbf{T}$.
-# In this model we prescribe the atmospheric concentration to 1 (unit?) and model the air-sea gas exchange using a constant piston velocity $\kappa$ of 50m / 10years.
-# For the radioactive decay we use a timescale $\tau$ of (5730 years) / log(2).
+# We will perform an idealized radiocarbon simulation in our model and use `TRdiv`, defined earlier, for the transport matrix $\mathbf{T}$.
+# In this model we prescribe the atmospheric concentration, $R_\mathsf{atm}$, to be simply equal to 1.
+# (We do not specify its unit or its specific value because it is not important for determining the age of a water parcel — only the decay rate does.)
+# For the air–sea gas exchange, we use a constant piston velocity $\lambda$ of 50m / 10years.
 
-sec_per_year = 365*24*60*60
-κ = 50 / 10sec_per_year     # m/s
-λ  = 1 / (5730sec_per_year / log(2)); # 1/s
+sec_per_year = 365*24*60*60 # s / yr
+λ = 50 / 10sec_per_year     # m / s
+Λ = λ / h * Diagonal(srf)
 
-#-
+# where the diagonal matrix `Λ` is the discrete version of the air-sea exchange operator, $\mathbf{\Lambda}$.
+# We could make it a sparse matrix via
 
-Λ = sparse(Diagonal(srf)) / h         # air-sea loss operator
-M = TRdiv + κ * Λ + λ * I
+Λ = λ / h * sparse(Diagonal(srf))
 
-#- 
+# instead, to save some memory allocations.
 
-s = κ * Λ * ones(5);             # air-sea source rate
+# For the radioactive decay we use a timescale $\tau$ of 5730/log(2) years, which we define via
 
+τ = 5730sec_per_year / log(2)  # s
 
+# We can now create the matrix $\mathbf{M}$ via
+
+M = TRdiv + Λ + I / τ
+
+# and the source term $\boldsymbol{s}$ via
+
+s = Λ * ones(5) # air-sea source rate
+
+# (Remember we assumed $R_\mathsf{atm}$ to be equal to 1.)
 
 
 #---------------------------------------------------------
-# ## Simulating Radiocarbon
+# ## Time stepping
 #---------------------------------------------------------
 
 # One way to see how the tracer evolves with time is to time step it.
 # Here we will use a simple Euler-backward scheme.
-# That is, below we create a function to solve $dx/dt = F(x)$ from `tspan[1]` to `tspan[2]` subject to `x[tspan[1]] = x0` using the Euler-backward scheme with `n` timesteps.
-# Note that `(x[i+1]-x[i])/dt = J*X[i+1] + s`.
+# That is, we want to simulate $\boldsymbol{R}(t)$ from time $t = 0$ to time $t = \Delta t$, subject to $\boldsymbol{R}(t = 0) = 1$, using the Euler-backward scheme with $n$ timesteps.
+#
+# We thus discretize the $(0, \Delta t)$ time span into $n$ time intervals of size $\delta t = \Delta t / n$.
+# We apply the Euler-backward scheme, which gives
+#
+# $$\frac{\boldsymbol{R}(t_{i+1}) - \boldsymbol{R}(t_i)}{\delta t} = - \mathbf{M} \, \boldsymbol{R}(t_{i+1}) + \boldsymbol{s}$$
+#
+# Reorganizing the equation to express $\boldsymbol{R}(t_{i+1})$ as a function of the rest, we get
+#
+# $$\big[\mathbf{I} + \delta t \, \mathbf{M}\big] \, \boldsymbol{R}(t_{i+1}) = \boldsymbol{R}(t_i) + \delta t \, \boldsymbol{s}.$$
+#
+# Solving such a linear system is done via the **backslash** operator, `\`.
+# Let us define the time-stepping function via
 
-function euler_backward(J, s, tspan, x0, n)
-    dt = (tspan[2] - tspan[1]) / (n - 1)
-    A = I - dt * J
-    X = zeros(5, n)
-    T = zeros(n)
-    X[:,1] .= x0
-    T[1] = tspan[1]
-    for i in 2:n
-        X[:,i] .= A \ (X[:,i-1] + dt * s)
-        T[i] = T[i-1] + dt
+euler_backward_step(R, δt, M, s) = (I + δt * M) \ (R + δt * s)
+
+# We write another function to run all the time steps and save 
+
+function euler_backward(R₀, ΔT, n, M, s)
+    R_hist = [R₀]
+    δt = Δt / n
+    for i in 1:n
+        push!(R_hist, euler_backward_step(R_hist[end], δt, M, s))
     end
-    return X, T
+    return reduce(hcat, R_hist), 0:δt:Δt
 end
 
-#-
+#md # !!! note
+#md #     We store all the history of `R` in `R_hist`.
+#md #     At each step, the `push!` function adds a new `R` to `R_hist`.
+#md #     Technically, `R_hist` is a vector of vectors, so at the end, we horizontally concatenate it via `reduce(hcat, R_hist)` to rearrange it into a 2D array.
+#nb # > **Note**
+#nb # > We store all the history of `R` in `R_hist`.
+#nb # > At each step, the `push!` function adds a new `R` to `R_hist`.
+#nb # > Technically, `R_hist` is a vector of vectors, so at the end, we horizontally concatenate it via `reduce(hcat, R_hist)` to rearrange it into a 2D array.
 
-tspan = [0, 7500]
-x0 = ones(5)
-X, T = euler_backward(-sec_per_year * M, sec_per_year * s, tspan, x0, 10000)
+# Now let's simulate the evolution of radiocarbon for 7500 years, starting from a concentration of 1 everywhere, via
 
-#-
+Δt = 7500 * sec_per_year # 7500 years
+R₀ = ones(5)             #
+R_hist, t_hist = euler_backward(R₀, Δt, 10000, M, s) # runs the simulation
+
+# This should take a few seconds to run.
+# Once it's done, we can plot the evloution of radiocarbon through time via
 
 using PyPlot
 clf()
-c14age = -log.(X) ./ (λ * sec_per_year)
-plot(T, c14age')
+C14age_hist = -log.(R_hist) * τ / sec_per_year
+plot(t_hist, C14age_hist')
 xlabel("simulation time (years)")
 ylabel("¹⁴C age (years)")
 legend("box " .* string.(iwet))
 title("Simulation of the evolution of ¹⁴C age with Euler-backward time steps")
-gcf();
+gcf()
 
 # The box model took more than 4000 years to spin up to equilibrium.
 # For a box model that's no big deal because it is not computationally expensive to run the model, but for a big circulation model waiting for the model to spinup is painful.
@@ -201,26 +239,29 @@ gcf();
 
 
 #---------------------------------------------------------
-# ## Solving for the Steady State
+# ## Solving Directly for the Steady State
 #---------------------------------------------------------
 
-# One thing we notice is that when the model is at equilibrium, the $dR/dt$ term vanishes and
-# the steady state solution is given by the solution to the following linear system of equations
-#
-# $$\underbrace{\left[\mathbf{T}+\lambda\mathbf{I}+\kappa\boldsymbol{\Lambda}\right]}_{\mathbf{M}}R = \underbrace{\kappa\boldsymbol{\Lambda}\mathbf{1}}_{s}$$
-#
-# which can be solved by directly inverting the $M$ matrix.
+# One thing we notice is that when the model is at equilibrium, the $\partial \boldsymbol{R} / \partial t$ term vanishes and
+# the steady state solution is simply given by the solution to the following linear system of equations
+# 
+# $$\mathbf{M} \, \boldsymbol{R} = \boldsymbol{s},$$
+# 
+# which can be solved by directly inverting the $\mathbf{M}$ matrix.
 
-R = M \ s
+R_final = M \ s
 
-#-
+# Converting radiocarbon into years gives the following values
 
-c14age_steady_state = -log.(R) / (λ * sec_per_year)
-for i in 1:5
-    println("box $(iwet[i]): $(round(c14age_steady_state[i])) years")
-end
+C14age_final = -log.(R_final) * τ / sec_per_year
+println.("box ", iwet, ": ", round.(C14age_final), " years");
 
 # These are exactly the limit that the Radiocarbon age reaches after about 4000 years of simulation!
+
+#---------------------------------------------------------
+# ## Exercise
+#---------------------------------------------------------
+
 # Try modifying the strength of the currents of the high latitude convective mixing to see how it affects the ¹⁴C-ages.
 
 
