@@ -56,11 +56,8 @@ AIBECS is a system because it allows you to chose some biogeochemical tracers, d
 
 ## Getting started
 
-We are currently working on the documentation along with some simple Jupyter notebooks to get you started with AIBECS:
-- modeling the ideal mean age (amlost ready)
-- ventilation tracers (coming soon)
-- coupled nutrients (coming soon)
 
+Head over to the [documentation](https://briochemc.github.io/AIBECS.jl/stable/) and find your way to some simple Jupyter notebooks to get you started with AIBECS!
 
 
 ## The Maths
