@@ -19,7 +19,7 @@ function buildIbelow(wet3d, iwet)
     nlat, nlon, ndepth = size(wet3d)
     n = nlon * nlat * (ndepth + 1)
     In = sparse(I, n, n)
-    idx = zeros(Int64, nlat, nlon, ndepth + 1)
+    idx = zeros(Int, nlat, nlon, ndepth + 1)
     idx[:] = 1:n
     idx .= idx[:, :, [2:ndepth + 1; 1]]      # downward shift
     return In[idx[:], :][iwet, iwet]

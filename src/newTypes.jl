@@ -7,8 +7,8 @@ This allows for the Shamanskii method to not update the Jacobian at each iterate
 """
 mutable struct AgedJacobianFactors
     fac        # Jacobian factors — can be Real, Complex, Dual, or HyperDual
-    age::Int64 # age of the Jacobian
-    facage::Int64 # age of the factors of the Jacobian
+    age::Int # age of the Jacobian
+    facage::Int # age of the factors of the Jacobian
 end
 
 """
