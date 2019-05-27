@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>A Phosphorus Cycling Model · AIBECS.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link href="../../../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><a href="../../../index.html"><img class="logo" src="../../../assets/logo.png" alt="AIBECS.jl logo"/></a><h1>AIBECS.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../../">Home</a></li><li><a class="toctext" href="../../../prerequisites/">Prerequisites</a></li><li><span class="toctext">Examples</span><ul><li><a class="toctext" href="../ideal_mean_age/">Ideal mean age</a></li><li class="current"><a class="toctext" href>A Phosphorus Cycling Model</a><ul class="internal"><li><a class="toctext" href="#Tracer-equations-1">Tracer equations</a></li><li class="toplevel"><a class="toctext" href="#making-it-cyclic-for-Cartopy-1">making it cyclic for Cartopy</a></li><li class="toplevel"><a class="toctext" href="#And-plot-1">And plot</a></li></ul></li><li><a class="toctext" href="../radiocarbon_OCIM/">Radiocarbon with OCIM</a></li><li><a class="toctext" href="../tracer_transport_operators/">Tracer Transport Operators</a></li></ul></li><li><a class="toctext" href="../../../functions/">Function index</a></li></ul></nav><article id="docs"><header><nav><ul><li>Examples</li><li><a href>A Phosphorus Cycling Model</a></li></ul><a class="edit-page" href="https://github.com/briochemc/AIBECS.jl/blob/master/docs/src/examples/p_cycle_DIP_DOP_POP.jl"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>A Phosphorus Cycling Model</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="A-Phosphorus-Cycling-Model-1" href="#A-Phosphorus-Cycling-Model-1">A Phosphorus Cycling Model</a></h1><div class="admonition tip"><div class="admonition-title">Tip</div><div class="admonition-text"><p>This example is also available as a Jupyter notebook: <a href="https://nbviewer.jupyter.org/github/briochemc/AIBECS.jl/blob/gh-pages/v0.1.6/examples/generated/p_cycle_DIP_DOP_POP.ipynb"><code>p_cycle_DIP_DOP_POP.ipynb</code></a></p></div></div><h2><a class="nav-anchor" id="Tracer-equations-1" href="#Tracer-equations-1">Tracer equations</a></h2><p>We consider a simple model for the cycling of phosphorus with 3 state variables consisting of phosphate (PO₄) AKA dissolved inorganic phosphorus (DIP), dissolved organic phosphorus (DOP), and particulate organic phosphorus (POP).</p><p>The dissolved phases are transported by advection and diffusion whereas the particulate phase sinks rapidly down the water column without any appreciable transport by the circulation.</p><p>The governing equations are:</p><div>\[\frac{\partial}{\partial t} DIP + \nabla \cdot \left[\boldsymbol{u} + \mathbf{K}\cdot\nabla \right] DIP = -\gamma(DIP) + \kappa_\mathsf{D} \, DOP,\]</div><div>\[\frac{\partial}{\partial t} DOP + \nabla \cdot \left[\boldsymbol{u} + \mathbf{K}\cdot \nabla \right] DOP = \sigma \, \gamma(DIP) + \kappa_\mathsf{P} \, POP - \kappa_\mathsf{D} \, DOP,\]</div><p>and</p><div>\[\frac{\partial}{\partial t} POP + \frac{\partial}{\partial z} \left[w_\mathsf{P} \, POP\right] = (1-\sigma) \, \gamma(DIP) - \kappa_\mathsf{P} \, POP,\]</div><p>where <span>$\boldsymbol{u}$</span> is the fluid velocity and <span>$\mathbf{K}$</span> is the eddy-diffusion tensor. Thus, <span>$\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$</span> is a differential operator that represents the transport by the ocean circulation. The function <span>$\gamma(DIP)$</span> represents the biological uptake of DIP by phytoplankton.</p><p>Oxygen participates to this cycle too and satisfies its own tracer equation</p><div>\[\frac{\partial}{\partial t} DO_2 + \nabla \cdot \left[\boldsymbol{u} + \mathbf{K}\cdot\nabla \right] DO_2 = -r_{\mathsf{O}_2:\mathsf{P}} \, \kappa_\mathsf{D} \, DOP + \boldsymbol{\Lambda}(DO_2 - [O_2]_{\mathsf{sat}})\]</div><p>where <span>$\Lambda$</span> is the air-sea gas exchange operator.</p><p>These tracer equations depend on a number of scalars, that we list below</p><table><tr><th style="text-align: left">Symbol</th><th style="text-align: left">Definition</th></tr><tr><td style="text-align: left"><span>$w_\mathsf{P}$</span></td><td style="text-align: left">depth dependent particle sinking speed</td></tr><tr><td style="text-align: left"><span>$\sigma$</span></td><td style="text-align: left">fraction of the organic matter production allocated to the dissolved phase</td></tr><tr><td style="text-align: left"><span>$\kappa_\mathsf{D}$</span></td><td style="text-align: left">respiration rate for dissolved organic matter (DOP → DIP)</td></tr><tr><td style="text-align: left"><span>$\kappa_\mathsf{P}$</span></td><td style="text-align: left">dissolution rate for particulate organic matter (POP → DOP)</td></tr><tr><td style="text-align: left"><span>$r_{\mathsf{O}_2:\mathsf{P}}$</span></td><td style="text-align: left">number of moles of O₂ needed to respire 1 mole of DOP</td></tr></table><pre><code class="language-julia">using AIBECS</code></pre><p>Load the circulation and grid</p><pre><code class="language-julia">const wet3d, grd, T_Circulation = OCIM1.load()</code></pre><pre><code class="language-none">([0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 1.0 1.0 … 1.0 1.0; 0.0 0.0 … 0.0 0.0]
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 1.0 1.0 … 1.0 1.0; 0.0 0.0 … 0.0 0.0]
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 1.0 1.0 … 1.0 1.0; 0.0 0.0 … 0.0 0.0]
+
+...
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0]
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0]
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0], Dict{String,Any}(&quot;XT&quot; =&gt; [1.0 3.0 … 357.0 359.0; 1.0 3.0 … 357.0 359.0; … ; 1.0 3.0 … 357.0 359.0; 1.0 3.0 … 357.0 359.0],&quot;Areat&quot; =&gt; [8.442828573400822e8 8.442828573400822e8 … 8.442828573400822e8 8.442828573400822e8; 2.53184242418399e9 2.53184242418399e9 … 2.53184242418399e9 2.53184242418399e9; … ; 2.531842424184019e9 2.531842424184019e9 … 2.531842424184019e9 2.531842424184019e9; 8.442828573400851e8 8.442828573400851e8 … 8.442828573400851e8 8.442828573400851e8],&quot;YC&quot; =&gt; [-88.02197802197801 -88.02197802197801 … -88.02197802197801 -88.02197802197801; -86.04395604395604 -86.04395604395604 … -86.04395604395604 -86.04395604395604; … ; 88.02197802197801 88.02197802197801 … 88.02197802197801 88.02197802197801; 90.0 90.0 … 90.0 90.0],&quot;dxu&quot; =&gt; [2.0 2.0 … 2.0 2.0],&quot;YT3d&quot; =&gt; [-89.01098901098901 -89.01098901098901 … -89.01098901098901 -89.01098901098901; -87.03296703296704 -87.03296703296704 … -87.03296703296704 -87.03296703296704; … ; 87.03296703296702 87.03296703296702 … 87.03296703296702 87.03296703296702; 89.01098901098901 89.01098901098901 … 89.01098901098901 89.01098901098901]
+
+[-89.01098901098901 -89.01098901098901 … -89.01098901098901 -89.01098901098901; -87.03296703296704 -87.03296703296704 … -87.03296703296704 -87.03296703296704; … ; 87.03296703296702 87.03296703296702 … 87.03296703296702 87.03296703296702; 89.01098901098901 89.01098901098901 … 89.01098901098901 89.01098901098901]
+
+[-89.01098901098901 -89.01098901098901 … -89.01098901098901 -89.01098901098901; -87.03296703296704 -87.03296703296704 … -87.03296703296704 -87.03296703296704; … ; 87.03296703296702 87.03296703296702 … 87.03296703296702 87.03296703296702; 89.01098901098901 89.01098901098901 … 89.01098901098901 89.01098901098901]
+
+...
+
+[-89.01098901098901 -89.01098901098901 … -89.01098901098901 -89.01098901098901; -87.03296703296704 -87.03296703296704 … -87.03296703296704 -87.03296703296704; … ; 87.03296703296702 87.03296703296702 … 87.03296703296702 87.03296703296702; 89.01098901098901 89.01098901098901 … 89.01098901098901 89.01098901098901]
+
+[-89.01098901098901 -89.01098901098901 … -89.01098901098901 -89.01098901098901; -87.03296703296704 -87.03296703296704 … -87.03296703296704 -87.03296703296704; … ; 87.03296703296702 87.03296703296702 … 87.03296703296702 87.03296703296702; 89.01098901098901 89.01098901098901 … 89.01098901098901 89.01098901098901]
+
+[-89.01098901098901 -89.01098901098901 … -89.01098901098901 -89.01098901098901; -87.03296703296704 -87.03296703296704 … -87.03296703296704 -87.03296703296704; … ; 87.03296703296702 87.03296703296702 … 87.03296703296702 87.03296703296702; 89.01098901098901 89.01098901098901 … 89.01098901098901 89.01098901098901],&quot;YV3d&quot; =&gt; [-88.02197802197801 -88.02197802197801 … -88.02197802197801 -88.02197802197801; -86.04395604395604 -86.04395604395604 … -86.04395604395604 -86.04395604395604; … ; 88.02197802197801 88.02197802197801 … 88.02197802197801 88.02197802197801; 90.0 90.0 … 90.0 90.0]
+
+[-88.02197802197801 -88.02197802197801 … -88.02197802197801 -88.02197802197801; -86.04395604395604 -86.04395604395604 … -86.04395604395604 -86.04395604395604; … ; 88.02197802197801 88.02197802197801 … 88.02197802197801 88.02197802197801; 90.0 90.0 … 90.0 90.0]
+
+[-88.02197802197801 -88.02197802197801 … -88.02197802197801 -88.02197802197801; -86.04395604395604 -86.04395604395604 … -86.04395604395604 -86.04395604395604; … ; 88.02197802197801 88.02197802197801 … 88.02197802197801 88.02197802197801; 90.0 90.0 … 90.0 90.0]
+
+...
+
+[-88.02197802197801 -88.02197802197801 … -88.02197802197801 -88.02197802197801; -86.04395604395604 -86.04395604395604 … -86.04395604395604 -86.04395604395604; … ; 88.02197802197801 88.02197802197801 … 88.02197802197801 88.02197802197801; 90.0 90.0 … 90.0 90.0]
+
+[-88.02197802197801 -88.02197802197801 … -88.02197802197801 -88.02197802197801; -86.04395604395604 -86.04395604395604 … -86.04395604395604 -86.04395604395604; … ; 88.02197802197801 88.02197802197801 … 88.02197802197801 88.02197802197801; 90.0 90.0 … 90.0 90.0]
+
+[-88.02197802197801 -88.02197802197801 … -88.02197802197801 -88.02197802197801; -86.04395604395604 -86.04395604395604 … -86.04395604395604 -86.04395604395604; … ; 88.02197802197801 88.02197802197801 … 88.02197802197801 88.02197802197801; 90.0 90.0 … 90.0 90.0],&quot;DYT3d&quot; =&gt; [219946.0087474788 219946.0087474788 … 219946.0087474788 219946.0087474788; 219946.00874747802 219946.00874747802 … 219946.00874747802 219946.00874747802; … ; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796]
+
+[219946.0087474788 219946.0087474788 … 219946.0087474788 219946.0087474788; 219946.00874747802 219946.00874747802 … 219946.00874747802 219946.00874747802; … ; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796]
+
+[219946.0087474788 219946.0087474788 … 219946.0087474788 219946.0087474788; 219946.00874747802 219946.00874747802 … 219946.00874747802 219946.00874747802; … ; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796]
+
+...
+
+[219946.0087474788 219946.0087474788 … 219946.0087474788 219946.0087474788; 219946.00874747802 219946.00874747802 … 219946.00874747802 219946.00874747802; … ; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796]
+
+[219946.0087474788 219946.0087474788 … 219946.0087474788 219946.0087474788; 219946.00874747802 219946.00874747802 … 219946.00874747802 219946.00874747802; … ; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796]
+
+[219946.0087474788 219946.0087474788 … 219946.0087474788 219946.0087474788; 219946.00874747802 219946.00874747802 … 219946.00874747802 219946.00874747802; … ; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796],&quot;dxv&quot; =&gt; [2.0 2.0 … 2.0 2.0],&quot;YV&quot; =&gt; [-88.02197802197801 -88.02197802197801 … -88.02197802197801 -88.02197802197801; -86.04395604395604 -86.04395604395604 … -86.04395604395604 -86.04395604395604; … ; 88.02197802197801 88.02197802197801 … 88.02197802197801 88.02197802197801; 90.0 90.0 … 90.0 90.0],&quot;DYV&quot; =&gt; [219946.00874747802 219946.00874747802 … 219946.00874747802 219946.00874747802; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796; … ; 219946.0087474796 219946.0087474796 … 219946.0087474796 219946.0087474796; 219946.0087474788 219946.0087474788 … 219946.0087474788 219946.0087474788]…), 
+  [1     ,      1]  =  0.000197784
+  [2     ,      1]  =  1.05541e-8
+  [10384 ,      1]  =  -2.09257e-7
+  [10442 ,      1]  =  -0.000191611
+  [10443 ,      1]  =  4.80961e-9
+  [20825 ,      1]  =  -1.83059e-9
+  [20883 ,      1]  =  7.967e-9
+  [1     ,      2]  =  -5.98052e-8
+  [2     ,      2]  =  0.000187532
+  ⋮
+  [200160, 200159]  =  -2.04829e-8
+  [197886, 200160]  =  2.41231e-9
+  [199766, 200160]  =  6.70985e-9
+  [199777, 200160]  =  -1.26357e-9
+  [199778, 200160]  =  -7.22216e-9
+  [199779, 200160]  =  7.59325e-9
+  [199790, 200160]  =  -7.41023e-9
+  [200156, 200160]  =  -3.07748e-8
+  [200159, 200160]  =  -2.14741e-8
+  [200160, 200160]  =  5.22074e-8)</code></pre><p>Define useful constants and arrays</p><pre><code class="language-julia">const iwet = indices_of_wet_boxes(wet3d)
+const nb = number_of_wet_boxes(wet3d)
+const v = vector_of_volumes(wet3d, grd)
+const z = vector_of_depths(wet3d, grd)
+const ztop = vector_of_top_depths(wet3d, grd)</code></pre><pre><code class="language-none">200160-element Array{Float64,1}:
+    0.0           
+    0.0           
+    0.0           
+    0.0           
+    0.0           
+    0.0           
+    0.0           
+    0.0           
+    0.0           
+    0.0           
+    ⋮             
+ 5116.506284367635
+ 5116.506284367635
+ 5116.506284367635
+ 5116.506284367635
+ 5116.506284367635
+ 5116.506284367635
+ 5116.506284367635
+ 5116.506284367635
+ 5116.506284367635</code></pre><p>And matrices</p><pre><code class="language-julia">const DIV = buildDIV(wet3d, iwet, grd)
+const Iabove = buildIabove(wet3d, iwet) ;</code></pre><pre><code class="language-none">200160×200160 SparseMatrixCSC{Bool,Int64} with 189719 stored entries:
+  [10442 ,      1]  =  1
+  [10443 ,      2]  =  1
+  [10444 ,      3]  =  1
+  [10445 ,      4]  =  1
+  [10446 ,      5]  =  1
+  [10447 ,      6]  =  1
+  [10448 ,      7]  =  1
+  [10449 ,      8]  =  1
+  [10450 ,      9]  =  1
+  ⋮
+  [200151, 199755]  =  1
+  [200152, 199756]  =  1
+  [200153, 199757]  =  1
+  [200154, 199764]  =  1
+  [200155, 199765]  =  1
+  [200156, 199766]  =  1
+  [200157, 199767]  =  1
+  [200158, 199776]  =  1
+  [200159, 199777]  =  1
+  [200160, 199778]  =  1</code></pre><h3><a class="nav-anchor" id="Transport-matrices-1" href="#Transport-matrices-1">Transport matrices</a></h3><pre><code class="language-julia">T_DIP(p) = T_Circulation
+T_DOP(p) = T_Circulation
+T_DO2(p) = T_Circulation
+const S₀ = buildPFD(ones(nb), DIV, Iabove)
+const S′ = buildPFD(ztop, DIV, Iabove)
+function T_POP(p)
+    w₀, w′ = p.w₀, p.w′
+    return w₀ * S₀ + w′ * S′
+end
+T_all = (T_DIP, T_DOP, T_POP, T_DO2)</code></pre><pre><code class="language-none">(Main.ex-p_cycle_DIP_DOP_POP.T_DIP, Main.ex-p_cycle_DIP_DOP_POP.T_DOP, Main.ex-p_cycle_DIP_DOP_POP.T_POP, Main.ex-p_cycle_DIP_DOP_POP.T_DO2)</code></pre><p>Because AIBECS will solve for the steady state solution directly without time-stepping the goverining equations to equilibrium, we don&#39;t have any opportunity to specify any intial conditions. Initial conditions are how the total amount of conserved elements get specified in most global biogeochemical modelels. Thus to specify the total inventory of P in AIBECS we add a very weak resporing term to the DIP equation. The time-scale for this restoring term is chosen to be very long compared to the timescale with which the ocean circulation homogenizes a tracer. Because of this long timescale we call it the geological restoring term, but geochemists who work on geological processes don&#39;t like that name! In any event the long timescale allows us to prescribe the total inventory of P without having any appreciable impact on the 3d distribution of P.</p><h3><a class="nav-anchor" id="Sources-minus-sinks-1" href="#Sources-minus-sinks-1">Sources minus sinks</a></h3><h5><a class="nav-anchor" id="Geological-Restoring-1" href="#Geological-Restoring-1">Geological Restoring</a></h5><pre><code class="language-julia">function geores(x, p)
+    τg, xgeo = p.τg, p.xgeo
+    return (xgeo .- x) / τg
+end</code></pre><pre><code class="language-none">geores (generic function with 1 method)</code></pre><h5><a class="nav-anchor" id="Uptake-of-phosphate-(DIP)-1" href="#Uptake-of-phosphate-(DIP)-1">Uptake of phosphate (DIP)</a></h5><pre><code class="language-julia">relu(x) = (x .≥ 0) .* x
+function uptake(DIP, p)
+    τu, ku, z₀ = p.τu, p.ku, p.z₀
+    DIP⁺ = relu(DIP)
+    return 1/τu * DIP⁺.^2 ./ (DIP⁺ .+ ku) .* (z .≤ z₀)
+end</code></pre><pre><code class="language-none">uptake (generic function with 1 method)</code></pre><h5><a class="nav-anchor" id="Remineralization-DOP-into-DIP-1" href="#Remineralization-DOP-into-DIP-1">Remineralization DOP into DIP</a></h5><pre><code class="language-julia">function remineralization(DOP, p)
+    κDOP = p.κDOP
+    return κDOP * DOP
+end</code></pre><pre><code class="language-none">remineralization (generic function with 1 method)</code></pre><h5><a class="nav-anchor" id="Dissolution-of-POP-into-DOP-1" href="#Dissolution-of-POP-into-DOP-1">Dissolution of POP into DOP</a></h5><pre><code class="language-julia">function dissolution(POP, p)
+    κPOP = p.κPOP
+    return κPOP * POP
+end</code></pre><pre><code class="language-none">dissolution (generic function with 1 method)</code></pre><h5><a class="nav-anchor" id="Air-sea-gas-exchange-1" href="#Air-sea-gas-exchange-1">Air-sea gas exchange</a></h5><pre><code class="language-julia">dz1 = grd[&quot;dzt&quot;][1]               # thickness of the top layer
+z = vec(grd[&quot;ZT3d&quot;])[iwet]        # depth of the gridbox centers
+using WorldOceanAtlasTools
+WOA = WorldOceanAtlasTools
+μDO2 , σ²DO2 = WOA.fit_to_grid(grd,2018,&quot;O2sat&quot;,&quot;annual&quot;,&quot;1°&quot;,&quot;an&quot;)</code></pre><pre><code class="language-none">([0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.9986298060417176 0.9981694602966309 … 1.000671501159668 0.9994396591186524; 1.0175252294540404 1.0174463748931886 … 1.0179427027702332 1.0176871752738952]
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.9550732585362026 0.9562181799752372 … 0.9535434395926339 0.9541520363943917; 0.9528527014596122 0.9531717082432338 … 0.9524201202392578 0.9525935690743583]
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.8482290013631184 0.8513909212748211 … 0.8417107359568279 0.8448687076568604; 0.836611909866333 0.8373468748728435 … 0.8351414712270101 0.8358594926198323]
+
+...
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.8468556912740072 0.8483416112263997 … 0.8462580108642578 0.8461976095346304; 0.8393070729573567 0.8395611953735351 … 0.8417618124825614 0.8413471494402204]
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0]
+
+[0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0; … ; 0.0 0.0 … 0.0 0.0; 0.0 0.0 … 0.0 0.0], [Inf Inf … Inf Inf; Inf Inf … Inf Inf; … ; 4.483668471052279e-5 4.483668471052279e-5 … 4.483668471052279e-5 4.483668471052279e-5; 6.510639911157342e-5 6.60700174907106e-5 … 5.990546374687256e-5 6.299638850869087e-5]
+
+[Inf Inf … Inf Inf; Inf Inf … Inf Inf; … ; 0.0014753435689954131 0.0014058725722332383 … 0.0016401173756970821 0.0015562222898595792; 0.0020962392960074796 0.002079495734697957 … 0.002135013684531441 0.0021153090527070164]
+
+[Inf Inf … Inf Inf; Inf Inf … Inf Inf; … ; 6.02427243913553e-5 6.371971117605426e-5 … 5.616889233288021e-5 5.7314006471460744e-5; 6.847410248901724e-5 7.391922987526414e-5 … 6.143014941535512e-5 6.413035838413634e-5]
+
+...
+
+[Inf Inf … Inf Inf; Inf Inf … Inf Inf; … ; 4.483668471052279e-5 4.483668471052279e-5 … 4.483668471052279e-5 4.483668471052279e-5; 4.483668471052279e-5 4.483668471052279e-5 … 4.483668471052279e-5 4.483668471052279e-5]
+
+[Inf Inf … Inf Inf; Inf Inf … Inf Inf; … ; Inf Inf … Inf Inf; Inf Inf … Inf Inf]
+
+[Inf Inf … Inf Inf; Inf Inf … Inf Inf; … ; Inf Inf … Inf Inf; Inf Inf … Inf Inf])</code></pre><p>This below was commented out?</p><pre><code class="language-julia">function airsea(DO2, p)
+    κDO2 = p.κDO2
+    return κDO2 * (z .&lt; 20) .* (1.0 .- DO2) / dz1
+end</code></pre><pre><code class="language-none">airsea (generic function with 1 method)</code></pre><p>Add them up into sms functions (Sources Minus Sinks)</p><pre><code class="language-julia">function sms_DIP(DIP, DOP, POP, p)
+    return -uptake(DIP, p) + remineralization(DOP, p) + geores(DIP, p)
+end
+function sms_DOP(DIP, DOP, POP, p)
+    σ = p.σ
+    return σ * uptake(DIP, p) - remineralization(DOP, p) + dissolution(POP, p)
+end
+function sms_POP(DIP, DOP, POP, p)
+    σ = p.σ
+    return (1 - σ) * uptake(DIP, p) - dissolution(POP, p)
+end
+sms_all = (sms_DIP, sms_DOP, sms_POP) # bundles all the source-sink functions in a tuple</code></pre><pre><code class="language-none">(Main.ex-p_cycle_DIP_DOP_POP.sms_DIP, Main.ex-p_cycle_DIP_DOP_POP.sms_DOP, Main.ex-p_cycle_DIP_DOP_POP.sms_POP)</code></pre><h3><a class="nav-anchor" id="Parameters-1" href="#Parameters-1">Parameters</a></h3><p>Build the parameters type and p₀</p><pre><code class="language-">t = empty_parameter_table()    # initialize table of parameters
+add_parameter!(t, :xgeo, 2.17u&quot;mmol/m^3&quot;,
+    variance_obs = ustrip(upreferred(0.1 * 2.17u&quot;mmol/m^3&quot;))^2,
+    description = &quot;Geological mean P concentration&quot;,
+    LaTeX = &quot;\\state^\\mathrm{geo}&quot;)
+add_parameter!(t, :τg, 1.0u&quot;Myr&quot;,
+    description = &quot;Geological restoring timescale&quot;,
+    LaTeX = &quot;\\tau_\\mathrm{geo}&quot;)
+add_parameter!(t, :ku, 10.0u&quot;μmol/m^3&quot;,
+    optimizable = true,
+    description = &quot;Half-saturation constant (Michaelis-Menten)&quot;,
+    LaTeX = &quot;k_\\vec{u}&quot;)
+add_parameter!(t, :z₀, 80.0u&quot;m&quot;,
+    description = &quot;Depth of the euphotic layer base&quot;,
+    LaTeX = &quot;z_0&quot;)
+add_parameter!(t, :w₀, 1.0u&quot;m/d&quot;,
+    optimizable = true,
+    description = &quot;Sinking velocity at surface&quot;,
+    LaTeX = &quot;w_0&quot;)
+add_parameter!(t, :w′, 1/4.4625u&quot;d&quot;,
+    optimizable = true,
+    description = &quot;Vertical gradient of sinking velocity&quot;,
+    LaTeX = &quot;w&#39;&quot;)
+add_parameter!(t, :κDOP, 1/0.25u&quot;yr&quot;,
+    optimizable = true,
+    description = &quot;Remineralization rate constant (DOP to DIP)&quot;,
+    LaTeX = &quot;\\kappa&quot;)
+add_parameter!(t, :κPOP, 1/5.25u&quot;d&quot;,
+    optimizable = true,
+    description = &quot;Dissolution rate constant (POP to DOP)&quot;,
+    LaTeX = &quot;\\kappa&quot;)
+add_parameter!(t, :σ, 0.3u&quot;1&quot;,
+    description = &quot;Fraction of quick local uptake recycling&quot;,
+    LaTeX = &quot;\\sigma&quot;)
+add_parameter!(t, :τu, 30.0u&quot;d&quot;,
+    optimizable = true,
+    description = &quot;Maximum uptake rate timescale&quot;,
+    LaTeX = &quot;\\tau_\\vec{u}&quot;)
+initialize_Parameters_type(t, &quot;Pcycle_Parameters&quot;)   # Generate the parameter type</code></pre><h3><a class="nav-anchor" id="Generate-state-function-and-Jacobian-1" href="#Generate-state-function-and-Jacobian-1">Generate state function and Jacobian</a></h3><pre><code class="language-julia">nt = length(T_all)    # number of tracers
+n = nt * nb           # total dimension of the state vector
+p = Pcycle_Parameters() # parameters
+x = p.xgeo * ones(n) # initial iterate</code></pre><pre><code class="language-none">800640-element Array{Float64,1}:
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ ⋮      
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217
+ 0.00217</code></pre><p>F, ∇ₓF = state<em>function</em>and<em>Jacobian(T</em>all, sms_all, nb)</p><p>and solve</p><p>prob = SteadyStateProblem(F, ∇ₓF, x, p) s = solve(prob, CTKAlg());</p><p>unpack state</p><p>function unpack<em>P</em>state(s,mask)         DIP = NaN<em>mask; DOP = NaN</em>mask; POP = NaN*mask         iwet = findall(x-&gt; x==1, vec(mask))         nwet = length(iwet)         idip = 1:nwet;       idop = idip.+nwet;   ipop = idop.+nwet         DIP[iwet] = s[idip]; DOP[iwet] = s[idop]; POP[iwet] = s[ipop]     return DIP, DOP, POP end DIP, DOP, POP = unpack<em>P</em>state(s,wet3d);</p><p>We will plot the concentration of DIP at a given depth horizon</p><pre><code class="language-julia">depth = vec(grd[&quot;zt&quot;])
+iz = findfirst(depth .&gt; 200)
+iz, depth[iz]</code></pre><pre><code class="language-none">(6, 246.7350746268657)</code></pre><p>dip = DIP[:,:,iz] * ustrip(1.0u&quot;mol/m^3&quot;|&gt;u&quot;mmol/m^3&quot;); lat, lon = vec(grd[&quot;yt&quot;]), vec(grd[&quot;xt&quot;]);</p><p>and plot</p><p>ENV[&quot;MPLBACKEND&quot;]=&quot;qt5agg&quot; using PyPlot, PyCall using Conda; Conda.add(&quot;Cartopy&quot;) clf() ccrs = pyimport(&quot;cartopy.crs&quot;) ax = subplot(projection=ccrs.Robinson(central_longitude=-155.0)) ax.coastlines()</p><h1><a class="nav-anchor" id="making-it-cyclic-for-Cartopy-1" href="#making-it-cyclic-for-Cartopy-1">making it cyclic for Cartopy</a></h1><p>lon<em>cyc = [lon; 360+lon[1]] dip</em>cyc = hcat(dip, dip[:,1])</p><h1><a class="nav-anchor" id="And-plot-1" href="#And-plot-1">And plot</a></h1><p>p = contourf(lon<em>cyc, lat, dip</em>cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1) colorbar(p, orientation=&quot;horizontal&quot;); gcf()</p><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p><footer><hr/><a class="previous" href="../ideal_mean_age/"><span class="direction">Previous</span><span class="title">Ideal mean age</span></a><a class="next" href="../radiocarbon_OCIM/"><span class="direction">Next</span><span class="title">Radiocarbon with OCIM</span></a></footer></article></body></html>
