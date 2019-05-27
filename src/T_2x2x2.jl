@@ -58,10 +58,10 @@ end
 
 function build_T(grd)
     wet3d = build_wet3d()
-    iwet = findall(wet3d)
-    v3d = ustrip(grd["DXT3d"] .* grd["DYT3d"] .* grd["DZT3d"] |> u"m^3")
+    iwet = LinearIndices(size(wet3d))[findall(wet3d)]
+    v3d = grd["DXT3d"] .* grd["DYT3d"] .* grd["DZT3d"] .|> u"m^3"
     n = length(v3d)
-    T = spzeros(n, n)
+    T = spzeros(n, n) * 1u"1/s"
     # Antarctic Circumpoloar Current 1 -> 3 -> 1 
     # TODO Add tools to GridTools to create those circulations and the mixings too
     ACC = 100e6u"m^3/s"
@@ -76,21 +76,19 @@ function build_T(grd)
     for orig in 1:n, dest in 1:n
         # Overturning part
         if isACC[orig, dest]
-            T[orig, orig] += ACC # add at origin
-            T[dest, orig] -= ACC # remove at destination
+            T[orig, orig] += v3d[orig] \ ACC # add at origin
+            T[dest, orig] -= v3d[dest] \ ACC # remove at destination
         end
         if isMOC[orig, dest]
-            T[orig, orig] += MOC # add at origin
-            T[dest, orig] -= MOC # remove at destination
+            T[orig, orig] += v3d[orig] \ MOC # add at origin
+            T[dest, orig] -= v3d[dest] \ MOC # remove at destination
         end
         if isMIX[orig, dest]
-            T[orig, orig] += MIX # add at origin
-            T[dest, orig] -= MIX # remove at destination
+            T[orig, orig] += v3d[orig] \ MIX # add at origin
+            T[dest, orig] -= v3d[dest] \ MIX # remove at destination
         end
     end
-    v = v3d[iwet] # Fine here because every point is wet :)
-    T = sparse(Diagonal(v.^(-1))) * T
-    return T
+    return ustrip(T[iwet, iwet])
 end
 
 """

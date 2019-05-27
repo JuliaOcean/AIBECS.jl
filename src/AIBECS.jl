@@ -19,5 +19,6 @@ include("multiTracer.jl")
 include("Parameters.jl")
 include("OCIM.jl")
 include("SixBoxModel.jl")
+include("T_2x2x2.jl")
 
 end # module

@@ -16,9 +16,9 @@ function state_function_and_Jacobian(Ts, Gs, nb)
     tracers(x) = state_to_tracers(x, nb, nt)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
     G(x, p) = reduce(vcat, [Gⱼ(tracers(x)..., p) for Gⱼ in Gs]) # nonlinear part
-    F(x, p) = -T(p) * x + G(x, p)                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
+    F(x, p) = G(x, p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
     ∇ₓG(x, p) = local_jacobian(Gs, x, p, nt, nb)     # Jacobian of nonlinear part
-    ∇ₓF(x, p) = -T(p) + ∇ₓG(x, p)          # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
+    ∇ₓF(x, p) = ∇ₓG(x, p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
     return F, ∇ₓF
 end
 export state_function_and_Jacobian
