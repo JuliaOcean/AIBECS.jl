@@ -62,6 +62,33 @@ We are currently working on the documentation along with some simple Jupyter not
 - coupled nutrients (coming soon)
 
 
+
+## The Maths
+
+AIBECS represents global biogeochemical cycles with a discretized system of nonlinear partial differential equations that takes the generic form
+
+```julia
+∂x/∂t = F(x,p)
+```
+
+where `x` is a column vector of the model state variables (i.e., the tracers) and `p` is a vector of model parameters.
+(For now, AIBECS only handles steady-state models, for which `F` does not depend on time.)
+
+This package was developed for models to exploit techniques from linear algebra.
+A typical example is if the model is linear (affine), i.e., if
+
+```julia
+F(x,p) = A * x + b
+```
+
+In that case, the model's steady state solution can be computed in a single use of "backslash", via `s = A \ -b`.
+
+However, AIBECS also works for nonlinear problems, i.e., when `F(x,p)` is nonlinear, covering a much larger range of models!
+In this case, AIBECS uses a state-of-the-art Newton-type solver to find the steady-state solution for you, which is much faster than time-stepping the system until it reaches equilibrium.
+(See, e.g., the work of C.T. Kelley.)
+
+
+
 ## Motivation
 
 The idea for this package came about in part from the [AWESOME OCIM](https://github.com/hengdiliang/AWESOME-OCIM-v1.1) by [Seth John](https://dornsife.usc.edu/cf/earth/faculty_display.cfm?Person_ID=1063621) and others.
@@ -95,30 +122,7 @@ We emphasize that this package is under active development, so that not all the 
 (Plotting publication-quality figures will likely be a feature that takes time, considering the current state of plotting in Julia!)
 
 
-## The Maths
 
-AIBECS represents global biogeochemical cycles with a discretized system of nonlinear partial differential equations that takes the generic form
-
-```julia
-∂x/∂t = F(x,p)
-```
-
-where `x` is a column vector of the model state variables (i.e., the tracers) and `p` is a vector of model parameters.
-(For now, AIBECS only handles steady models, for which `F` does not depend on time.)
-
-This package was developed for models to exploit techniques from linear algebra.
-A typical example is if the model is linear (affine), i.e., if
-
-```julia
-F(x,p,t) = A * x + b
-```
-
-In that case, the model's steady state solution can be computed in a single use of "backslash", via `s = A \ -b`.
-(That's what the AWESOME OCIM does.)
-
-However, AIBECS also works for nonlinear problems, i.e., when `F(x,p)` is nonlinear, covering a much larger range of models!
-In this case, AIBECS uses a state-of-the-art Newton-type solver to find the steady-state solution for you, which is much faster than time-stepping the system until it reaches equilibrium.
-(See, e.g., the work of C.T. Kelley.)
 
 ## References
 
