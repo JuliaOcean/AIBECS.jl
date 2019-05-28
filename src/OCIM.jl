@@ -58,7 +58,7 @@ function load()
     grd = vars["output"]["grid"]
     wet3d = vars["output"]["M3d"]
     println(" ✅")
-    return wet3d, grd, T
+    return wet3d, grd, convert(SparseMatrixCSC{Float64,Int}, T)
 end
 
 end
