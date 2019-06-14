@@ -6,7 +6,8 @@ using SuiteSparse, LinearAlgebra, Printf
 using DualNumbers, DualMatrixTools
 using HyperDualNumbers, HyperDualMatrixTools
 using Flatten, FieldMetadata, DataFrames
-using JLD2
+using BSON
+@reexport using OceanGrids            # To store the grid
 @reexport using Unitful, UnitfulAstro
 
 include("GridTools.jl")
