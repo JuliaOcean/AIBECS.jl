@@ -1,5 +1,5 @@
 
-<img src="https://user-images.githubusercontent.com/4486578/59548598-d8fe7f80-8f94-11e9-931f-cf3532b5cc25.png" alt="logo" title="AIBECS_logo" align="center" width="50%"/>
+<img src="https://user-images.githubusercontent.com/4486578/59548598-d8fe7f80-8f94-11e9-931f-cf3532b5cc25.png" alt="logo" title="The AIBECS logo: It represents three global marine biogeochemical cycles, where each element affects the others" align="center" width="50%"/>
 
 # AIBECS.jl
 
