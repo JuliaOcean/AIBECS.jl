@@ -25,6 +25,7 @@ UnitfulAstro = "6112ee07-acf9-5e0f-b108-d242c714bf9f"
 
 [compat]
 julia = "1.0"
+WorldOceanAtlasTools = "0.2"
 
 [extras]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
