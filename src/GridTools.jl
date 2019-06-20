@@ -8,15 +8,15 @@ Off-diaongal matrices
 ===================================#
 
 """
-    buildIbelow(wet3d, iwet)
+    buildIbelow(wet3D, iwet)
 
 Build the shifted-diagonal sparse matrix of the indices of below neighbours.
 
 Ibelow[i,j] = 1 if the box represented by the linear index i
 lies directly below the box represented by the linear index j.
 """
-function buildIbelow(wet3d, iwet)
-    nlat, nlon, ndepth = size(wet3d)
+function buildIbelow(wet3D, iwet)
+    nlat, nlon, ndepth = size(wet3D)
     n = nlon * nlat * (ndepth + 1)
     In = sparse(I, n, n)
     idx = zeros(Int, nlat, nlon, ndepth + 1)
@@ -27,14 +27,14 @@ end
 export buildIbelow
 
 """
-    buildIabove(wet3d, iwet)
+    buildIabove(wet3D, iwet)
 
 Build the shifted-diagonal sparse matrix of the indices of above neighbours.
 
 Iabove[i,j] = 1 if the box represented by the linear index i
 lies directly above the box represented by the linear index j.
 """
-buildIabove(wet3d, iwet) = copy(transpose(buildIbelow(wet3d, iwet)))
+buildIabove(wet3D, iwet) = copy(transpose(buildIbelow(wet3D, iwet)))
 export buildIabove
 
 
@@ -45,51 +45,51 @@ vectors, and constants
 ===================================#
 
 """
-    array_of_volumes(grd)
+    array_of_volumes(grid)
 
 Returns the 3D array of volumes of grid boxes.
 """
-array_of_volumes(grd) = grd["DXT3d"] .* grd["DYT3d"] .* grd["DZT3d"]
+array_of_volumes(grid) = grid.volume_3D
 export array_of_volumes
 
 """
-    indices_of_wet_boxes(wet3d)
+    indices_of_wet_boxes(wet3D)
 
 Returns the vector of the indices of wet grid boxes.
 """
-indices_of_wet_boxes(wet3d) = (LinearIndices(wet3d))[findall(!iszero, wet3d)]
+indices_of_wet_boxes(wet3D) = (LinearIndices(wet3D))[findall(!iszero, wet3D)]
 export indices_of_wet_boxes
 
 """
-    number_of_wet_boxes(wet3d)
+    number_of_wet_boxes(wet3D)
 
 Returns the number of wet grid boxes.
 """
-number_of_wet_boxes(wet3d) = length(indices_of_wet_boxes(wet3d))
+number_of_wet_boxes(wet3D) = length(indices_of_wet_boxes(wet3D))
 export number_of_wet_boxes
 
 """
-    vector_of_volumes(wet3d, grd)
+    vector_of_volumes(wet3D, grid)
 
 Returns the vector of volumes of wet boxes.
 """
-vector_of_volumes(wet3d, grd) = array_of_volumes(grd)[indices_of_wet_boxes(wet3d)]
+vector_of_volumes(wet3D, grid) = array_of_volumes(grid)[indices_of_wet_boxes(wet3D)]
 export vector_of_volumes
 
 """
-    vector_of_depths(wet3d, grd)
+    vector_of_depths(wet3D, grid)
 
 Returns the vector of depths of the center of wet boxes.
 """
-vector_of_depths(wet3d, grd) = grd["ZT3d"][indices_of_wet_boxes(wet3d)]
+vector_of_depths(wet3D, grid) = grid.depth_3D[indices_of_wet_boxes(wet3D)]
 export vector_of_depths
 
 """
-    vector_of_depths(wet3d, grd)
+    vector_of_depths(wet3D, grid)
 
 Returns the vector of depths of the top of wet boxes.
 """
-vector_of_top_depths(wet3d, grd) = grd["ZW3d"][indices_of_wet_boxes(wet3d)]
+vector_of_top_depths(wet3D, grid) = grid.depth_top_3D[indices_of_wet_boxes(wet3D)]
 export vector_of_top_depths
 
 #===================================
@@ -132,25 +132,25 @@ export weighted_norm²
 ===================================#
 
 """
-    rearrange_into_3Darray(x, wet3d)
+    rearrange_into_3Darray(x, wet3D)
 
-Returns a 3D array of `x` rearranged to the `true` entries of `wet3d`.
-Entries where `wet3d` is `false` are filled with `NaN`s.
+Returns a 3D array of `x` rearranged to the `true` entries of `wet3D`.
+Entries where `wet3D` is `false` are filled with `NaN`s.
 """
-function rearrange_into_3Darray(x, wet3d)
-    iwet = indices_of_wet_boxes(wet3d)
-    x3d = fill(NaN, size(wet3d))
+function rearrange_into_3Darray(x, wet3D)
+    iwet = indices_of_wet_boxes(wet3D)
+    x3d = fill(NaN, size(wet3D))
     x3d[iwet] .= x
     return x3d
 end
 
 """
-    rearrange_into_1Dvector(x3d, wet3d)
+    rearrange_into_1Dvector(x3d, wet3D)
 
-Returns a 1D vector of `x3d` from the linear indices where `wet3d` is `true`.
+Returns a 1D vector of `x3d` from the linear indices where `wet3D` is `true`.
 """
-function rearrange_into_1Dvector(x3d, wet3d)
-    iwet = indices_of_wet_boxes(wet3d)
+function rearrange_into_1Dvector(x3d, wet3D)
+    iwet = indices_of_wet_boxes(wet3D)
     return x3d[iwet]
 end
 export rearrange_into_3Darray, rearrange_into_1Dvector

@@ -3,7 +3,7 @@
 ωp = 1e-7
 # PO₄ mean and variance of observations fom WOA18
 WOA = WorldOceanAtlasTools
-μDIPobs3D, σ²DIPobs3D = WOA.fit_to_grid(grd, 2018, "phosphate", "annual", "1°", "an")
+μDIPobs3D, σ²DIPobs3D = WOA.fit_to_grid(grid, 2018, "phosphate", "annual", "1°", "an")
 μDIPobs, σ²DIPobs = μDIPobs3D[iwet], σ²DIPobs3D[iwet]
 const μx = (μDIPobs, missing, missing)
 const σ²x = (σ²DIPobs, missing, missing)
