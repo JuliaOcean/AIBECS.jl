@@ -31,7 +31,7 @@
 
 # Oxygen participates to this cycle too and satisfies its own tracer equation
 #
-# $$\frac{\partial}{\partial t} DO_2 + \nabla \cdot \left[\boldsymbol{u} + \mathbf{K}\cdot\nabla \right] DO_2 = -r_{\mathsf{O}_2:\mathsf{P}} \, \kappa_\mathsf{D} \, DOP + \boldsymbol{\Lambda}(DO_2 - [O_2]_{\mathsf{sat}})$$
+# $$\frac{\partial}{\partial t} DO_2 + \nabla \cdot \left[\boldsymbol{u} + \mathbf{K}\cdot\nabla \right] DO_2 = -r_{\mathsf{O}_2:\mathsf{P}} \, \kappa_\mathsf{D} \, DOP + \Lambda(DO_2 - [O_2]_{\mathsf{sat}})$$
 #
 # where $\Lambda$ is the air-sea gas exchange operator.
 
@@ -49,43 +49,42 @@ using AIBECS
 
 # Load the circulation and grid
 
-const wet3d, grd, T_Circulation = OCIM1.load()
+wet3D, grd, T_Circulation = OCIM1.load() ;
 
 # Define useful constants and arrays
 
-const iwet = indices_of_wet_boxes(wet3d)
-const nb = number_of_wet_boxes(wet3d)
-const v = vector_of_volumes(wet3d, grd)
-const z = vector_of_depths(wet3d, grd)
-const ztop = vector_of_top_depths(wet3d, grd)
+iwet = indices_of_wet_boxes(wet3D)
+nb = length(iwet)
+z = ustrip.(vector_of_depths(wet3D, grd))
+ztop = vector_of_top_depths(wet3D, grd) ;
 
 # And matrices
 
-const DIV = buildDIV(wet3d, iwet, grd)
-const Iabove = buildIabove(wet3d, iwet) ;
+DIV = buildDIV(wet3D, iwet, grd)
+Iabove = buildIabove(wet3D, iwet) ;
 
 # ### Transport matrices
 
 T_DIP(p) = T_Circulation
 T_DOP(p) = T_Circulation
 T_DO2(p) = T_Circulation
-const S₀ = buildPFD(ones(nb), DIV, Iabove)
-const S′ = buildPFD(ztop, DIV, Iabove)
+S₀ = buildPFD(ones(nb), DIV, Iabove)
+S′ = buildPFD(ztop, DIV, Iabove)
 function T_POP(p)
     w₀, w′ = p.w₀, p.w′
     return w₀ * S₀ + w′ * S′
 end
-T_all = (T_DIP, T_DOP, T_POP, T_DO2)
+T_all = (T_DIP, T_DOP, T_POP, T_DO2) ;
 
 # Because AIBECS will solve for the steady state solution directly without time-stepping the goverining equations to equilibrium, we don't have any opportunity to specify any intial conditions.
 # Initial conditions are how the total amount of conserved elements get specified in most global biogeochemical modelels.
 # Thus to specify the total inventory of P in AIBECS we add a very weak resporing term to the DIP equation.
 # The time-scale for this restoring term is chosen to be very long compared to the timescale with which the ocean circulation homogenizes a tracer.
 # Because of this long timescale we call it the geological restoring term, but geochemists who work on geological processes don't like that name!
-# In any event the long timescale allows us to prescribe the total inventory of P without having any appreciable impact on the 3d distribution of P.
+# In any event the long timescale allows us to prescribe the total inventory of P in a way that yields the same solution we would have gotten had we time-stepped the model to steady-state with the total inventory prescribed by the initial condition.
 
 # ### Sources minus sinks
-#
+
 # ##### Geological Restoring
 
 function geores(x, p)
@@ -104,7 +103,7 @@ end
 
 # ##### Remineralization DOP into DIP
 
-function remineralization(DOP, p)
+function respiration(DOP, p)
     κDOP = p.κDOP
     return κDOP * DOP
 end
@@ -118,33 +117,35 @@ end
 
 # ##### Air-sea gas exchange
 
-dz1 = grd["dzt"][1]               # thickness of the top layer
-z = vec(grd["ZT3d"])[iwet]        # depth of the gridbox centers
+h = ustrip(grd.δdepth[1])             # thickness of the top layer
+z = grd.depth_3D[iwet]        # depth of the gridbox centers
 using WorldOceanAtlasTools
 WOA = WorldOceanAtlasTools
-μDO2 , σ²DO2 = WOA.fit_to_grid(grd,2018,"O2sat","annual","1°","an")
-
-# This below was commented out?
-
+μDO2sat , σ²DO2sat = WOA.fit_to_grid(grd,2018,"O2sat","annual","1°","an") ;
+DO2sat = vec(μDO2sat)[iwet]
 function airsea(DO2, p)
     κDO2 = p.κDO2
-    return κDO2 * (z .< 20) .* (1.0 .- DO2) / dz1
+    return κDO2 * (z .< 20u"m") .* (DO2sat .- DO2) / h
 end
 
 # Add them up into sms functions (Sources Minus Sinks)
 
-function sms_DIP(DIP, DOP, POP, p)
-    return -uptake(DIP, p) + remineralization(DOP, p) + geores(DIP, p)
+function sms_DIP(DIP, DOP, POP, DO2, p)
+    return -uptake(DIP, p) + respiration(DOP, p) + geores(DIP, p)
 end
-function sms_DOP(DIP, DOP, POP, p)
+function sms_DOP(DIP, DOP, POP, DO2, p)
     σ = p.σ
-    return σ * uptake(DIP, p) - remineralization(DOP, p) + dissolution(POP, p)
+    return σ * uptake(DIP, p) - respiration(DOP, p) + dissolution(POP, p)
 end
-function sms_POP(DIP, DOP, POP, p)
+function sms_POP(DIP, DOP, POP, DO2, p)
     σ = p.σ
     return (1 - σ) * uptake(DIP, p) - dissolution(POP, p)
 end
-sms_all = (sms_DIP, sms_DOP, sms_POP) # bundles all the source-sink functions in a tuple
+function sms_DO2(DIP, DOP, POP, DO2, p)
+    rO2P = p.rO2P
+    return airsea(DO2,p) + rO2P * (uptake(DIP,p) - respiration(DOP,p))
+end
+sms_all = (sms_DIP, sms_DOP, sms_POP, sms_DO2,) # bundles all the source-sink functions in a tuple
 
 
 # ### Parameters
@@ -153,42 +154,50 @@ sms_all = (sms_DIP, sms_DOP, sms_POP) # bundles all the source-sink functions in
 
 t = empty_parameter_table()    # initialize table of parameters
 add_parameter!(t, :xgeo, 2.17u"mmol/m^3",
-    variance_obs = ustrip(upreferred(0.1 * 2.17u"mmol/m^3"))^2,
-    description = "Geological mean P concentration",
-    LaTeX = "\\state^\\mathrm{geo}")
+               variance_obs = ustrip(upreferred(0.1 * 2.17u"mmol/m^3"))^2,
+               description = "Geological mean P concentration",
+               LaTeX = "\\state^\\mathrm{geo}")
 add_parameter!(t, :τg, 1.0u"Myr",
-    description = "Geological restoring timescale",
-    LaTeX = "\\tau_\\mathrm{geo}")
+               description = "Geological restoring timescale",
+               LaTeX = "\\tau_\\mathrm{geo}")
 add_parameter!(t, :ku, 10.0u"μmol/m^3",
-    optimizable = true,
-    description = "Half-saturation constant (Michaelis-Menten)",
-    LaTeX = "k_\\vec{u}")
+               optimizable = true,
+               description = "Half-saturation constant (Michaelis-Menten)",
+               LaTeX = "k_\\vec{u}")
 add_parameter!(t, :z₀, 80.0u"m",
-    description = "Depth of the euphotic layer base",
-    LaTeX = "z_0")
+               description = "Depth of the euphotic layer base",
+               LaTeX = "z_0")
 add_parameter!(t, :w₀, 1.0u"m/d",
-    optimizable = true,
-    description = "Sinking velocity at surface",
-    LaTeX = "w_0")
+               optimizable = true,
+               description = "Sinking velocity at surface",
+               LaTeX = "w_0")
 add_parameter!(t, :w′, 1/4.4625u"d",
-    optimizable = true,
-    description = "Vertical gradient of sinking velocity",
-    LaTeX = "w'")
+               optimizable = true,
+               description = "Vertical gradient of sinking velocity",
+               LaTeX = "w'")
 add_parameter!(t, :κDOP, 1/0.25u"yr",
-    optimizable = true,
-    description = "Remineralization rate constant (DOP to DIP)",
-    LaTeX = "\\kappa")
+               optimizable = true,
+               description = "Remineralization rate constant (DOP to DIP)",
+               LaTeX = "\\kappa")
 add_parameter!(t, :κPOP, 1/5.25u"d",
-    optimizable = true,
-    description = "Dissolution rate constant (POP to DOP)",
-    LaTeX = "\\kappa")
+               optimizable = true,
+               description = "Dissolution rate constant (POP to DOP)",
+               LaTeX = "\\kappa")
 add_parameter!(t, :σ, 0.3u"1",
-    description = "Fraction of quick local uptake recycling",
-    LaTeX = "\\sigma")
+               description = "Fraction of quick local uptake recycling",
+               LaTeX = "\\sigma")
 add_parameter!(t, :τu, 30.0u"d",
-    optimizable = true,
-    description = "Maximum uptake rate timescale",
-    LaTeX = "\\tau_\\vec{u}")
+               optimizable = true,
+               description = "Maximum uptake rate timescale",
+               LaTeX = "\\tau_\\vec{u}")
+add_parameter!(t, :κDO2, 50u"m" / 30u"d",
+               optimizable = false,
+               description = "Airsea O2 piston velocity",
+               LaTeX = "\\kappa_{\\mbox{\\tiny DO}_2}")
+add_parameter!(t, :rO2P, 175.0,
+               optimizable = true,
+               description = "Moles of O2 consumed per mole of P respired",
+               LaTeX = "r_{\\mbox{\\tiny O2:C}")
 initialize_Parameters_type(t, "Pcycle_Parameters")   # Generate the parameter type
 
 # ### Generate state function and Jacobian
@@ -197,49 +206,42 @@ nt = length(T_all)    # number of tracers
 n = nt * nb           # total dimension of the state vector
 p = Pcycle_Parameters() # parameters
 x = p.xgeo * ones(n) # initial iterate
-# F, ∇ₓF = state_function_and_Jacobian(T_all, sms_all, nb)
+F, ∇ₓF = state_function_and_Jacobian(T_all, sms_all, nb)
 
 # and solve
 
-# prob = SteadyStateProblem(F, ∇ₓF, x, p)
-# s = solve(prob, CTKAlg());
+prob = SteadyStateProblem(F, ∇ₓF, x, p)
+nothing # s = solve(prob, CTKAlg()) # Not working yet
 
 # unpack state
 
-# function unpack_P_state(s,mask)
-#         DIP = NaN*mask; DOP = NaN*mask; POP = NaN*mask
-#         iwet = findall(x-> x==1, vec(mask))
-#         nwet = length(iwet)
-#         idip = 1:nwet;       idop = idip.+nwet;   ipop = idop.+nwet
-#         DIP[iwet] = s[idip]; DOP[iwet] = s[idop]; POP[iwet] = s[ipop]
-#     return DIP, DOP, POP
-# end
-# DIP, DOP, POP = unpack_P_state(s,wet3d);
+DIP, DOP, POP, DO2 = state_to_tracers(x, nb, nt) # remove when line below works
+nothing # DIP, DOP, POP, DO2 = state_to_tracers(s.u, nb, nt)
 
 # We will plot the concentration of DIP at a given depth horizon
 
-depth = vec(grd["zt"])
-iz = findfirst(depth .> 200)
+depth = grd.depth
+iz = findfirst(depth .> 200u"m")
 iz, depth[iz]
 
 #-
 
-# dip = DIP[:,:,iz] * ustrip(1.0u"mol/m^3"|>u"mmol/m^3");
-# lat, lon = vec(grd["yt"]), vec(grd["xt"]);
+DIP_3D = rearrange_into_3Darray(DIP, wet3D)
+DIP_2D = DIP_3D[:,:,iz] * ustrip(1.0u"mol/m^3" |> u"mmol/m^3")
+lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 
 # and plot
 
-# ENV["MPLBACKEND"]="qt5agg"
-# using PyPlot, PyCall
-# using Conda; Conda.add("Cartopy")
-# clf()
-# ccrs = pyimport("cartopy.crs")
-# ax = subplot(projection=ccrs.Robinson(central_longitude=-155.0))
-# ax.coastlines()
-# # making it cyclic for Cartopy
-# lon_cyc = [lon; 360+lon[1]]
-# dip_cyc = hcat(dip, dip[:,1])
-# # And plot
-# p = contourf(lon_cyc, lat, dip_cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1)
-# colorbar(p, orientation="horizontal");
-# gcf()
+ENV["MPLBACKEND"]="qt5agg"
+using PyPlot, PyCall
+clf()
+ccrs = pyimport("cartopy.crs")
+ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
+ax.coastlines()
+# making it cyclic for Cartopy
+lon_cyc = [lon; 360+lon[1]]
+DIP_2D_cyc = hcat(DIP_2D, DIP_2D[:,1])
+# And plot
+p = contourf(lon_cyc, lat, DIP_2D_cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1)
+colorbar(p, orientation="horizontal");
+gcf()
