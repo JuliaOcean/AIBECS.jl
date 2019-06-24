@@ -11,6 +11,9 @@ using DataFrames
 
 Circulation = SixBoxModel
 
+# For CI, make sure the download does not hang
+ENV["DATADEPS_ALWAYS_ACCEPT"] = true
+
 @testset "Six-box model" begin
     # Run tests with the 6-box toy model
     include("setup.jl")
