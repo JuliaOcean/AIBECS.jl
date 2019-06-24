@@ -8,15 +8,12 @@ The citation material is in here but I could make it availabe to future JAMES us
 Need to decide if JAMES is the name I want to keep too.
 =#
 
-using SparseArrays, SuiteSparse
-using DataDeps, JLD2, FileIO
+using SparseArrays          # For sparse matrix
+using DataDeps              # For storage location of data
+using BSON                  # For saving circulation as BSON format
+using Unitful, UnitfulAstro # for units
 using Reexport
-
-# UnitfulAstro required for yr unit
-# as I could not figure out how to do this
-# without it...
-# (this helps to convert OCIM1.1's [yr⁻¹] unit to [s⁻¹] (SI))
-@reexport using Unitful, UnitfulAstro
+@reexport using OceanGrids            # To store the grid
 
 function fallback_download(remotepath, localdir)
     @assert(isdir(localdir))
@@ -30,13 +27,13 @@ end
 function register_OCIM1()
     register(
         DataDep(
-            "MatricesForJAMES",
+            "AIBECS_OCIM1",
             """
             References:
-            - DeVries, T. (2014), The oceanic anthropogenic CO2 sink: Storage, air‐sea fluxes, and transports over the industrial era, Global Biogeochem. Cycles, 28, 631–647, doi:10.1002/2013GB004739.
+            - DeVries, T., 2014: The oceanic anthropogenic CO2 sink: Storage, air‐sea fluxes, and transports over the industrial era, Global Biogeochem. Cycles, 28, 631–647, doi:10.1002/2013GB004739.
             - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, https://doi.org/10.1175/JPO-D-10-05011.1
             """,
-            "http://files.figshare.com/14330492/OCIM1_CTL.jld2",
+            "https://files.figshare.com/15448595/OCIM1.bson",
             sha2_256,
             fetch_method = fallback_download
         )
@@ -50,18 +47,24 @@ end
 Returns wet3d, grd, and T (in that order) from FigShare repository.
 """
 function load()
-    print("Loading OCIM1 with JLD2")
+    print("Loading OCIM1")
     register_OCIM1()
-    jld2_file = @datadep_str string("MatricesForJAMES/", "OCIM1_CTL.jld2")
-    @load jld2_file vars
-    T = -vars["output"]["TR"] * ustrip(upreferred(u"1/yr")) # convert from yr⁻¹ to s⁻¹ (SI)
-    grd = vars["output"]["grid"]
-    wet3d = vars["output"]["M3d"]
-    println(" ✅")
-    return wet3d, grd, convert(SparseMatrixCSC{Float64,Int}, T)
+    bson_file = @datadep_str string("AIBECS_OCIM1/", "OCIM1.bson")
+    BSON.@load bson_file T grid wet3D
+    println(" ✔")
+    println("""
+            You are about to use the OCIM1, for which the references to cite are:
+
+            - DeVries, T., 2014: The oceanic anthropogenic CO2 sink: Storage, air‐sea fluxes, and transports over the industrial era, Global Biogeochem. Cycles, 28, 631–647, doi:10.1002/2013GB004739.
+
+            - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, https://doi.org/10.1175/JPO-D-10-05011.1
+
+            You can find the corresponding BibTeX entries in the CITATION.bib file at the root of the AIBECS.jl package repository, with the keys "DeVries_Primeau_2011" and "DeVries_2014".
+            """)
+    return wet3D, grid, ustrip.(T)
 end
 
-end
+end # end module
 
 export OCIM1
 

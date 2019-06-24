@@ -1,6 +1,7 @@
 # Reexport SinkingParticles as they are useful outside too
 @reexport module SinkingParticles
 
+using Unitful
 using LinearAlgebra, SparseArrays
 using ..GridTools
 
@@ -55,15 +56,15 @@ julia> PFD = buildPFD(w)
 buildPFD(w, DIV, Iabove) = DIV * buildFLUX(w, Iabove)
 
 """
-    buildDIV(wet3d, iwet, grd)
+    buildDIV(wet3D, iwet, grid)
 
 Build the DIV operator such that
 
     DIV * Φ = 1/dz * (Φ - Φ[below]) ≃ dΦ/dz.
 """
-function buildDIV(wet3d, iwet, grd)
-    Ibelow = buildIbelow(wet3d, iwet)
-    dz = grd["DZT3d"][iwet]
+function buildDIV(wet3D, iwet, grid)
+    Ibelow = buildIbelow(wet3D, iwet)
+    dz = ustrip.(grid.δz_3D[iwet])
     return sparse(Diagonal(dz.^(-1))) * (Ibelow - I) # divergence with positive downwards
 end
 
