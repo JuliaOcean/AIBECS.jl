@@ -19,7 +19,7 @@
 # The ideal mean age is transported with water, is equal to $0$ at the surface, and increases by one second every second everywhere.
 # In other words, the 3D field of the age, $a$, is governed by the tracer equation
 #
-# $$\frac{\partial a}{\partial t} = - \nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] a + 1,$$
+# $$\frac{\partial a}{\partial t} + \nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] a = 1,$$
 #
 # where $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$ is a differential operator that represents the transport by the ocean circulation.
 # ($\boldsymbol{u}$ is the 3D vector field for the advection and $\mathbf{K}$ is the diffusivity matrix.)
@@ -38,9 +38,10 @@
 # In practice, this is done by restoring $\boldsymbol{a}$ to $0$ with a very short timescale.
 # The tracer equation thgus takes the form of
 #
-# $$\frac{\partial\boldsymbol{a}}{\partial t} = -\mathbf{T} \, \boldsymbol{a} + 1 - \boldsymbol{a} / \tau,$$
+# $$\frac{\partial\boldsymbol{a}}{\partial t} = -\mathbf{T} \, \boldsymbol{a} + 1 - \boldsymbol{\Lambda} \, \boldsymbol{a},$$
 #
-# where $\tau$ will be chosen to be very small, ensuring that $\boldsymbol{a}$ is very close to $0$ at the surface.
+# where $\boldsymbol{\Lambda}$ is a diagonal matrix with entries equal to $1 / \tau$ in the surface layer of the model grid and 0 otherwise. 
+# The timescale $\tau$ is chosen to be very small, ensuring that $\boldsymbol{a}$ is very close to $0$ at the surface.
 # The first term represents the transport by the ocean circulation, the second term the source of 1 second per second everywhere, and the last term the fast relaxation.
 
 #---------------------------------
@@ -54,12 +55,12 @@
 
 # Computationally, in the discrete case, this means that we just need to solve
 #
-# $$0 = -\mathbf{T} \, \boldsymbol{a} + 1 - \boldsymbol{a} / \tau$$
+# $$0 = -\mathbf{T} \, \boldsymbol{a} + 1 - \boldsymbol{\Lambda} \, \boldsymbol{a}$$
 #
 # to find $\boldsymbol{a}$.
 # More specifically, we need to solve
 #
-# $$(\mathbf{T} + \mathbf{I} / \tau) \, \boldsymbol{a} = 1.$$
+# $$(\mathbf{T} + \boldsymbol{\Lambda}) \, \boldsymbol{a} = 1.$$
 
 # Now that we have the equations laid down, let us chose the circulation transport matrix, $\mathbf{T}$.
 
@@ -115,10 +116,9 @@ using AIBECS
 # (For more details, see Tim DeVries's [website](https://tdevries.eri.ucsb.edu/models-and-data-products/) and references therein.)
 # With AIBECS, the OCIM circulation can be loaded really easily, by simply typing
 
-const wet3d, grd, T_OCIM = AIBECS.OCIM1.load()
+wet3D, grd, T_OCIM = AIBECS.OCIM1.load()
 typeof(T_OCIM), size(T_OCIM)
 
-# Here, I have used the `const` prefix to tell Julia these are constants (it helps Julia's compiler)
 #
 #md # !!! note
 #md #     Julia may ask you to download the OCIM matrix for you, in which case you should say yes (i.e., type `y`).
@@ -128,8 +128,8 @@ typeof(T_OCIM), size(T_OCIM)
 #nb # > Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
 #
 # Additionally to downloading the OCIM file, the `load()` command loads 3 variables in the Julia workspace:
-# - `wet3d` — a 3D array of the model grid, filled with `1`'s at "wet" grid boxes and `0`'s and "land" grid boxes.
-# - `grd` — a dictionary containing information about the 3D grid of the OCIM circulation, like the latitude, longitude, and depth of each grid boxes. `grd` is a dictionary (i.e., a `Dict` in Julia, which is equivalent to a `struct` in MATLAB or a `dict` in python).
+# - `wet3D` — a 3D array of the model grid, filled with `1`'s at "wet" grid boxes and `0`'s and "land" grid boxes.
+# - `grd` — a `OceanGrid` object containing information about the 3D grid of the OCIM circulation, like the latitude, longitude, and depth of each grid boxes.
 # - `T_OCIM` — the transport matrix representing advection and diffusion.
 #
 # The second line in command above tells you the type and the size of `T_OCIM`.
@@ -180,7 +180,7 @@ source_age(age, p) = 1
 # (You can see the list of functions by typing `varinfo(AIBECS)` at the REPL.)
 # Here we will use the vector of grid box depths, `z`, which AIBECS can generate for us via
 
-const z = vector_of_depths(wet3d, grd)
+z = vector_of_depths(wet3D, grd)
 
 # So what is the top layer?
 # Let's investigate what's the minimum depth:
@@ -200,7 +200,7 @@ minimum(z)
 
 function sink_age(age, p)
     τ = p.τ
-    return age .* (z .< 20) / τ
+    return age .* (z .< 20u"m") / τ
 end
 
 #md # !!! note
@@ -250,12 +250,12 @@ p₀ = IdealAgeParameters()
 # The vector `x₀` will be our initial guess for the state.
 # Let's assume that the age is `1` (seconds) everywhere (as an initial guess):
 
-const nb = number_of_wet_boxes(wet3d)  # number of wet boxes
+nb = number_of_wet_boxes(wet3D)  # number of wet boxes
 x₀ = ones(nb)
 
 # The first line above defines the number of wet grid boxes, `nb`.
 # Here, this is also the length of the state vector `x`, because there is only one tracer, `age`.
-# In the second line, the `ones` function creates a vector of `1`s of the size you give it (the number of wet grid boxes, `nb`, here, which we defined as a constant earlier).
+# In the second line, the `ones` function creates a vector of `1`s of the size you give it (the number of wet grid boxes, `nb`, here, which we defined earlier).
 
 # Finally, the last step for the set up is to define $\boldsymbol{F}$.
 # Using AIBECS, this is done via
@@ -348,11 +348,11 @@ age = solve(prob, CTKAlg())
 # First, we must rearrange `age` into the 3D model grid.
 # For that we will need the vector of the indices of wet points in the 3D grid, which we will denote by `iwet`, and which AIBECS generates via
 
-const iwet = indices_of_wet_boxes(wet3d)
+iwet = indices_of_wet_boxes(wet3D)
 
 # We then rearrange the column vector `age` into a 3D array via
 
-age_3D = NaN * wet3d # creates a 3D array of NaNs of the same size as `wet3d`
+age_3D = NaN * wet3D # creates a 3D array of NaNs of the same size as `wet3D`
 age_3D[iwet] = age   # Fills the wet grid boxes with the age values
 size(age_3D)         # Just to check the size of age_3D
 
@@ -362,12 +362,12 @@ size(age_3D)         # Just to check the size of age_3D
 # To do that we must use the depth information contained in `grd`.
 # Let us first create a small vector of the depths of the grid:
 
-depth = vec(grd["zt"])
+depth = grd.depth
 
 # We could count the index of the entry we want, but here we will use the `findfirst` function to find the first depth index that is greater than 1000m.
 #nb # (Feel free to change the value of `iz` if you want to see a slice at another depth.)
 
-iz = findfirst(depth .> 1000)
+iz = findfirst(depth .> 1000u"m")
 iz, depth[iz]
 
 # We get `iz = 13`, which is a layer that lies at 1104m, close to 1000m like we wanted.
@@ -375,7 +375,7 @@ iz, depth[iz]
 # Finally, we need the latitude and longitudes of the grid, contained in `grd`.
 # As for `depth`, we can use the OCIM's `grd` output:
 
-lat, lon = vec(grd["yt"]), vec(grd["xt"])
+lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 
 # So these are the latitudes and longitudes of the map we are about to plot.
 
@@ -404,7 +404,7 @@ using PyPlot, PyCall
 
 clf()
 ccrs = pyimport("cartopy.crs")
-ax = subplot(projection=ccrs.Robinson(central_longitude=-155.0))
+ax = subplot(projection=ccrs.EqualEarth(central_longitude=-155.0))
 ax.coastlines()
 lon_cyc = [lon; 360+lon[1]] # making it cyclic for Cartopy
 age_cyc = hcat(age_3d_1000m_yr, age_3d_1000m_yr[:,1])
