@@ -181,7 +181,7 @@ using PyPlot, PyCall
 clf()
 ccrs = pyimport(&quot;cartopy.crs&quot;)
 ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()</code></pre><pre><code class="language-none">PyObject &lt;cartopy.mpl.feature_artist.FeatureArtist object at 0x7f125f77ef28&gt;</code></pre><p>making it cyclic for Cartopy</p><pre><code class="language-julia">lon_cyc = [lon; 360+lon[1]]
+ax.coastlines()</code></pre><pre><code class="language-none">PyObject &lt;cartopy.mpl.feature_artist.FeatureArtist object at 0x7f84d4d39470&gt;</code></pre><p>making it cyclic for Cartopy</p><pre><code class="language-julia">lon_cyc = [lon; 360+lon[1]]
 DIP_2D_cyc = hcat(DIP_2D, DIP_2D[:,1])</code></pre><pre><code class="language-none">90×181 Array{Float64,2}:
  NaN     NaN     NaN     NaN     NaN     …  NaN     NaN     NaN     NaN   
  NaN     NaN     NaN     NaN     NaN        NaN     NaN     NaN     NaN   
