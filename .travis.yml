@@ -30,7 +30,7 @@ after_success:
 jobs:
   include:
     - stage: "Documentation"
-      julia: nightly
+      julia: 1.1
       os: linux
       before_script:
         - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
