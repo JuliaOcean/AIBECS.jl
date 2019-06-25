@@ -111,10 +111,10 @@ using AIBECS
 # ### The circulation
 #---------------------------------
 
-# We will use the circulation output from the Ocean Circulation Inverse Model (OCIM) version 1.1.
+# We will use the circulation output from the Ocean Circulation Inverse Model (OCIM1).
 # Basically, the OCIM provides researchers and oceanographers with a big sparse matrix that represents the global ocean circulation (advection and diffusion), which allows them to efficiently simulate the transport of passive tracers, like the age.
 # (For more details, see Tim DeVries's [website](https://tdevries.eri.ucsb.edu/models-and-data-products/) and references therein.)
-# With AIBECS, the OCIM circulation can be loaded really easily, by simply typing
+# With AIBECS, the OCIM0.1 and OCIM1 circulations can be loaded really easily, by simply typing
 
 wet3D, grd, T_OCIM = AIBECS.OCIM1.load()
 typeof(T_OCIM), size(T_OCIM)

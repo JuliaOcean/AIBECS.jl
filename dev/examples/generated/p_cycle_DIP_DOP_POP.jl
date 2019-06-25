@@ -1,6 +1,6 @@
 using AIBECS
 
-wet3D, grd, T_Circulation = OCIM1.load() ;
+wet3D, grd, T_Circulation = OCIM0.load() ;
 
 iwet = indices_of_wet_boxes(wet3D)
 nb = length(iwet)

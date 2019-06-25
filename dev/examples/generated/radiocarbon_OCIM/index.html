@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Radiocarbon with OCIM · AIBECS.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link href="../../../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><a href="../../../index.html"><img class="logo" src="../../../assets/logo.png" alt="AIBECS.jl logo"/></a><h1>AIBECS.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../../">Home</a></li><li><a class="toctext" href="../../../prerequisites/">Prerequisites</a></li><li><span class="toctext">Examples</span><ul><li><a class="toctext" href="../ideal_mean_age/">Ideal mean age</a></li><li><a class="toctext" href="../p_cycle_DIP_DOP_POP/">A Phosphorus Cycling Model</a></li><li class="current"><a class="toctext" href>Radiocarbon with OCIM</a><ul class="internal"></ul></li><li><a class="toctext" href="../tracer_transport_operators/">Tracer Transport Operators</a></li></ul></li><li><a class="toctext" href="../../../functions/">Function index</a></li></ul></nav><article id="docs"><header><nav><ul><li>Examples</li><li><a href>Radiocarbon with OCIM</a></li></ul><a class="edit-page" href="https://github.com/briochemc/AIBECS.jl/blob/master/docs/src/examples/radiocarbon_OCIM.jl"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Radiocarbon with OCIM</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Radiocarbon-with-OCIM-1" href="#Radiocarbon-with-OCIM-1">Radiocarbon with OCIM</a></h1><div class="admonition tip"><div class="admonition-title">Tip</div><div class="admonition-text"><p>This example is also available as a Jupyter notebook: <a href="https://nbviewer.jupyter.org/github/briochemc/AIBECS.jl/blob/gh-pages/dev/examples/generated/radiocarbon_OCIM.ipynb"><code>radiocarbon_OCIM.ipynb</code></a></p></div></div><p>A simple model for <span>$R \equiv \frac{^{14}\mathrm{C}}{^{12}\mathrm{C}}$</span> normalized so that <span>$R=1$</span> in the atmosphere.</p><div>\[\frac{\partial R}{\partial t} + [\mathbf{TRdiv}]R = \kappa\boldsymbol{\Lambda}(1-R) -\lambda R\]</div><p>Here we will redo the radiocarbon age example, but using the OCIM transport operator made available through the AIBECS package</p><pre><code class="language-julia">using AIBECS
-mask, grd, T_OCIM = OCIM1.load() ;</code></pre><pre><code class="language-none">(Bool[0 0 … 0 0; 0 0 … 0 0; … ; 1 1 … 1 1; 0 0 … 0 0]
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Radiocarbon with OCIM · AIBECS.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link href="../../../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><a href="../../../index.html"><img class="logo" src="../../../assets/logo.png" alt="AIBECS.jl logo"/></a><h1>AIBECS.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../../">Home</a></li><li><a class="toctext" href="../../../prerequisites/">Prerequisites</a></li><li><span class="toctext">Examples</span><ul><li><a class="toctext" href="../ideal_mean_age/">Ideal mean age</a></li><li><a class="toctext" href="../p_cycle_DIP_DOP_POP/">A Phosphorus Cycling Model</a></li><li class="current"><a class="toctext" href>Radiocarbon with OCIM</a><ul class="internal"></ul></li><li><a class="toctext" href="../tracer_transport_operators/">Tracer Transport Operators</a></li></ul></li><li><a class="toctext" href="../../../functions/">Function index</a></li></ul></nav><article id="docs"><header><nav><ul><li>Examples</li><li><a href>Radiocarbon with OCIM</a></li></ul><a class="edit-page" href="https://github.com/briochemc/AIBECS.jl/blob/master/docs/src/examples/radiocarbon_OCIM.jl"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Radiocarbon with OCIM</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Radiocarbon-with-OCIM-1" href="#Radiocarbon-with-OCIM-1">Radiocarbon with OCIM</a></h1><div class="admonition tip"><div class="admonition-title">Tip</div><div class="admonition-text"><p>This example is also available as a Jupyter notebook: <a href="https://nbviewer.jupyter.org/github/briochemc/AIBECS.jl/blob/gh-pages/dev/examples/generated/radiocarbon_OCIM.ipynb"><code>radiocarbon_OCIM.ipynb</code></a></p></div></div><p>A simple model for <span>$R \equiv \frac{^{14}\mathrm{C}}{^{12}\mathrm{C}}$</span> normalized so that <span>$R=1$</span> in the atmosphere.</p><div>\[\frac{\partial R}{\partial t} + [\mathbf{TRdiv}]R = \kappa\boldsymbol{\Lambda}(1-R) -\lambda R\]</div><p>Here we will redo the radiocarbon age example, but using the OCIM1 transport operator made available through the AIBECS package</p><pre><code class="language-julia">using AIBECS
+mask, grd, T_OCIM = OCIM1.load() ;</code></pre><pre><code class="language-none">(Bool[false false … false false; false false … false false; … ; true true … true true; false false … false false]
 
-Bool[0 0 … 0 0; 0 0 … 0 0; … ; 1 1 … 1 1; 0 0 … 0 0]
+Bool[false false … false false; false false … false false; … ; true true … true true; false false … false false]
 
-Bool[0 0 … 0 0; 0 0 … 0 0; … ; 1 1 … 1 1; 0 0 … 0 0]
+Bool[false false … false false; false false … false false; … ; true true … true true; false false … false false]
 
 ...
 
-Bool[0 0 … 0 0; 0 0 … 0 0; … ; 0 0 … 0 0; 0 0 … 0 0]
+Bool[false false … false false; false false … false false; … ; false false … false false; false false … false false]
 
-Bool[0 0 … 0 0; 0 0 … 0 0; … ; 0 0 … 0 0; 0 0 … 0 0]
+Bool[false false … false false; false false … false false; … ; false false … false false; false false … false false]
 
-Bool[0 0 … 0 0; 0 0 … 0 0; … ; 0 0 … 0 0; 0 0 … 0 0], , 
+Bool[false false … false false; false false … false false; … ; false false … false false; false false … false false], , 
   [1     ,      1]  =  0.000197784
   [2     ,      1]  =  1.05541e-8
   [10384 ,      1]  =  -2.09257e-7
@@ -23,7 +23,6 @@ Bool[0 0 … 0 0; 0 0 … 0 0; … ; 0 0 … 0 0; 0 0 … 0 0], ,
   [1     ,      2]  =  -5.98052e-8
   [2     ,      2]  =  0.000187532
   ⋮
-  [200160, 200159]  =  -2.04829e-8
   [197886, 200160]  =  2.41231e-9
   [199766, 200160]  =  6.70985e-9
   [199777, 200160]  =  -1.26357e-9
@@ -70,30 +69,30 @@ initialize_Parameters_type(t, &quot;C14_Parameters&quot;) # Generate the paramet
     return κ / h * (z .&lt; z₀) .* (1.0 .- R) - λ * R
 end</code></pre><pre><code class="language-none">sms (generic function with 1 method)</code></pre><p>The tracer transport operator</p><pre><code class="language-julia">T_14c(p) = T_OCIM</code></pre><pre><code class="language-none">T_14c (generic function with 1 method)</code></pre><p>Prepare the stuff needed for the AIBECS solver:</p><pre><code class="language-julia">T_matrices = (T_14c,)            # bundles all the transport matrices in a tuple
 sources_minus_sinks = (sms,) # bundles all the source-sink functions in a tuple
-F, ∇ₓF = state_function_and_Jacobian(T_matrices, sources_minus_sinks, nwet) # generates the state function (and its Jacobian!)</code></pre><pre><code class="language-none">(getfield(AIBECS, Symbol(&quot;#F#22&quot;)){getfield(AIBECS, Symbol(&quot;#T#18&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.T_14c)}},getfield(AIBECS, Symbol(&quot;#G#20&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.sms)},getfield(AIBECS, Symbol(&quot;#tracers#17&quot;)){Int64,Int64}}}(getfield(AIBECS, Symbol(&quot;#T#18&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.T_14c)}}((Main.ex-radiocarbon_OCIM.T_14c,)), getfield(AIBECS, Symbol(&quot;#G#20&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.sms)},getfield(AIBECS, Symbol(&quot;#tracers#17&quot;)){Int64,Int64}}((Main.ex-radiocarbon_OCIM.sms,), getfield(AIBECS, Symbol(&quot;#tracers#17&quot;)){Int64,Int64}(200160, 1))), getfield(AIBECS, Symbol(&quot;#∇ₓF#24&quot;)){getfield(AIBECS, Symbol(&quot;#T#18&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.T_14c)}},getfield(AIBECS, Symbol(&quot;#∇ₓG#23&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.sms)},Int64,Int64}}(getfield(AIBECS, Symbol(&quot;#T#18&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.T_14c)}}((Main.ex-radiocarbon_OCIM.T_14c,)), getfield(AIBECS, Symbol(&quot;#∇ₓG#23&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.sms)},Int64,Int64}((Main.ex-radiocarbon_OCIM.sms,), 200160, 1)))</code></pre><pre><code class="language-julia">x = ones(nwet)                           # initial iterate for the solver
+F, ∇ₓF = state_function_and_Jacobian(T_matrices, sources_minus_sinks, nwet) # generates the state function (and its Jacobian!)</code></pre><pre><code class="language-none">(getfield(AIBECS, Symbol(&quot;#F#19&quot;)){getfield(AIBECS, Symbol(&quot;#T#15&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.T_14c)}},getfield(AIBECS, Symbol(&quot;#G#17&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.sms)},getfield(AIBECS, Symbol(&quot;#tracers#14&quot;)){Int64,Int64}}}(getfield(AIBECS, Symbol(&quot;#T#15&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.T_14c)}}((Main.ex-radiocarbon_OCIM.T_14c,)), getfield(AIBECS, Symbol(&quot;#G#17&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.sms)},getfield(AIBECS, Symbol(&quot;#tracers#14&quot;)){Int64,Int64}}((Main.ex-radiocarbon_OCIM.sms,), getfield(AIBECS, Symbol(&quot;#tracers#14&quot;)){Int64,Int64}(200160, 1))), getfield(AIBECS, Symbol(&quot;#∇ₓF#21&quot;)){getfield(AIBECS, Symbol(&quot;#T#15&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.T_14c)}},getfield(AIBECS, Symbol(&quot;#∇ₓG#20&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.sms)},Int64,Int64}}(getfield(AIBECS, Symbol(&quot;#T#15&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.T_14c)}}((Main.ex-radiocarbon_OCIM.T_14c,)), getfield(AIBECS, Symbol(&quot;#∇ₓG#20&quot;)){Tuple{typeof(Main.ex-radiocarbon_OCIM.sms)},Int64,Int64}((Main.ex-radiocarbon_OCIM.sms,), 200160, 1)))</code></pre><pre><code class="language-julia">x = ones(nwet)                           # initial iterate for the solver
 prob = SteadyStateProblem(F, ∇ₓF, x, p) # define the problem
 R = solve(prob, CTKAlg())                 # solve the problem
 c14age = -log.(R) / p.λ ;                   # convert R to $^{14}C-age$</code></pre><pre><code class="language-none">200160-element Array{Float64,1}:
- 3.942273096560254e10 
- 3.980081330050604e10 
- 4.039395435254564e10 
- 3.998797942292548e10 
- 3.742935022296953e10 
- 3.669643544760427e10 
- 3.753248046209904e10 
- 3.703244437629167e10 
- 3.577737704586382e10 
- 3.402738749624555e10 
+ 3.942273096557934e10 
+ 3.980081330050298e10 
+ 4.039395435254752e10 
+ 3.9987979422927895e10
+ 3.742935022297088e10 
+ 3.6696435447603836e10
+ 3.753248046209911e10 
+ 3.703244437629198e10 
+ 3.577737704586466e10 
+ 3.4027387496248764e10
  ⋮                    
- 3.2269848925595623e10
- 3.2059184113358418e10
- 3.2539013376892643e10
- 3.240752129878833e10 
- 3.2187009397144234e10
- 3.1753835571645058e10
- 3.237799887583362e10 
- 3.225366161852383e10 
- 3.21011466642212e10  </code></pre><p>Make some plots</p><pre><code class="language-julia">c14age_3d = fill(NaN, size(mask))     # creates a 3D array of NaNs
+ 3.2269848925598038e10
+ 3.2059184113360832e10
+ 3.2539013376895077e10
+ 3.240752129879076e10 
+ 3.218700939714665e10 
+ 3.175383557164748e10 
+ 3.2377998875836052e10
+ 3.225366161852626e10 
+ 3.2101146664223614e10</code></pre><p>Make some plots</p><pre><code class="language-julia">c14age_3d = fill(NaN, size(mask))     # creates a 3D array of NaNs
 c14age_3d[iwet] = c14age   # Fills the wet grd boxes with the age values
 size(c14age_3d)            # Just to check the size of age_3D</code></pre><pre><code class="language-none">(91, 180, 24)</code></pre><p>Pick a layer to plot</p><pre><code class="language-julia">iz = findfirst(depth .&gt; 700) # aim for a depth of ~ 700 m
 depth_map = Int(round(depth[iz]))
