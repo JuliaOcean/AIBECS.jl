@@ -5,8 +5,8 @@
 WOA = WorldOceanAtlasTools
 μDIPobs3D, σ²DIPobs3D = WOA.fit_to_grid(grid, 2018, "phosphate", "annual", "1°", "an")
 μDIPobs, σ²DIPobs = μDIPobs3D[iwet], σ²DIPobs3D[iwet]
-const μx = (μDIPobs, missing, missing)
-const σ²x = (σ²DIPobs, missing, missing)
+μx = (μDIPobs, missing, missing)
+σ²x = (σ²DIPobs, missing, missing)
 # generate mismatch functions
 f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p₀), variance_obs(p₀))
 ∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs(p₀), variance_obs(p₀))

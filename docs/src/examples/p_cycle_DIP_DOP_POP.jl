@@ -49,7 +49,7 @@ using AIBECS
 
 # Load the circulation and grid
 
-wet3D, grd, T_Circulation = OCIM1.load() ;
+wet3D, grd, T_Circulation = OCIM0.load() ;
 
 # Define useful constants and arrays
 

@@ -1,17 +1,17 @@
 
 # Load the circulation and grid
-const wet3D, grid, T_Circulation_unit = Circulation.load()
-const T_Circulation = ustrip.(T_Circulation_unit) # strip units for now
+wet3D, grid, T_Circulation_unit = Circulation.load()
+T_Circulation = ustrip.(T_Circulation_unit) # strip units for now
 
 # Define useful constants and arrays
-const iwet = indices_of_wet_boxes(wet3D)
-const nb = number_of_wet_boxes(wet3D)
-const v = ustrip.(vector_of_volumes(wet3D, grid)) # strip units for now
-const z = ustrip.(vector_of_depths(wet3D, grid)) # strip units for now
-const ztop = ustrip.(vector_of_top_depths(wet3D, grid)) # strip units for now
+iwet = indices_of_wet_boxes(wet3D)
+nb = number_of_wet_boxes(wet3D)
+v = ustrip.(vector_of_volumes(wet3D, grid)) # strip units for now
+z = ustrip.(vector_of_depths(wet3D, grid)) # strip units for now
+ztop = ustrip.(vector_of_top_depths(wet3D, grid)) # strip units for now
 # And matrices
-const DIV = buildDIV(wet3D, iwet, grid)
-const Iabove = buildIabove(wet3D, iwet)
+DIV = buildDIV(wet3D, iwet, grid)
+Iabove = buildIabove(wet3D, iwet)
 
 @testset "Circulation and grid" begin
     @testset "wet3D" begin
@@ -50,10 +50,10 @@ end
         @test v * u"m^3" == array_of_volumes(grid)[iwet]
     end
     @testset "z (vector of depths of center of boxes)" begin
-        @test z isa Vector{Float64}
+        @test z isa Vector{<:Real}
         @test length(z) == nb
     end
-    @test ztop isa Vector{Float64}
+    @test ztop isa Vector{<:Real}
     @test DIV isa SparseMatrixCSC
     @test Iabove isa SparseMatrixCSC
 end

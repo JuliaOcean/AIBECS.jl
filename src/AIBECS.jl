@@ -11,15 +11,18 @@ using BSON
 @reexport using Unitful, UnitfulAstro
 
 include("GridTools.jl")
+include("CirculationGeneration.jl")
 include("SinkingParticles.jl")
 include("newTypes.jl")
 include("CTKsolvers.jl")
-include("CTKsolvers2.jl")
 include("overload_solve.jl")
 include("multiTracer.jl")
 include("Parameters.jl")
-include("OCIM.jl")
-include("SixBoxModel.jl")
-include("T_2x2x2.jl")
+
+# Available circulations
+include("OCIM0.jl")
+include("OCIM1.jl")
+include("Archer_etal_2000.jl")
+include("Primeau_2x2x2.jl")
 
 end # module

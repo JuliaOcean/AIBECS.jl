@@ -1,4 +1,4 @@
-module SixBoxModel
+module Archer_etal_2000
 #=
 This module serves to load the 6-box model matrix and grid.
 The 6-box model is used because it makes it easier to build
@@ -27,15 +27,10 @@ using ..GridTools
 using Unitful, UnitfulAstro # for units
 using Reexport
 @reexport using OceanGrids            # To store the grid
+using ..CirculationGeneration
+CG = CirculationGeneration
 
 build_wet3D() = trues(2, 1, 3)
-
-# Macro to create grid in a simple `@Dict` call
-# Thanks to Lyndon White (on slack)
-macro Dict(vars...)
-    kvs = Expr.(:call, :Pair, string.(vars), esc.(vars))
-    Expr(:call, :Dict, kvs...)
-end
 
 function build_grid()
     wet3D = build_wet3D()
@@ -54,47 +49,31 @@ function build_grid()
     return OceanGrid(elon, elat, edepth)
 end
 
-
 function build_T(grid)
-    # Mixing and overturning (F_HD, etc. see Figure 1 of Archer et al.)
-    Mixing = zeros(6, 6)
-    Mixing[1, 2] = Mixing[2, 1] = 10e6 # between top boxes (1 and 2) (10 Sv = 10e6 cubic meters)
-    Mixing[2, 5] = Mixing[5, 2] = 53e6 # between high-lat and deep (1 and 3)
-    Mixing[2, 4] = Mixing[4, 2] = 1e6 # between low-lat and deep (2 and 4)
+    # From Archer et al. [2000]
+    v3D = array_of_volumes(grid)
+    nb = length(v3D)
+
+    # Mixing terms
+    # between top boxes (1 and 2) (10 Sv = 10e6 cubic meters)
+    T  = CG.flux_divergence_operator_from_advection(10e6u"m^3/s", [1, 2], v3D, nb)
+    # between high-lat and deep (1 and 3)
+    T += CG.flux_divergence_operator_from_advection(53e6u"m^3/s", [2, 5], v3D, nb)
+    # between low-lat and deep (2 and 4)
+    T += CG.flux_divergence_operator_from_advection( 1e6u"m^3/s", [2, 4], v3D, nb)
     # (trick) fast mixing between boxes of the same 3-box-model box
-    idx_high = [1, 3]
-    idx_low = [2]
-    idx_deep = [4, 5, 6]
-    for idx in [idx_high, idx_low, idx_deep]
-        for i in idx, j in idx
-            (i ≠ j) ? Mixing[i, j] = 1e10 : nothing
-        end
-    end
+    T += CG.flux_divergence_operator_from_advection(1e10u"m^3/s", [1, 3], v3D, nb)
+    T += CG.flux_divergence_operator_from_advection(1e10u"m^3/s", [4, 5], v3D, nb)
+    T += CG.flux_divergence_operator_from_advection(1e10u"m^3/s", [5, 6], v3D, nb)
+    T += CG.flux_divergence_operator_from_advection(1e10u"m^3/s", [4, 6], v3D, nb)
+
     # Overturning circulation
-    overturning = 19e6
-    Overturning = falses(6, 6)
-    Overturning[1, 3] = Overturning[3, 5] = Overturning[5, 6] = Overturning[6, 4] = Overturning[4, 2] = Overturning[2, 1] = true 
-    # Build T, as a divergence operator, i.e.,
-    # T is positive where tracers are removed.
-    T = spzeros(6,6)
-    for orig in 1:6, dest in 1:6
-        # Overturning part
-        if Overturning[orig, dest]
-            T[orig, orig] += overturning # add at origin
-            T[dest, orig] -= overturning # remove at destination
-        end
-        # Mixing part
-        if !iszero(Mixing[orig, dest])
-            T[orig, orig] += Mixing[orig, dest] # add at origin
-            T[dest, orig] -= Mixing[orig, dest] # remove at destination
-        end
-    end
-    v3d = array_of_volumes(grid)
-    v = vec(v3d) # Fine here because every point is wet :)
-    V⁻¹ = sparse(Diagonal(v.^(-1)))
-    T = V⁻¹ * T
+    T += CG.flux_divergence_operator_from_advection(19e6u"m^3/s", [1, 3, 5, 6, 4, 2], v3D, nb)
+
     return T
 end
+
+
 
 """
     load
@@ -102,15 +81,27 @@ end
 Returns wet3D, grid, and T (in that order).
 """
 function load()
-    print("Loading 6-box model")
+    print("Creating 6-box model")
     wet3D = build_wet3D()
     grid = build_grid()
     T = build_T(grid)
-    println(" ✅")
+    println(" ✔")
+    println("""
+
+            You are about to use the 3-box model of Archer et al. [2000], for which the reference to cite is:
+
+            - Archer, D. E., Eshel, G., Winguth, A., Broecker, W., Pierrehumbert, R., Tobis, M., and Jacob, R. (2000), Atmospheric pCO2 sensitivity to the biological pump in the ocean, Global Biogeochem. Cycles, 14 (4), 1219--1230, doi:10.1029/1999GB001216.
+
+            You can find the corresponding BibTeX entries in the CITATION.bib file at the root of the AIBECS.jl package repository, with the keys "Archer_etal_2000".
+
+            Note that although this model represents the 3-box model of Archer et al. [2000], it effectively requires 6 boxes to represent in the AIBECS, so that particulate sinking flux divergence operators can be built.
+            (See the comments at the start of the Archer_etal_2000.jl file for details.)
+
+            """)
     return wet3D, grid, T
 end
 
 end
 
-export SixBoxModel
+export Archer_etal_2000
 

@@ -42,9 +42,9 @@ delete_parameter!(t, :foo)
 add_parameter!(t, :foo, 1.0u"m")
 delete_parameter!(t, size(t, 1))
 initialize_Parameters_type(t)   # Generate the parameter type
-const p₀ = Parameters()
-const m_all = length(fieldnames(typeof(p₀)))
-const m = length(p₀)
+p₀ = Parameters()
+m_all = length(fieldnames(typeof(p₀)))
+m = length(p₀)
 
 @testset "Parameters" begin
     @test t isa DataFrames.DataFrame
