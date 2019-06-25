@@ -14,12 +14,6 @@ Circulation = Archer_etal_2000
 @testset "Archer_etal_2000 3-box model" begin
     # Run tests with the 6-box toy model
     include("setup.jl")
-    include("parameters.jl")
-    include("bgc_functions.jl")
-    include("gridtools.jl")
-    include("cost_functions.jl")
-    include("solvers.jl")
-    include("derivatives.jl")
 end
 
 Circulation = Primeau_2x2x2
