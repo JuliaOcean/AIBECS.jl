@@ -86,18 +86,21 @@ function load()
     grid = build_grid()
     T = build_T(grid)
     println(" ✔")
-    println("""
+    @info """
+            You are about to use the 3-box model of Archer et al. [2000].
+            If you use it for research, please cite:
 
-            You are about to use the 3-box model of Archer et al. [2000], for which the reference to cite is:
+            - Archer, D. E., Eshel, G., Winguth, A., Broecker, W., Pierrehumbert, R., Tobis, M., and Jacob, R. (2000), Atmospheric pCO2 sensitivity to the biological pump in the ocean, Global Biogeochem. Cycles, 14 (4), 1219–1230, doi:10.1029/1999GB001216.
 
-            - Archer, D. E., Eshel, G., Winguth, A., Broecker, W., Pierrehumbert, R., Tobis, M., and Jacob, R. (2000), Atmospheric pCO2 sensitivity to the biological pump in the ocean, Global Biogeochem. Cycles, 14 (4), 1219--1230, doi:10.1029/1999GB001216.
+            You can find the corresponding BibTeX entry in the CITATION.bib file
+            at the root of the AIBECS.jl package repository.
+            (Look for the "Archer_etal_2000" key.)
 
-            You can find the corresponding BibTeX entries in the CITATION.bib file at the root of the AIBECS.jl package repository, with the keys "Archer_etal_2000".
-
-            Note that although this model represents the 3-box model of Archer et al. [2000], it effectively requires 6 boxes to represent in the AIBECS, so that particulate sinking flux divergence operators can be built.
+            Note that although this model represents the 3-box model of Archer et al. [2000],
+            it effectively requires 6 boxes to represent in the AIBECS, 
+            so that particulate sinking flux divergence operators can be built.
             (See the comments at the start of the Archer_etal_2000.jl file for details.)
-
-            """)
+            """
     return wet3D, grid, T
 end
 

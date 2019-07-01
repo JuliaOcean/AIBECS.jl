@@ -50,17 +50,16 @@ function load()
     bson_file = @datadep_str string("AIBECS_OCIM0.1/", "OCIM0.1.bson")
     BSON.@load bson_file T grid wet3D
     println(" ✔")
-    println("""
+    @info """You are about to use OCIM0.1 model.
+          If you use it for research, please cite:
 
-            You are about to use the OCIM0.1, for which the references to cite are:
+          - Primeau, F. W., Holzer, M., and DeVries, T. (2013), Southern Ocean nutrient trapping and the efficiency of the biological pump, J. Geophys. Res. Oceans, 118, 2547–2564, doi:10.1002/jgrc.20181.
+          - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, doi:10.1175/JPO-D-10-05011.1
 
-            - Primeau, F. W., Holzer, M., and DeVries, T. (2013), Southern Ocean nutrient trapping and the efficiency of the biological pump, J. Geophys. Res. Oceans, 118, 2547–2564, doi:10.1002/jgrc.20181.
-
-            - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, https://doi.org/10.1175/JPO-D-10-05011.1
-
-            You can find the corresponding BibTeX entries in the CITATION.bib file at the root of the AIBECS.jl package repository, with the keys "DeVries_Primeau_2011" and "Primeau_etal_2013".
-
-            """)
+          You can find the corresponding BibTeX entries in the CITATION.bib file
+          at the root of the AIBECS.jl package repository.
+          (Look for the "DeVries_Primeau_2011" and "Primeau_etal_2013" keys.)
+          """
     return wet3D, grid, ustrip.(T)
 end
 

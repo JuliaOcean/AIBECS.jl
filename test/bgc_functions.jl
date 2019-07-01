@@ -56,6 +56,24 @@ AIBECS F and ∇ₓF
 F, ∇ₓF = state_function_and_Jacobian(T_all, sms_all, nb)
 
 #===========================================
+AIBECS split operators for CNLF
+===========================================#
+
+NL_DIP(DIP, DOP, POP, p) = -uptake(DIP, p) + geores(0*DIP, p)
+L_DIP(DIP, DOP, POP, p) = remineralization(DOP, p) + geores(DIP, p) - geores(0*DIP, p)
+
+NL_DOP(DIP, DOP, POP, p) = p.σ * uptake(DIP, p)
+L_DOP(DIP, DOP, POP, p) = -remineralization(DOP, p) + dissolution(POP, p)
+
+NL_POP(DIP, DOP, POP, p) = (1 - p.σ) * uptake(DIP, p)
+L_POP(DIP, DOP, POP, p) = -dissolution(POP, p)
+
+NL_all = (NL_DIP, NL_DOP, NL_POP)
+L_all = (L_DIP, L_DOP, L_POP)
+
+F2, L, NL, ∇ₓF2, ∇ₓL, ∇ₓNL, T = split_state_function_and_Jacobian(T_all, L_all, NL_all, nb)
+
+#===========================================
 Tests
 ===========================================#
 

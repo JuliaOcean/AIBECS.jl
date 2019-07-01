@@ -233,7 +233,7 @@ p = C14_shoebox_parameters()                            # creates the parameters
 # The last step for the setup is for AIBECS to create $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = \boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p}) - \mathbf{T}(\boldsymbol{p}) \, \boldsymbol{x}$, which defines the rate of change of the state, $\boldsymbol{x}$.
 # This is done via
 
-F, ∇ₓF = state_function_and_Jacobian(p -> T, G, nb) # generates the state function (and its Jacobian!)
+F, ∇ₓF = state_function_and_Jacobian(p -> T, G) # generates the state function (and its Jacobian!)
 x = zeros(nb)
 F(x,p)
 
@@ -253,6 +253,7 @@ F(x,p)
 #
 # A single step is performed via, e.g.,
 
+δt = ustrip(1.0u"yr" |> u"s")
 AIBECS.crank_nicolson_step(x, p, δt, F, ∇ₓF)
 
 # We can write a function to run all the time steps and save them into a `x_hist` object, via
@@ -282,12 +283,18 @@ x₀ = ones(5)             #
 x_hist, t_hist = time_steps(x₀, Δt, 1000, F, ∇ₓF) # runs the simulation
 
 # This should take a few seconds to run.
+
+#md # !!! note
+#md #     AIBECS also has other time-stepping methods available, including Euler-froward (fast but unstable), Euler-backwards (like Crank-Nicolson, slow but stable), and Crank-Nicolson-Leapfrog (Fast-ish and more stable than Euler forward).
+#nb # > **Note**
+#nb # > AIBECS also has other time-stepping methods available, including Euler-froward (fast but unstable), Euler-backwards (like Crank-Nicolson, slow but stable), and Crank-Nicolson-Leapfrog (Fast-ish and more stable than Euler forward).
+
 # Once it's done, we can plot the evolution of radiocarbon through time via
 
 using PyPlot
 clf()
 C14age_hist = -log.(x_hist) * ustrip(p.τ * u"s" |> u"yr")
-plot(t_hist, C14age_hist')
+plot(t_hist * ustrip(1u"s" |> u"yr"), C14age_hist')
 xlabel("simulation time (years)")
 ylabel("¹⁴C age (years)")
 legend("box " .* string.(iwet))

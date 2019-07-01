@@ -15,19 +15,45 @@ function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb)
     nt = length(Ts)
     tracers(x) = state_to_tracers(x, nb, nt)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
-    G(x, p) = reduce(vcat, [Gⱼ(tracers(x)..., p) for Gⱼ in Gs]) # nonlinear part
-    F(x, p) = G(x, p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
-    ∇ₓG(x, p) = local_jacobian(Gs, x, p, nt, nb)     # Jacobian of nonlinear part
-    ∇ₓF(x, p) = ∇ₓG(x, p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
+    G(x,p) = reduce(vcat, [Gⱼ(tracers(x)..., p) for Gⱼ in Gs]) # nonlinear part
+    F(x,p) = G(x,p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
+    ∇ₓG(x,p) = local_jacobian(Gs, x, p, nt, nb)     # Jacobian of nonlinear part
+    ∇ₓF(x,p) = ∇ₓG(x,p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
     return F, ∇ₓF
 end
-function state_function_and_Jacobian(T, G, nb)
-    F(x, p) = G(x, p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
-    ∇ₓG(x, p) = sparse(Diagonal(𝔇(G(x .+ ε, p))))     # Jacobian of nonlinear part
-    ∇ₓF(x, p) = ∇ₓG(x, p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
+function state_function_and_Jacobian(T, G)
+    F(x,p) = G(x,p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
+    ∇ₓG(x,p) = sparse(Diagonal(𝔇(G(x .+ ε, p))))     # Jacobian of nonlinear part
+    ∇ₓF(x,p) = ∇ₓG(x,p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
     return F, ∇ₓF
 end
 export state_function_and_Jacobian
+
+"""
+    F, ∇ₓF = state_function_and_Jacobian(Ts, Gs, nb)
+
+Returns the state function `F` and its jacobian, `∇ₓF`.
+"""
+function split_state_function_and_Jacobian(Ts::Tuple, Ls::Tuple, NLs::Tuple, nb)
+    nt = length(Ts)
+    tracers(x) = state_to_tracers(x, nb, nt)
+    T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
+    NL(x,p) = reduce(vcat, [NLⱼ(tracers(x)..., p) for NLⱼ in NLs]) # nonlinear part
+    L(x,p) = reduce(vcat, [Lⱼ(tracers(x)..., p) for Lⱼ in Ls]) # nonlinear part
+    F(x,p) = NL(x,p) + L(x,p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
+    ∇ₓNL(x,p) = local_jacobian(NLs, x, p, nt, nb)     # Jacobian of nonlinear part
+    ∇ₓL(p) = local_jacobian(Ls, zeros(nt*nb), p, nt, nb)     # Jacobian of nonlinear part
+    ∇ₓF(x,p) = ∇ₓNL(x,p) + ∇ₓL(p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
+    return F, L, NL, ∇ₓF, ∇ₓL, ∇ₓNL, T
+end
+function split_state_function_and_Jacobian(T, L, NL, nb)
+    F(x,p) = NL(x,p) + L(p) * x - T(p) * x                     # full 𝐹(𝑥)
+    ∇ₓNL(x,p) = sparse(Diagonal(𝔇(NL(x .+ ε,p))))     # Jacobian of nonlinear part
+    ∇ₓL(p) = sparse(Diagonal(𝔇(L(zeros(nb) .+ ε,p))))     # Jacobian of nonlinear part
+    ∇ₓF(x,p) = ∇ₓNL(x,p) + ∇ₓL(p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
+    return F, L, NL, ∇ₓF, ∇ₓL, ∇ₓNL, T
+end
+export split_state_function_and_Jacobian
 
 function local_jacobian(Gs, x, p, nt, nb)
     return reduce(vcat, [local_jacobian_row(Gⱼ, x, p, nt, nb) for Gⱼ in Gs])

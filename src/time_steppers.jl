@@ -71,3 +71,17 @@ function crank_nicolson_step!(x, p, δt, F, ∇ₓF)
     return x
 end
 
+"""
+    crank_nicolson_step!(x, p, δt, F, ∇ₓF)
+
+Returns the crank-nicolson-leapfrog-step increment (out of place).
+"""
+function crank_nicolson_leapfrog_step(xᵢ, xᵢ₋₁, p, δt, T, ∇ₓL, NL)
+    return (I / 2δt + (T(p) - ∇ₓL(p)) / 2) \ (NL(xᵢ,p) + (I / 2δt - (T(p) - ∇ₓL(p)) / 2) * xᵢ₋₁)
+end
+function crank_nicolson_leapfrog_step(xᵢ, xᵢ₋₁, p, A⁺::Factorization, A⁻, G)
+    return A⁺ \ (G(xᵢ,p) + A⁻ * xᵢ₋₁)
+end
+function crank_nicolson_leapfrog_step_A⁺_and_A⁻(p, δt, T, L)
+    return factorize(I / 2δt + (T(p) - L(p)) / 2), I / 2δt - (T(p) - L(p)) / 2
+end
