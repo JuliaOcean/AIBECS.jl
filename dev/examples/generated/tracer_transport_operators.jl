@@ -1,82 +1,87 @@
-a = 6367e3   # Earth radius           (m)
-A = 4*pi*a^2 # Earth surface area     (m²)
-d = 3700     # ocean depth            (m)
-V = 0.75*A*d # volume of ocean        (m³)
-h = 200      # thickness of top layer (m)
+using AIBECS
 
-dz = [h*ones(4,1);(d-h)*ones(4,1)] # grid box thicknesses       (m)
-dV = (dz/d).*((V/4)*ones(8,1))     # grid box volumes           (m³)
-dAz = dV./dz                       # area of face ⟂ to z axis   (m²)
-dy = sqrt.(dAz)                    # north-south side length    (m)
-dx = sqrt.(dAz)                    # east-west side length      (m)
-dAx = dV./dy                       # area of face ⟂ to x axis   (m²)
-dAy = dV./dx                       # area of face ⟂ to y axis   (m²)
+wet3D, grd, T = Primeau_2x2x2.load() ;
 
-msk = [1, 1, 1, 0, 1, 1, 0, 0]     # wet-dry mask wet=1 dry = 0
-iwet = findall(x -> x == 1, msk)        # index to wet gridboxes
-idry = findall(x -> x == 0, msk)        # index to dry gridboxes
-srf = [1, 1, 1, 0, 0]              # surface mask srface=1 bottom = 0
-isrf = findall(x -> x == 1, srf) ;
-iwet
+wet3D
 
-using LinearAlgebra
-using SparseArrays
-TRdiv = spzeros(8,8)
-ACC = 100e6  # (m³/s) ACC for Antarctic Circumpoloar Current
-TRdiv += sparse([1,1], [1,3], dV[1] \ [ACC, -ACC], 8, 8)
-TRdiv += sparse([3,3], [3,1], dV[3] \ [ACC, -ACC], 8, 8)
-MOC = 15e6    # (m³/s) MOC for Meridional Overturning Circulation
-TRdiv += sparse([1,1], [1,5], dV[1] \ [MOC, -MOC], 8, 8)
-TRdiv += sparse([2,2], [2,1], dV[2] \ [MOC, -MOC], 8, 8)
-TRdiv += sparse([5,5], [5,6], dV[5] \ [MOC, -MOC], 8, 8)
-TRdiv += sparse([6,6], [6,2], dV[6] \ [MOC, -MOC], 8, 8)
-MIX = 10e6      # (m³/s) MIX for vertical mixing at high northern latitudes
-TRdiv += sparse([2,2], [2,6], dV[2] \ [MIX, -MIX], 8, 8)
-TRdiv += sparse([6,6], [6,2], dV[6] \ [MIX, -MIX], 8, 8)
-TRdiv = TRdiv[iwet,iwet]
-Matrix(TRdiv)
+findall(wet3D)
 
-sec_per_year = 365*24*60*60 # s / yr
-λ = 50 / 10sec_per_year     # m / s
-Λ = λ / h * Diagonal(srf)
+iwet = findall(vec(wet3D))
 
-Λ = λ / h * sparse(Diagonal(srf))
+nb = length(iwet)
 
-τ = 5730sec_per_year / log(2)  # s
+grd
 
-M = TRdiv + Λ + I / τ
+[println(box) for box in grd] ;
 
-s = Λ * ones(5) # air-sea source rate
+grd.depth_3D
 
-euler_backward_step(R, δt, M, s) = (I + δt * M) \ (R + δt * s)
+grd.lat_3D
 
-function euler_backward(R₀, ΔT, n, M, s)
-    R_hist = [R₀]
-    δt = Δt / n
-    for i in 1:n
-        push!(R_hist, euler_backward_step(R_hist[end], δt, M, s))
-    end
-    return reduce(hcat, R_hist), 0:δt:Δt
+T
+
+Matrix(T)
+
+j = 2                            # index where we put some tracer
+x = 1.0 * [i == j for i in 1:nb] # vector of 0's except for index j
+x, (T * x)[j]
+
+function G(x, p)
+    τ, Ratm = p.τ, p.Ratm
+    return Λ(Ratm .- x, p) - x / τ
 end
 
-Δt = 7500 * sec_per_year # 7500 years
-R₀ = ones(5)             #
-R_hist, t_hist = euler_backward(R₀, Δt, 10000, M, s) # runs the simulation
+surface_boxes = grd.depth_3D[iwet] .== grd.depth[1]
+
+function Λ(x, p)
+    λ, h = p.λ, p.h
+    return λ / h * surface_boxes .* x
+end
+
+t = empty_parameter_table()                   # initialize an empty table of parameters
+add_parameter!(t, :τ, 5730u"yr"/log(2)) # radioactive decay e-folding timescale
+add_parameter!(t, :λ, 50u"m" / 10u"yr") # piston velocity
+add_parameter!(t, :h, grd.δdepth[1])    # height of top layer
+add_parameter!(t, :Ratm, 1.0u"mol/m^3") # atmospheric concentration
+t
+
+initialize_Parameters_type(t, "C14_shoebox_parameters") # creates the type for parameters
+p = C14_shoebox_parameters()                            # creates the parameters object
+
+F, ∇ₓF = state_function_and_Jacobian(p -> T, G, nb) # generates the state function (and its Jacobian!)
+x = zeros(nb)
+F(x,p)
+
+AIBECS.crank_nicolson_step(x, p, δt, F, ∇ₓF)
+
+function time_steps(x₀, Δt, n, F, ∇ₓF)
+    x_hist = [x₀]
+    δt = Δt / n
+    for i in 1:n
+        push!(x_hist, AIBECS.crank_nicolson_step(last(x_hist), p, δt, F, ∇ₓF))
+    end
+    return reduce(hcat, x_hist), 0:δt:Δt
+end
+
+Δt = ustrip(7500u"yr" |> u"s") # 7500 years in seconds
+x₀ = ones(5)             #
+x_hist, t_hist = time_steps(x₀, Δt, 1000, F, ∇ₓF) # runs the simulation
 
 using PyPlot
 clf()
-C14age_hist = -log.(R_hist) * τ / sec_per_year
+C14age_hist = -log.(x_hist) * ustrip(p.τ * u"s" |> u"yr")
 plot(t_hist, C14age_hist')
 xlabel("simulation time (years)")
 ylabel("¹⁴C age (years)")
 legend("box " .* string.(iwet))
-title("Simulation of the evolution of ¹⁴C age with Euler-backward time steps")
+title("Simulation of the evolution of ¹⁴C age with Crank-Nicolson time steps")
 gcf()
 
-R_final = M \ s
+prob = SteadyStateProblem(F, ∇ₓF, x, p)
+x_final = solve(prob, CTKAlg()).u
 
-C14age_final = -log.(R_final) * τ / sec_per_year
-println.("box ", iwet, ": ", round.(C14age_final), " years");
+C14age_final = -log.(x_final) * p.τ * u"s" .|> u"yr"
+println.("box ", iwet, ": ", C14age_final);
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
 
