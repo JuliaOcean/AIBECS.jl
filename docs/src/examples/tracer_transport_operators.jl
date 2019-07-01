@@ -15,7 +15,7 @@
 # ## Discretization
 #---------------------------------------------------------
 
-# In order to represent the transport operator on a computer we have to discretize the tracer concentration field and the operator.
+# In order to represent the transport operator on a computer one needs to discretize the tracer concentration field and the operator.
 # Once discretized the tracer field is represented as a vector and the operator is represented as a sparse matrix.
 
 #md # !!! note
@@ -27,13 +27,18 @@
 #nb # > The only difference is that in a sparse matrix the majority of the entries are zeros.
 #nb # > These zeros are not stored explicitly to save computer memory making it possible to deal with fairly high resolution ocean models.
 
-# Mathematically, the discretization converts an expression with partial derivatives into a matrix vector product:
+# Mathematically, the discretization converts an expression with partial derivatives into a matrix vector product.
+# For the ocean circulation, we do the following conversion
 #
 # $$\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] C \longrightarrow \mathbf{T} \, \boldsymbol{C}$$
 #
-# where $\mathbf{T}$ is the flux divergence transport matrix and $\boldsymbol{C}$ is the tracer concentration vector.
+# where $C(\boldsymbol{r})$ is a tracer concentration at location $\boldsymbol{r}$.
+# (We often omit the $\boldsymbol{r}$ dependency in equations for brevity.)
+# The $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] C$ term is the flux divergence of the tracer due to the marine currents and turbulent eddies.
+# ($\boldsymbol{u}$ is the 3D current velocity and $\mathbf{K}$ the diffusivity matrix.)
+# The matrix $\mathbf{T}$ is the flux divergence transport matrix and $\boldsymbol{C}$ is the tracer concentration vector.
 #
-# One can go a long way towards understanding what a tracer transport operator is by playing with a simple box model. We therefore introuce a simple box model before moving on to the *Ocean Circulation Inverse Model* (OCIM).
+# One can go a long way towards understanding what a tracer transport operator is by playing with a simple model with only a few boxes, which is the goal of this example.
 
 # The simple box model we consider is embeded in a 2×2×2 "shoebox".
 # It has 5 *wet* boxes and 3 *dry* boxes, as illustrated below:
@@ -51,60 +56,88 @@
 
 
 #---------------------------------------------------------
-# ## The transport matrix
+# ## The model grid and the transport matrix
 #---------------------------------------------------------
 
-# We start by defining the model boxes, theirs volumes, their indices, and so on:
+# Like for any models using AIBECS, we start by telling Julia just that:
 
-a = 6367e3   # Earth radius           (m)
-A = 4*pi*a^2 # Earth surface area     (m²)
-d = 3700     # ocean depth            (m)
-V = 0.75*A*d # volume of ocean        (m³)
-h = 200      # thickness of top layer (m)
+using AIBECS
 
-dz = [h*ones(4,1);(d-h)*ones(4,1)] # grid box thicknesses       (m)
-dV = (dz/d).*((V/4)*ones(8,1))     # grid box volumes           (m³)
-dAz = dV./dz                       # area of face ⟂ to z axis   (m²)
-dy = sqrt.(dAz)                    # north-south side length    (m)
-dx = sqrt.(dAz)                    # east-west side length      (m)
-dAx = dV./dy                       # area of face ⟂ to x axis   (m²)
-dAy = dV./dx                       # area of face ⟂ to y axis   (m²)
+# We then load the shoebox model via
 
-msk = [1, 1, 1, 0, 1, 1, 0, 0]     # wet-dry mask wet=1 dry = 0
-iwet = findall(x -> x == 1, msk)        # index to wet gridboxes
-idry = findall(x -> x == 0, msk)        # index to dry gridboxes
-srf = [1, 1, 1, 0, 0]              # surface mask srface=1 bottom = 0
-isrf = findall(x -> x == 1, srf) ;
-iwet
+wet3D, grd, T = Primeau_2x2x2.load() ;
 
-# As you can see, `iwet` is the the vector of indices of the wet boxes.
+# where we have loaded 3 objects, `wet3D`, `grd`, and `T`.
+
+# `wet3D` is 3D array representing the 3D ocean with `true` for "wet" boxes and `false` for "dry" boxes.
+# Let's have a look at its contents:
+
+wet3D
+
+# It's a 2×2×2 `BitArray`, i.e., an array of bit elements (the `true` and `false` entries).
+# You can check that it matches our "shoebox" model.
+# (Well, except for the orientation, for which northwards in the box model is downwards in the array.)
+
+# We can find all the wet boxes simply via
+
+findall(wet3D)
+
+# These are the 3D indices of the wet boxes, `(i,j,k)`, called the "cartesian" indices.
+# If you want the "linear" indices, i.e., the numbers as shown in the image of the shoebox model, you can simply transform `wet3D` into a vector, via
+
+iwet = findall(vec(wet3D))
+
+# We can also check that we indeed have the expected number of wet boxes via
+
+nb = length(iwet)
+
+# Now let's look at the grid, `grd`:
+
+grd
+
+# It's an `OceanGrid` object, of size 2×2×2, as expected.
+# This object is defined in the [OceanGrids](https://github.com/briochemc/OceanGrids.jl) package, on which AIBECS depends.
+# There are many ways to look inside the grid, one of which is to iterate over it:
+
+[println(box) for box in grd] ;
+
+# shows some details about all the boxes of the model, one at a time.
+# The `grd` object also contains other information about the grid, like the 3D depths of the boxes:
+
+grd.depth_3D
+
+# or the 3D latitudes:
+
+grd.lat_3D
+
+# where you can check that northwards = downwards in the array.
+# You may notice these come with units!
+# This helps ensure that degrees of latitude are not confused with meters for example.
 
 #md # !!! note
-#md #     Julia comes with Unitful, a package for using units, which AIBECS uses.
-#md #     In the examples where we use AIBECS, we will use Unitful.
+#md #     Julia comes with [Unitful](https://github.com/PainterQubits/Unitful.jl), a package for using units, which AIBECS uses.
 #nb # > **Note**
-#nb # > Julia comes with Unitful, a package for using units, which AIBECS uses.
-#nb # > In the examples where we use AIBECS, we will use Unitful.
+#nb # > Julia comes with [Unitful](https://github.com/PainterQubits/Unitful.jl), a package for using units, which AIBECS uses.
 
 
-# We now create the transport matrix as the flux divergence of the dissolved tracer transport due to the ocean circulation:
+# Finally, let's have a look at the transport matrix `T`, which represents $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$, i.e., the flux divergence operator for dissolved tracers:
 
-using LinearAlgebra
-using SparseArrays
-TRdiv = spzeros(8,8)
-ACC = 100e6  # (m³/s) ACC for Antarctic Circumpoloar Current
-TRdiv += sparse([1,1], [1,3], dV[1] \ [ACC, -ACC], 8, 8)
-TRdiv += sparse([3,3], [3,1], dV[3] \ [ACC, -ACC], 8, 8)
-MOC = 15e6    # (m³/s) MOC for Meridional Overturning Circulation
-TRdiv += sparse([1,1], [1,5], dV[1] \ [MOC, -MOC], 8, 8)
-TRdiv += sparse([2,2], [2,1], dV[2] \ [MOC, -MOC], 8, 8)
-TRdiv += sparse([5,5], [5,6], dV[5] \ [MOC, -MOC], 8, 8)
-TRdiv += sparse([6,6], [6,2], dV[6] \ [MOC, -MOC], 8, 8)
-MIX = 10e6      # (m³/s) MIX for vertical mixing at high northern latitudes
-TRdiv += sparse([2,2], [2,6], dV[2] \ [MIX, -MIX], 8, 8)
-TRdiv += sparse([6,6], [6,2], dV[6] \ [MIX, -MIX], 8, 8)
-TRdiv = TRdiv[iwet,iwet]
-Matrix(TRdiv)
+T
+
+# It's a sparse matrix (a `SparseMatrixCSC` object in Julia), which only stores those entries that are not zero.
+# We can display the full matrix via
+
+Matrix(T)
+
+# to check its structure out.
+# Note that all the diagonal terms are positive, which is the sign that the transport matrix acts as a divergence, which would be positive for a box containing all the tracer.
+# For example, if there was only some tracer in box 2, then that tracer should "diverge" away from that box, resulting in the positiva value in that box:
+
+j = 2                            # index where we put some tracer
+x = 1.0 * [i == j for i in 1:nb] # vector of 0's except for index j
+x, (T * x)[j]
+
+# shows that the flux divergence `T * x` is positive where we injected the tracer.
 
 #---------------------------------------------------------
 # ## Radiocarbon
@@ -123,118 +156,146 @@ Matrix(TRdiv)
 #
 # where $\Lambda(R_\mathsf{atm} - R)$ represents the air–sea exchanges and $R / \tau$ the radioactive decay rate.
 # ($\tau$ is the radioactive decay timescale.)
+
 # The discretized tracer is thus given by
 #
-# $$\frac{\partial \boldsymbol{R}}{\partial t} + \mathbf{T} \boldsymbol{R} = \mathbf{\Lambda}(R_\mathsf{atm} - \boldsymbol{R}) - \boldsymbol{R} / \tau$$
-#
-# where $\mathbf{\Lambda}$ is a diagonal matrix with diagonal elements equal to zero except for surface-layer boxes.
-# We can rearrange this equation as
-#
-# $$\frac{\partial \boldsymbol{R}}{\partial t} + \underbrace{\left[ \mathbf{T} + \mathbf{\Lambda} + \mathbf{I} / \tau \right]}_{\mathbf{M}} \, \boldsymbol{R} = \boldsymbol{s},$$
-#
-# where $\boldsymbol{s} = \mathbf{\Lambda} \, \boldsymbol{1} \, R_\mathsf{atm}$ effectively acts as a fixed source of Radiocarbon from the atmosphere.
-# (Here we multiply $\boldsymbol{1}$, a vector of 1's, to the scalar value of $R_\mathsf{atm}$ to make sure the matrix $\mathbf{\Lambda}$ is applied to a vector, and not a scalar.)
-#
-# The matrix $\mathbf{M} = \mathbf{T} + \mathbf{\Lambda} + \mathbf{I} / \tau$ simplifies notation even more:
-#
-# $$\frac{\partial \boldsymbol{R}}{\partial t} + \mathbf{M} \, \boldsymbol{R} = \boldsymbol{s}.$$
+# $$\frac{\partial \boldsymbol{R}}{\partial t} + \mathbf{T} \, \boldsymbol{R} = \mathbf{\Lambda}(R_\mathsf{atm} - \boldsymbol{R}) - \boldsymbol{R} / \tau.$$
 
-# ### Translation to Julia Code
 
-# We will perform an idealized radiocarbon simulation in our model and use `TRdiv`, defined earlier, for the transport matrix $\mathbf{T}$.
+# ### Translation to AIBECS Code
+
+
+
+# We will perform an idealized radiocarbon simulation in our model and use the ocean circulation defined earlier using AIBECS.
 # In this model we prescribe the atmospheric concentration, $R_\mathsf{atm}$, to be simply equal to 1.
 # (We do not specify its unit or its specific value because it is not important for determining the age of a water parcel — only the decay rate does.)
-# For the air–sea gas exchange, we use a constant piston velocity $\lambda$ of 50m / 10years.
 
-sec_per_year = 365*24*60*60 # s / yr
-λ = 50 / 10sec_per_year     # m / s
-Λ = λ / h * Diagonal(srf)
+# To use AIBECS, one must put the equations into the generic form of
+#
+# $$\frac{\partial \boldsymbol{x}}{\partial t} + \mathbf{T}(\boldsymbol{p}) \, \boldsymbol{x} = \boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p}),$$
+#
+# where $\boldsymbol{x}$ is the state vector, $\boldsymbol{p}$ is the vector of model parameters, $\mathbf{T}(\boldsymbol{p})$ is the transport operator, and $\boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p})$ is the local sources minus sinks.
 
-# where the diagonal matrix `Λ` is the discrete version of the air-sea exchange operator, $\mathbf{\Lambda}$.
-# We could make it a sparse matrix via
+# In our radiocarbon-model context, with $\boldsymbol{x} = \boldsymbol{R}$, we have that
+#
+# $$\boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p}) = \mathbf{\Lambda}(R_\mathsf{atm} - \boldsymbol{x}) - \boldsymbol{x} / \tau.$$
+#
+# Hence, we must create `T(p)` and `G(x,p)` to give AIBECS the means to simulate the tracer distribution and/or its evolution in time.
 
-Λ = λ / h * sparse(Diagonal(srf))
+# #### Sources and Sinks
 
-# instead, to save some memory allocations.
+# The local sources and sinks are thus simply given by
 
-# For the radioactive decay we use a timescale $\tau$ of 5730/log(2) years, which we define via
+function G(x, p)
+    τ, Ratm = p.τ, p.Ratm
+    return Λ(Ratm .- x, p) - x / τ
+end
 
-τ = 5730sec_per_year / log(2)  # s
+# where `τ` is the decay rate timescale and `Ratm` is the atmospheric concentration of radiocarbon.
 
-# We can now create the matrix $\mathbf{M}$ via
+# We must define the air–sea exchange rate, `Λ(x,p)`, which requires us to define which boxes are located at the surface first.
+# This is done, e.g., via
 
-M = TRdiv + Λ + I / τ
+surface_boxes = grd.depth_3D[iwet] .== grd.depth[1]
 
-# and the source term $\boldsymbol{s}$ via
+# The air–sea exchange rate is then given by
 
-s = Λ * ones(5) # air-sea source rate
+function Λ(x, p)
+    λ, h = p.λ, p.h
+    return λ / h * surface_boxes .* x
+end
 
-# (Remember we assumed $R_\mathsf{atm}$ to be equal to 1.)
+# where `λ` is the piston velocity and `h` is the height of the top layer of the model grid.
 
+
+# #### Parameters
+
+# For the air–sea gas exchange, we use a constant piston velocity $\lambda$ of 50m / 10years, which will happen in the top layer, of height given by, well, the height of the top layer.
+# And for the radioactive decay we use a timescale $\tau$ of 5730/log(2) years.
+# We define these as parameters using the dedicated API from the AIBECS:
+
+t = empty_parameter_table()                   # initialize an empty table of parameters
+add_parameter!(t, :τ, 5730u"yr"/log(2)) # radioactive decay e-folding timescale
+add_parameter!(t, :λ, 50u"m" / 10u"yr") # piston velocity
+add_parameter!(t, :h, grd.δdepth[1])    # height of top layer
+add_parameter!(t, :Ratm, 1.0u"mol/m^3") # atmospheric concentration
+t
+
+# shows the parameters that you just created.
+
+# We now generate a new object to contain all these parameters via
+
+initialize_Parameters_type(t, "C14_shoebox_parameters") # creates the type for parameters
+p = C14_shoebox_parameters()                            # creates the parameters object
+
+# #### Generate the state function and its Jacobian
+
+# The last step for the setup is for AIBECS to create $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = \boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p}) - \mathbf{T}(\boldsymbol{p}) \, \boldsymbol{x}$, which defines the rate of change of the state, $\boldsymbol{x}$.
+# This is done via
+
+F, ∇ₓF = state_function_and_Jacobian(p -> T, G, nb) # generates the state function (and its Jacobian!)
+x = zeros(nb)
+F(x,p)
+
+
+# Note here that AIBECS has automatically created `∇ₓF`, i.e., $\nabla_{\boldsymbol{x}}\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p})$, which is the Jacobian of the system.
+# This Jacobian will be useful in the simulations below.
+
+# That's it!
+# Your model is entirely setup and ready to be used for simulations!
 
 #---------------------------------------------------------
 # ## Time stepping
 #---------------------------------------------------------
 
 # One way to see how the tracer evolves with time is to time step it.
-# Here we will use a simple Euler-backward scheme.
-# That is, we want to simulate $\boldsymbol{R}(t)$ from time $t = 0$ to time $t = \Delta t$, subject to $\boldsymbol{R}(t = 0) = 1$, using the Euler-backward scheme with $n$ timesteps.
+# Here we will use the [Crank-Nicolson](https://en.wikipedia.org/wiki/Crank%E2%80%93Nicolson_method) scheme embedded in AIBECS.
 #
-# We thus discretize the $(0, \Delta t)$ time span into $n$ time intervals of size $\delta t = \Delta t / n$.
-# We apply the Euler-backward scheme, which gives
-#
-# $$\frac{\boldsymbol{R}(t_{i+1}) - \boldsymbol{R}(t_i)}{\delta t} = - \mathbf{M} \, \boldsymbol{R}(t_{i+1}) + \boldsymbol{s}$$
-#
-# Reorganizing the equation to express $\boldsymbol{R}(t_{i+1})$ as a function of the rest, we get
-#
-# $$\big[\mathbf{I} + \delta t \, \mathbf{M}\big] \, \boldsymbol{R}(t_{i+1}) = \boldsymbol{R}(t_i) + \delta t \, \boldsymbol{s}.$$
-#
-# Solving such a linear system is done via the **backslash** operator, `\`.
-# Let us define the time-stepping function via
+# A single step is performed via, e.g.,
 
-euler_backward_step(R, δt, M, s) = (I + δt * M) \ (R + δt * s)
+AIBECS.crank_nicolson_step(x, p, δt, F, ∇ₓF)
 
-# We write another function to run all the time steps and save 
+# We can write a function to run all the time steps and save them into a `x_hist` object, via
 
-function euler_backward(R₀, ΔT, n, M, s)
-    R_hist = [R₀]
+function time_steps(x₀, Δt, n, F, ∇ₓF)
+    x_hist = [x₀]
     δt = Δt / n
     for i in 1:n
-        push!(R_hist, euler_backward_step(R_hist[end], δt, M, s))
+        push!(x_hist, AIBECS.crank_nicolson_step(last(x_hist), p, δt, F, ∇ₓF))
     end
-    return reduce(hcat, R_hist), 0:δt:Δt
+    return reduce(hcat, x_hist), 0:δt:Δt
 end
 
 #md # !!! note
-#md #     We store all the history of `R` in `R_hist`.
-#md #     At each step, the `push!` function adds a new `R` to `R_hist`.
-#md #     Technically, `R_hist` is a vector of vectors, so at the end, we horizontally concatenate it via `reduce(hcat, R_hist)` to rearrange it into a 2D array.
+#md #     We store all the history of `x` in `x_hist`.
+#md #     At each step, the `push!` function adds a new `x` to `x_hist`.
+#md #     Technically, `x_hist` is a vector of vectors, so at the end, we horizontally concatenate it via `reduce(hcat, x_hist)` to rearrange it into a 2D array.
 #nb # > **Note**
-#nb # > We store all the history of `R` in `R_hist`.
-#nb # > At each step, the `push!` function adds a new `R` to `R_hist`.
-#nb # > Technically, `R_hist` is a vector of vectors, so at the end, we horizontally concatenate it via `reduce(hcat, R_hist)` to rearrange it into a 2D array.
+#nb # > We store all the history of `x` in `x_hist`.
+#nb # > At each step, the `push!` function adds a new `x` to `x_hist`.
+#nb # > Technically, `x_hist` is a vector of vectors, so at the end, we horizontally concatenate it via `reduce(hcat, x_hist)` to rearrange it into a 2D array.
 
 # Now let's simulate the evolution of radiocarbon for 7500 years, starting from a concentration of 1 everywhere, via
 
-Δt = 7500 * sec_per_year # 7500 years
-R₀ = ones(5)             #
-R_hist, t_hist = euler_backward(R₀, Δt, 10000, M, s) # runs the simulation
+Δt = ustrip(7500u"yr" |> u"s") # 7500 years in seconds
+x₀ = ones(5)             #
+x_hist, t_hist = time_steps(x₀, Δt, 1000, F, ∇ₓF) # runs the simulation
 
 # This should take a few seconds to run.
-# Once it's done, we can plot the evloution of radiocarbon through time via
+# Once it's done, we can plot the evolution of radiocarbon through time via
 
 using PyPlot
 clf()
-C14age_hist = -log.(R_hist) * τ / sec_per_year
+C14age_hist = -log.(x_hist) * ustrip(p.τ * u"s" |> u"yr")
 plot(t_hist, C14age_hist')
 xlabel("simulation time (years)")
 ylabel("¹⁴C age (years)")
 legend("box " .* string.(iwet))
-title("Simulation of the evolution of ¹⁴C age with Euler-backward time steps")
+title("Simulation of the evolution of ¹⁴C age with Crank-Nicolson time steps")
 gcf()
 
 # The box model took more than 4000 years to spin up to equilibrium.
-# For a box model that's no big deal because it is not computationally expensive to run the model, but for a big circulation model waiting for the model to spinup is painful.
+# For a box model that's no big deal because it is not computationally expensive to run the model, but for a big circulation model waiting for the model to spinup is painfully long.
 # We therefore want a better way to find the equilibrium solution.
 
 
@@ -242,26 +303,23 @@ gcf()
 # ## Solving Directly for the Steady State
 #---------------------------------------------------------
 
-# One thing we notice is that when the model is at equilibrium, the $\partial \boldsymbol{R} / \partial t$ term vanishes and
-# the steady state solution is simply given by the solution to the following linear system of equations
-# 
-# $$\mathbf{M} \, \boldsymbol{R} = \boldsymbol{s},$$
-# 
-# which can be solved by directly inverting the $\mathbf{M}$ matrix.
+# With the AIBECS, you can create the steady state problem and solve it in just 2 commands:
 
-R_final = M \ s
+prob = SteadyStateProblem(F, ∇ₓF, x, p)
+x_final = solve(prob, CTKAlg()).u
 
 # Converting radiocarbon into years gives the following values
 
-C14age_final = -log.(R_final) * τ / sec_per_year
-println.("box ", iwet, ": ", round.(C14age_final), " years");
+C14age_final = -log.(x_final) * p.τ * u"s" .|> u"yr"
+println.("box ", iwet, ": ", C14age_final);
 
 # These are exactly the limit that the Radiocarbon age reaches after about 4000 years of simulation!
+# So what happened there?
 
-#---------------------------------------------------------
-# ## Exercise
-#---------------------------------------------------------
+# Well, AIBECS used a version of [Newton's method](https://en.wikipedia.org/wiki/Newton%27s_method) to solve for $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$.
+# Simply put, Newton's method iterates on the state via the recursion relation
+#
+# $$\boldsymbol{x}_{n+1} = \boldsymbol{x}_n - \nabla_{\boldsymbol{x}}\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p})^{-1} \boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}).$$
 
-# Try modifying the strength of the currents of the high latitude convective mixing to see how it affects the ¹⁴C-ages.
-
-
+# Here, our radiocarbon model only requires a single iteration.
+# This is because the state function, $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p})$, is linear.

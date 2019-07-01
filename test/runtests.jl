@@ -25,6 +25,7 @@ Circulation = Primeau_2x2x2
     include("gridtools.jl")
     include("cost_functions.jl")
     include("solvers.jl")
+    include("time_steps.jl")
     include("derivatives.jl")
 end
 

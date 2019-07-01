@@ -11,13 +11,19 @@ Generate 𝐹 and ∇ₓ𝐹 from user input
 
 Returns the state function `F` and its jacobian, `∇ₓF`.
 """
-function state_function_and_Jacobian(Ts, Gs, nb)
+function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb)
     nt = length(Ts)
     tracers(x) = state_to_tracers(x, nb, nt)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
     G(x, p) = reduce(vcat, [Gⱼ(tracers(x)..., p) for Gⱼ in Gs]) # nonlinear part
     F(x, p) = G(x, p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
     ∇ₓG(x, p) = local_jacobian(Gs, x, p, nt, nb)     # Jacobian of nonlinear part
+    ∇ₓF(x, p) = ∇ₓG(x, p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
+    return F, ∇ₓF
+end
+function state_function_and_Jacobian(T, G, nb)
+    F(x, p) = G(x, p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
+    ∇ₓG(x, p) = sparse(Diagonal(𝔇(G(x .+ ε, p))))     # Jacobian of nonlinear part
     ∇ₓF(x, p) = ∇ₓG(x, p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
     return F, ∇ₓF
 end

@@ -12,10 +12,10 @@ for example in readdir(EXAMPLEDIR)
     script = Literate.script(input, GENERATEDDIR)
     code = strip(read(script, String))
     mdpost(str) = replace(str, "@__CODE__" => code)
-    Literate.notebook(input, GENERATEDDIR, execute = true)
-    Literate.markdown(input, GENERATEDDIR, postprocess = mdpost)
+    #Literate.notebook(input, GENERATEDDIR, execute = true)
+    #Literate.markdown(input, GENERATEDDIR, postprocess = mdpost)
     # Altenrate comments to avoid running the code when editing the text only!
     #Literate.notebook(input, GENERATEDDIR, execute = false)
-    #Literate.markdown(input, GENERATEDDIR, documenter = false)
+    Literate.markdown(input, GENERATEDDIR, documenter = false)
 end
 
