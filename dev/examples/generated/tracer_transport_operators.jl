@@ -48,10 +48,11 @@ t
 initialize_Parameters_type(t, "C14_shoebox_parameters") # creates the type for parameters
 p = C14_shoebox_parameters()                            # creates the parameters object
 
-F, ∇ₓF = state_function_and_Jacobian(p -> T, G, nb) # generates the state function (and its Jacobian!)
+F, ∇ₓF = state_function_and_Jacobian(p -> T, G) # generates the state function (and its Jacobian!)
 x = zeros(nb)
 F(x,p)
 
+δt = ustrip(1.0u"yr" |> u"s")
 AIBECS.crank_nicolson_step(x, p, δt, F, ∇ₓF)
 
 function time_steps(x₀, Δt, n, F, ∇ₓF)
@@ -70,7 +71,7 @@ x_hist, t_hist = time_steps(x₀, Δt, 1000, F, ∇ₓF) # runs the simulation
 using PyPlot
 clf()
 C14age_hist = -log.(x_hist) * ustrip(p.τ * u"s" |> u"yr")
-plot(t_hist, C14age_hist')
+plot(t_hist * ustrip(1u"s" |> u"yr"), C14age_hist')
 xlabel("simulation time (years)")
 ylabel("¹⁴C age (years)")
 legend("box " .* string.(iwet))
