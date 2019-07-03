@@ -65,16 +65,16 @@ c14age = -log.(R) / p.λ ;                   # convert R to $^{14}C-age$
 
 # Make some plots
 
-c14age_3d = fill(NaN, size(mask))     # creates a 3D array of NaNs
-c14age_3d[iwet] = c14age   # Fills the wet grd boxes with the age values
-size(c14age_3d)            # Just to check the size of age_3D
+c14age_3D = fill(NaN, size(mask))     # creates a 3D array of NaNs
+c14age_3D[iwet] = c14age   # Fills the wet grd boxes with the age values
+size(c14age_3D)            # Just to check the size of age_3D
 
 # Pick a layer to plot
 
 iz = findfirst(depth .> 700) # aim for a depth of ~ 700 m
 depth_map = Int(round(depth[iz]))
 iz, depth_map
-c14age_3d_1000m_yr = c14age_3d[:,:,iz] * ustrip(1.0u"s" |> u"yr")
+c14age_3D_1000m_yr = c14age_3D[:,:,iz] * ustrip(1.0u"s" |> u"yr")
 
 #
 
@@ -88,7 +88,7 @@ ccrs = pyimport("cartopy.crs")
 ax = subplot(projection=ccrs.EqualEarth(central_longitude=-155.0))
 ax.coastlines()
 lon_cyc = [lon; 360+lon[1]] # making it cyclic for Cartopy
-age_cyc = hcat(c14age_3d_1000m_yr, c14age_3d_1000m_yr[:,1])
+age_cyc = hcat(c14age_3D_1000m_yr, c14age_3D_1000m_yr[:,1])
 p = contourf(lon_cyc, lat, age_cyc, levels=0:100:1800, transform=ccrs.PlateCarree(), zorder=-1)
 colorbar(p, orientation="horizontal")
 title("¹⁴C age at $(depth_map)m depth")

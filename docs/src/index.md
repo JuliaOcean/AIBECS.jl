@@ -1,10 +1,10 @@
 ```@raw html
-<img src="https://user-images.githubusercontent.com/4486578/60554111-8fc27400-9d79-11e9-9ca7-6d78ee89ea70.png" alt="logo" title="AIBECS_logo" align="right" width="200"/>
+<img src="https://user-images.githubusercontent.com/4486578/60554111-8fc27400-9d79-11e9-9ca7-6d78ee89ea70.png" alt="logo" title="AIBECS_logo" align="left" width="50%"/>
 ```
 
 # AIBECS.jl
 
-**Algebraic Implicit Biogeochemistry Element-Cycling System**
+**Algebraic Implicit Biogeochemistry Elemental Cycling System**
 
 (Work in Progress)
 
@@ -20,9 +20,9 @@ AIBECS is a new software written in [Julia](https://julialang.org) to easily cre
 AIBECS is not just a single model.
 It's a **system** that allows you to create a global steady-state biogeochmistry model with just a few simple commands.
 Basically, you just need to tell AIBECS
-- (i) which ocean circulation to use (from simple toy models of just a few boxes to more complicated global models of the circulation),
-- (ii) what elements you want to model/track and 
-- (iii) how each tracer gets converted into other tracers.
+1. which ocean circulation to use (from simple toy models of just a few boxes to more complicated global models of the circulation),
+2. what elements you want to model/track and 
+3. how each tracer gets converted into other tracers.
 Once the model is set up, you can run simulations.
 
 AIBECS relies on many tools from linear algebra to run simulations and perform optimizations really fast.

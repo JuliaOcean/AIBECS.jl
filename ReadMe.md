@@ -118,11 +118,12 @@ We emphasize that this package is under active development, so that not all the 
 
 
 
-
 ## References
 
 Please cite us of you use this package.
 The references under bibtex format are available in the [CITATION.bib](./CITATION.bib) file.
+
+Also, if you want to do research using the AIBECS, and you think I could help, do not hesitate to contact me directly (contacts on my [website](www.bpasquier.com)), I would be happy to contribute and collaborate!
 
 <img src="https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png" alt="NSF" title="NSF_logo" align="right" height="50"/>
 
