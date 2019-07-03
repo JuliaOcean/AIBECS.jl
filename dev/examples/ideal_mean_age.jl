@@ -352,13 +352,13 @@ iwet = indices_of_wet_boxes(wet3D)
 
 # We then rearrange the column vector `age` into a 3D array via
 
-age_3D = NaN * wet3D # creates a 3D array of NaNs of the same size as `wet3D`
-age_3D[iwet] = age   # Fills the wet grid boxes with the age values
-size(age_3D)         # Just to check the size of age_3D
+age_3D = fill(NaN, size(wet3D)) # creates a 3D array of NaNs of the same size as `wet3D`
+age_3D[iwet] = age              # Fills the wet grid boxes with the age values
+size(age_3D)                    # Just to check the size of age_3D
 
 # The last line just shows you the size of `age_3D`, which is a 3D-array as expected.
 
-# Now let us find the index of the depth that is closest to $1000\,$m.
+# Now let us find the index of the depth that is closest to 1000m.
 # To do that we must use the depth information contained in `grd`.
 # Let us first create a small vector of the depths of the grid:
 
@@ -382,7 +382,7 @@ lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 # A last thing we can do is convert the age from seconds, `u"s"`, to years, `u"yr"`, because the age is large.
 # This can be done via the Unitful package (loaded automatically by AIBECS).
 
-age_3d_1000m_yr = age_3D[:,:,iz] * ustrip(1.0u"s" |> u"yr")
+age_3D_1000m_yr = age_3D[:,:,iz] * ustrip(1.0u"s" |> u"yr")
 
 # Finally! Let's have a look at this ideal mean age!
 # To make figures, here, we use Cartopy.
@@ -407,7 +407,7 @@ ccrs = pyimport("cartopy.crs")
 ax = subplot(projection=ccrs.EqualEarth(central_longitude=-155.0))
 ax.coastlines()
 lon_cyc = [lon; 360+lon[1]] # making it cyclic for Cartopy
-age_cyc = hcat(age_3d_1000m_yr, age_3d_1000m_yr[:,1])
+age_cyc = hcat(age_3D_1000m_yr, age_3D_1000m_yr[:,1])
 p = contourf(lon_cyc, lat, age_cyc, levels=0:100:1200, transform=ccrs.PlateCarree(), zorder=-1)
 colorbar(p, orientation="horizontal")
 gcf() # gets the current figure to display

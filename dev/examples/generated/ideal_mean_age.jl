@@ -39,9 +39,9 @@ age = solve(prob, CTKAlg())
 
 iwet = indices_of_wet_boxes(wet3D)
 
-age_3D = NaN * wet3D # creates a 3D array of NaNs of the same size as `wet3D`
-age_3D[iwet] = age   # Fills the wet grid boxes with the age values
-size(age_3D)         # Just to check the size of age_3D
+age_3D = fill(NaN, size(wet3D)) # creates a 3D array of NaNs of the same size as `wet3D`
+age_3D[iwet] = age              # Fills the wet grid boxes with the age values
+size(age_3D)                    # Just to check the size of age_3D
 
 depth = grd.depth
 
@@ -50,7 +50,7 @@ iz, depth[iz]
 
 lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 
-age_3d_1000m_yr = age_3D[:,:,iz] * ustrip(1.0u"s" |> u"yr")
+age_3D_1000m_yr = age_3D[:,:,iz] * ustrip(1.0u"s" |> u"yr")
 
 ENV["MPLBACKEND"]="qt5agg"
 using PyPlot, PyCall
@@ -60,7 +60,7 @@ ccrs = pyimport("cartopy.crs")
 ax = subplot(projection=ccrs.EqualEarth(central_longitude=-155.0))
 ax.coastlines()
 lon_cyc = [lon; 360+lon[1]] # making it cyclic for Cartopy
-age_cyc = hcat(age_3d_1000m_yr, age_3d_1000m_yr[:,1])
+age_cyc = hcat(age_3D_1000m_yr, age_3D_1000m_yr[:,1])
 p = contourf(lon_cyc, lat, age_cyc, levels=0:100:1200, transform=ccrs.PlateCarree(), zorder=-1)
 colorbar(p, orientation="horizontal")
 gcf() # gets the current figure to display
