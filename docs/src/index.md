@@ -1,5 +1,5 @@
 ```@raw html
-<img src="https://user-images.githubusercontent.com/4486578/57189839-c422db00-6f56-11e9-9e1d-26c8d9208702.png" alt="logo" title="AIBECS_logo" align="right" width="200"/>
+<img src="https://user-images.githubusercontent.com/4486578/60554111-8fc27400-9d79-11e9-9ca7-6d78ee89ea70.png" alt="logo" title="AIBECS_logo" align="right" width="200"/>
 ```
 
 # AIBECS.jl
