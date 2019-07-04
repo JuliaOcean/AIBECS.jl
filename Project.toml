@@ -24,9 +24,9 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 UnitfulAstro = "6112ee07-acf9-5e0f-b108-d242c714bf9f"
 
 [compat]
-Flatten = "0.1"
 OceanGrids = "0.1.1"
 WorldOceanAtlasTools = "0.3"
+Flatten = "2.1"
 julia = "1.1"
 
 [extras]

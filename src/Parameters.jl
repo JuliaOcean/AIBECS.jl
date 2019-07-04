@@ -172,10 +172,10 @@ function initialize_Parameters_type(t, PName="Parameters")
         Base.copy(p::$Parameters) = $Parameters(vec(p)...)
         Base.convert(::Type{$Parameters{T1}}, p::$Parameters{T2}) where {T1, T2} = $Parameters(convert(Vector{T1}, vec(p))...)
         Base.convert(::Type{$Parameters{T}}, p::$Parameters{T}) where T = p
-        opt_para(p, v) = Flatten.reconstruct(p, v)
-        opt_para(p::$Parameters{Tₚ}, v::Vector{Tᵥ}) where {Tₚ, Tᵥ} = Flatten.reconstruct(convert($Parameters{Tᵥ}, p), v)
+        opt_para(p, v) = Flatten.reconstruct(p, v, Number)
+        opt_para(p::$Parameters{Tₚ}, v::Vector{Tᵥ}) where {Tₚ, Tᵥ} = Flatten.reconstruct(convert($Parameters{Tᵥ}, p), v, Number)
         opt_para(v) = opt_para($Parameters(), v)
-        optvec(p::$Parameters) = collect(flatten(p))
+        optvec(p::$Parameters) = collect(flatten(p, Number))
         optvec(v) = v # ForwardDiff requirement
         export optvec
         # Testing equality and approx
