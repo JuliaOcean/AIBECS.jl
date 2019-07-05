@@ -55,6 +55,14 @@ julia> PFD = buildPFD(w)
 """
 buildPFD(w, DIV, Iabove) = DIV * buildFLUX(w, Iabove)
 
+function buildPFD(grid, wet3D; sinking_speed=1.0)
+    w = sinking_speed
+    iwet = findall(vec(wet3D))
+    DIV = buildDIV(wet3D, iwet, grid)
+    Iabove = buildIabove(wet3D, iwet)
+    return DIV * buildFLUX(w, Iabove)
+end
+
 """
     buildDIV(wet3D, iwet, grid)
 
