@@ -105,8 +105,8 @@ t
 
 # We now generate a new object to contain all these parameters via
 
-initialize_Parameters_type(t, "C14_shoebox_parameters") # creates the type for parameters
-p = C14_shoebox_parameters()                            # creates the parameters object
+initialize_Parameters_type(t, "C14_OCIM_parameters") # creates the type for parameters
+p = C14_OCIM_parameters()                            # creates the parameters object
 
 # #### Generate the state function and its Jacobian
 
