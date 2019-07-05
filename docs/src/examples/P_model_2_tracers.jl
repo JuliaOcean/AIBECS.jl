@@ -422,5 +422,5 @@ gcf()
 #md # !!! note
 #md #     If you find any bugs or ideas you want to test and struggle with the AIBECS, don't hesitate to raise issues on the GitHub [AIBECS](https://github.com/briochemc/AIBECS.jl) repository or [contact me](www.bpasquier.com)!
 
-#nb > **Note**
-#nb > If you find any bugs or ideas you want to test and struggle with the AIBECS, don't hesitate to raise issues on the GitHub [AIBECS](https://github.com/briochemc/AIBECS.jl) repository or [contact me](www.bpasquier.com)!
+#nb # > **Note**
+#nb # > If you find any bugs or ideas you want to test and struggle with the AIBECS, don't hesitate to raise issues on the GitHub [AIBECS](https://github.com/briochemc/AIBECS.jl) repository or [contact me](www.bpasquier.com)!
