@@ -7,6 +7,16 @@
 #md #     This example is also available as a Jupyter notebook:
 #md #     [`P_model_2_tracers.ipynb`](@__NBVIEWER_ROOT_URL__examples/generated/P_model_2_tracers.ipynb)
 
+#md # !!! warn
+#md #     This example is not finished yet.
+#md #     It lacks a number of things, including explanatory text, references, and more.
+#md #     However, it can already serve as an example of model optimization.
+
+#nb # > **Warning!**
+#nb # > This example is not finished yet.
+#nb # > It lacks a number of things, including explanatory text, references, and more.
+#nb # > However, it can already serve as an example of model optimization.
+
 #---------------------------------------------------------
 # ## Tracer equations
 #---------------------------------------------------------
@@ -222,11 +232,11 @@ s = solve(prob, CTKAlg()).u
 
 # For plotting, we first unpack the state
 
-DIP, POP = state_to_tracers(s, nb, 2) # remove when line below works
+DIP, POP = state_to_tracers(s, nb, 2)
 
 # We will plot the concentration of DIP at a given depth horizon
 
-iz = findfirst(grd.depth .> 200u"m")
+iz = findfirst(grd.depth .> 2000u"m")
 iz, grd.depth[iz]
 
 #-
@@ -342,4 +352,75 @@ opt = Optim.Options(store_trace = false, show_trace = true, extended_trace = fal
 
 results = optimize(obj, grad, hess, λ, NewtonTrustRegion(), opt)
 
+# Because we started from an other optimized set of parameters, this should only take a few iterations.
+# The starting parameters were
 
+p
+
+# and the optimized ones are
+
+p_optimized = λ2p(results.minimizer)
+
+# After optimizing these parameters, we expect the fit to be better.
+# Let's have a look at the optimized steady-state solution at the same depth as earlier, and compare it to the observed DIP field.
+# First, let's calculate the steady-state with the optimized parameters.
+
+prob_optimized = SteadyStateProblem(F, ∇ₓF, s, p_optimized)
+s_optimized = solve(prob_optimized, CTKAlg()).u
+
+# Like earlier, we fill in a 3D array of `NaN`s with the values we want to plot.
+# Here, we fill the arrays with the fractional difference bewteen modeled and observed DIP:
+
+DIPold, _ = state_to_tracers(s, nb, 2)
+DIPnew, _ = state_to_tracers(s_optimized, nb, 2)
+δDIPold_3D = fill(NaN, size(grd))
+δDIPold_3D[iwet] .= 100(DIPold - μDIPobs) ./ μDIPobs
+δDIPnew_3D = fill(NaN, size(grd))
+δDIPnew_3D[iwet] .= 100(DIPnew - μDIPobs) ./ μDIPobs
+
+# And take a slice at depth index `iz`
+
+δDIPold_2D = δDIPold_3D[:,:,iz]
+δDIPnew_2D = δDIPnew_3D[:,:,iz]
+
+# We make those 2D slices cyclic along the longitude for Cartopy
+
+δDIPold_cyc = hcat(δDIPold_2D, δDIPold_2D[:,1])
+δDIPnew_cyc = hcat(δDIPnew_2D, δDIPnew_2D[:,1])
+
+# And we plot the mismatch of the old, OCIM1-optimized field
+
+figure()
+δDIPlevels = -20:2:20
+ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
+ax.coastlines()
+plt2 = contourf(lon_cyc, lat, δDIPold_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
+cbar2 = colorbar(plt2, orientation="horizontal", extend="both")
+cbar2.set_label("δDIP / DIP [%]")
+title("old DIP mismatch at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
+gcf()
+
+# We can see a significant negative bias in the North Atlantic.
+# This is probably due to having swapped the circulation from OCIM1 to OCIM0.1.
+# Let's plot the OCIM-0.1-optimized mismatch
+
+figure()
+ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
+ax.coastlines()
+plt3 = contourf(lon_cyc, lat, δDIPnew_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
+cbar3 = colorbar(plt3, orientation="horizontal", extend="both")
+cbar3.set_label("δDIP / DIP [%]")
+title("new DIP mismatch at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
+gcf()
+
+# This shows that most of the negative bias has been corrected.
+# (The green patch in the North Atlantic has dissipated.)
+# Of course, this optimization was "easy", because there were only 2 tracers, few parameters, and we started from a pretty good solution.
+# However, this type of optimization can really improve the skill of models, even current "state-of-the-art" ones.
+# Such optimizations turn average models into better tools for cutting-edge oceanography research.
+
+#md # !!! note
+#md #     If you find any bugs or ideas you want to test and struggle with the AIBECS, don't hesitate to raise issues on the GitHub [AIBECS](https://github.com/briochemc/AIBECS.jl) repository or [contact me](www.bpasquier.com)!
+
+#nb > **Note**
+#nb > If you find any bugs or ideas you want to test and struggle with the AIBECS, don't hesitate to raise issues on the GitHub [AIBECS](https://github.com/briochemc/AIBECS.jl) repository or [contact me](www.bpasquier.com)!
