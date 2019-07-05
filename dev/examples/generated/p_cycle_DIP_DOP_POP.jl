@@ -72,56 +72,23 @@ end
 sms_all = (sms_DIP, sms_DOP, sms_POP, sms_DO2,) # bundles all the source-sink functions in a tuple
 
 t = empty_parameter_table()    # initialize table of parameters
-add_parameter!(t, :xgeo, 2.17u"mmol/m^3",
-               variance_obs = ustrip(upreferred(0.1 * 2.17u"mmol/m^3"))^2,
-               description = "Geological mean P concentration",
-               LaTeX = "\\state^\\mathrm{geo}")
-add_parameter!(t, :τg, 1.0u"Myr",
-               description = "Geological restoring timescale",
-               LaTeX = "\\tau_\\mathrm{geo}")
-add_parameter!(t, :ku, 10.0u"μmol/m^3",
-               optimizable = true,
-               description = "Half-saturation constant (Michaelis-Menten)",
-               LaTeX = "k_\\vec{u}")
-add_parameter!(t, :z₀, 80.0u"m",
-               description = "Depth of the euphotic layer base",
-               LaTeX = "z_0")
-add_parameter!(t, :w₀, 1.0u"m/d",
-               optimizable = true,
-               description = "Sinking velocity at surface",
-               LaTeX = "w_0")
-add_parameter!(t, :w′, 1/4.4625u"d",
-               optimizable = true,
-               description = "Vertical gradient of sinking velocity",
-               LaTeX = "w'")
-add_parameter!(t, :κDOP, 1/0.25u"yr",
-               optimizable = true,
-               description = "Remineralization rate constant (DOP to DIP)",
-               LaTeX = "\\kappa")
-add_parameter!(t, :κPOP, 1/5.25u"d",
-               optimizable = true,
-               description = "Dissolution rate constant (POP to DOP)",
-               LaTeX = "\\kappa")
-add_parameter!(t, :σ, 0.3u"1",
-               description = "Fraction of quick local uptake recycling",
-               LaTeX = "\\sigma")
-add_parameter!(t, :τu, 30.0u"d",
-               optimizable = true,
-               description = "Maximum uptake rate timescale",
-               LaTeX = "\\tau_\\vec{u}")
-add_parameter!(t, :κDO2, 50u"m" / 30u"d",
-               optimizable = false,
-               description = "Airsea O2 piston velocity",
-               LaTeX = "\\kappa_{\\mbox{\\tiny DO}_2}")
-add_parameter!(t, :rO2P, 175.0,
-               optimizable = true,
-               description = "Moles of O2 consumed per mole of P respired",
-               LaTeX = "r_{\\mbox{\\tiny O2:C}")
-initialize_Parameters_type(t, "Pcycle_Parameters")   # Generate the parameter type
+add_parameter!(t, :xgeo, 2.17u"mmol/m^3")
+add_parameter!(t, :τg, 1.0u"Myr")
+add_parameter!(t, :ku, 10.0u"μmol/m^3")
+add_parameter!(t, :z₀, 80.0u"m")
+add_parameter!(t, :w₀, 1.0u"m/d")
+add_parameter!(t, :w′, 1/4.4625u"d")
+add_parameter!(t, :κDOP, 1/0.25u"yr")
+add_parameter!(t, :κPOP, 1/5.25u"d")
+add_parameter!(t, :σ, 0.3u"1")
+add_parameter!(t, :τu, 30.0u"d")
+add_parameter!(t, :κDO2, 50u"m" / 30u"d")
+add_parameter!(t, :rO2P, 175.0u"mol/mol")
+initialize_Parameters_type(t, "DIP_DOP_POP_O₂_Parameters")   # Generate the parameter type
 
 nt = length(T_all)    # number of tracers
 n = nt * nb           # total dimension of the state vector
-p = Pcycle_Parameters() # parameters
+p = DIP_DOP_POP_O₂_Parameters() # parameters
 x = p.xgeo * ones(n) # initial iterate
 F, ∇ₓF = state_function_and_Jacobian(T_all, sms_all, nb)
 
