@@ -32,7 +32,7 @@ function register_OCIM1()
             - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, https://doi.org/10.1175/JPO-D-10-05011.1
             """,
             "https://files.figshare.com/15560234/OCIM1.bson",
-            sha2_256,
+            "76da39dc1845894d647149fccc1eeba0fbcb8368f85ec07f49b76f6373b2ac2f",
             fetch_method = fallback_download
         )
     )
