@@ -1,6 +1,6 @@
 
 #---------------------------------------------------------
-# # A Simple Phosphorus Cycling Model
+# # Optimization of a simple phosphorus cycling model
 #---------------------------------------------------------
 
 #md # !!! tip
@@ -58,7 +58,7 @@
 #---------------------------------------------------------
 
 # ### Transport matrices
-a
+
 # We start by telling Julia we want to use the AIBECS
 
 using AIBECS
@@ -155,6 +155,7 @@ t = empty_parameter_table()    # empty table of parameters
 # Then, we add every parameter that we need
 
 add_parameter!(t, :xgeo, 2.12u"mmol/m^3",
+               optimizable = true,
                variance_obs = ustrip(upreferred(0.1 * 2.17u"mmol/m^3"))^2,
                description = "Mean PO₄ concentration")
 add_parameter!(t, :τg, 1.0u"Myr",
@@ -177,8 +178,12 @@ add_parameter!(t, :τ, 236.52u"d",
                optimizable = true,
                description = "Maximum uptake rate timescale")
 
-# (These values have been optimized for the same model but embedded in the OCIM1 circulation and should yield a pretty good fit to observations.)
-# Then, generate a new type for the parameters, via
+# These values of these parameters have been optimized for the same model but embedded in the OCIM1 circulation and should yield a pretty good fit to observations.
+# However, because the circulation has changed from the OCIM1 to the OCIM0.1 used here, the best parameters have probably changed, too.
+# Thus, we will re-optimize these parameters below.
+# But first, we will just try to find the steady-state solution with these initial parameter values.
+
+# We generate a new type for the parameters, via
 
 initialize_Parameters_type(t, "Pcycle_Parameters")   # Generate the parameter type
 
@@ -187,6 +192,10 @@ initialize_Parameters_type(t, "Pcycle_Parameters")   # Generate the parameter ty
 p = Pcycle_Parameters()
 
 # where we have used the name of the new type that we created just earlier.
+
+#---------------------------------------------------------
+# ## Finding the steady-state solution
+#---------------------------------------------------------
 
 # ### Generate state function and Jacobian
 
@@ -242,7 +251,95 @@ DIP_2D_cyc = hcat(DIP_2D, DIP_2D[:,1])
 
 # And plot
 
-p = contourf(lon_cyc, lat, DIP_2D_cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1)
-colorbar(p, orientation="horizontal");
+plt = contourf(lon_cyc, lat, DIP_2D_cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1)
+colorbar(plt, orientation="horizontal");
 title("PO₄ at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
 gcf()
+
+
+
+#---------------------------------------------------------
+# ## Optimizing the model parameters
+#---------------------------------------------------------
+
+# To optimize the model, we will use data from the World Ocean Atlas (WOA).
+# Specifically, we will use the observed PO<sub>4</sub> climatology, which the WOA produces every few years.
+# Thanks to the [WorldOceanAtlasTools](https://github.com/briochemc/WorldOceanAtlasTools.jl) package combined with some AIBECS functionality, this is done a just a few commands:
+
+using WorldOceanAtlasTools
+μDIPobs3D, σ²DIPobs3D = WorldOceanAtlasTools.fit_to_grid(grd, 2018, "phosphate", "annual", "1°", "an")
+μDIPobs, σ²DIPobs = μDIPobs3D[iwet], σ²DIPobs3D[iwet]
+μx = (μDIPobs, missing)
+σ²x = (σ²DIPobs, missing)
+
+# We define some hyper parameters for the weight of the mismatch of DIP, POP, and the parameters with observations / their prior estimates.
+
+ωs = [1.0, 0.0] # the weight for the mismatch (weight of POP = 0)
+ωp = 1e-4       # the weight for the parameters prior estimates
+
+# We then generate the objective function and some derivatives using the PO₄ mean and variance
+
+v = ustrip.(vector_of_volumes(wet3D, grd))
+f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
+∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
+∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
+
+# For the optimization, we will use the F-1 algorithm from the [F1Method](https://github.com/briochemc/F1Method.jl) package.
+
+using F1Method
+
+# For the F-1 algorithm, we must initialize the memory buffer
+
+mem = F1Method.initialize_mem(s, p)
+
+# We then define the objective, gradient, and Hessian using the F1Method package API
+
+objective(p) = F1Method.objective(f, F, ∇ₓF, mem, p, CTKAlg())
+gradient(p) = F1Method.gradient(f, F, ∇ₓf, ∇ₓF, mem, p, CTKAlg())
+hessian(p) = F1Method.hessian(f, F, ∇ₓf, ∇ₓF, mem, p, CTKAlg())
+
+# Because we want the parameters to remain positive, we define the change of variables
+# The change variable from vector `λ = log(p)` to Parameters `p`:
+
+λ2p(λ) = AIBECS.opt_para(exp.(λ))
+
+# and the corresponding derivatives:
+
+∇λ2p(λ) = exp.(λ)
+∇²λ2p(λ) = exp.(λ)
+
+# Reverse change of variables from Parameters p to vector λ
+
+p2λ(p) = log.(optvec(p))
+λ = p2λ(p)
+
+obj(λ) = objective(λ2p(λ))
+using LinearAlgebra
+grad(λ) = gradient(λ2p(λ)) * Diagonal(∇λ2p(λ))
+function hess(λ)
+    ∇p = Diagonal(∇λ2p(λ)) # for variable change
+    ∇²p = Diagonal(∇²λ2p(λ)) # for variable change
+    G = vec(gradient(λ2p(λ)))
+    H = hessian(λ2p(λ))
+    return ∇p * H * ∇p + Diagonal(G) * ∇²p
+end
+
+# Use optim to optimize
+
+using Optim
+
+# Add storage for use with Optim
+
+m = length(p)
+grad(s, λ) = s[1:m] .= vec(grad(λ))
+hess(s, λ) = s[1:m,1:m] .= hess(λ)
+
+# Set options of Optim
+
+opt = Optim.Options(store_trace = false, show_trace = true, extended_trace = false)
+
+# Run optimization
+
+results = optimize(obj, grad, hess, λ, NewtonTrustRegion(), opt)
+
+

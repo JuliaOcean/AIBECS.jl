@@ -1,7 +1,9 @@
 [deps]
 Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+F1Method = "d5605bae-6d76-11e9-2fd7-71bcf42edbaa"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 WorldOceanAtlasTools = "04f20302-f1b9-11e8-29d9-7d841cb0a64a"
