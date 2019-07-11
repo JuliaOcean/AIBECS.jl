@@ -140,7 +140,7 @@ using PyPlot, PyCall
 clf()
 ccrs = pyimport(&quot;cartopy.crs&quot;)
 ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()</code></pre><pre><code class="language-none">PyObject &lt;cartopy.mpl.feature_artist.FeatureArtist object at 0x7f1a4986b9b0&gt;</code></pre><p>Making the data cyclic in order for the plot to look good in Cartopy</p><pre><code class="language-julia">lon_cyc = [lon; 360+lon[1]]
+ax.coastlines()</code></pre><pre><code class="language-none">PyObject &lt;cartopy.mpl.feature_artist.FeatureArtist object at 0x7f41235ec400&gt;</code></pre><p>Making the data cyclic in order for the plot to look good in Cartopy</p><pre><code class="language-julia">lon_cyc = [lon; 360+lon[1]]
 DIP_2D_cyc = hcat(DIP_2D, DIP_2D[:,1])</code></pre><pre><code class="language-none">90×181 Array{Float64,2}:
  NaN         NaN         NaN         …  NaN         NaN         NaN       
  NaN         NaN         NaN            NaN         NaN         NaN       
@@ -189,12 +189,18 @@ function hess(λ)
     return ∇p * H * ∇p + Diagonal(G) * ∇²p
 end</code></pre><pre><code class="language-none">hess (generic function with 1 method)</code></pre><p>Use optim to optimize</p><pre><code class="language-julia">using Optim</code></pre><p>Add storage for use with Optim</p><pre><code class="language-julia">m = length(p)
 grad(s, λ) = s[1:m] .= vec(grad(λ))
-hess(s, λ) = s[1:m,1:m] .= hess(λ)</code></pre><pre><code class="language-none">hess (generic function with 2 methods)</code></pre><p>Set options of Optim</p><pre><code class="language-julia">opt = Optim.Options(store_trace = false, show_trace = true, extended_trace = false)</code></pre><pre><code class="language-none">                   x_tol = 0.0
-                   f_tol = 0.0
-                   g_tol = 1.0e-8
-             outer_x_tol = 0.0
-             outer_f_tol = 0.0
-             outer_g_tol = 1.0e-8
+hess(s, λ) = s[1:m,1:m] .= hess(λ)</code></pre><pre><code class="language-none">hess (generic function with 2 methods)</code></pre><p>Set options of Optim</p><pre><code class="language-julia">opt = Optim.Options(store_trace = false, show_trace = true, extended_trace = false)</code></pre><pre><code class="language-none">                x_abstol = 0.0
+                x_reltol = 0.0
+                f_abstol = 0.0
+                f_reltol = 0.0
+                g_abstol = 1.0e-8
+                g_reltol = 1.0e-8
+          outer_x_abstol = 0.0
+          outer_x_reltol = 0.0
+          outer_f_abstol = 0.0
+          outer_f_reltol = 0.0
+          outer_g_abstol = 1.0e-8
+          outer_g_reltol = 1.0e-8
            f_calls_limit = 0
            g_calls_limit = 0
            h_calls_limit = 0
@@ -204,6 +210,7 @@ hess(s, λ) = s[1:m,1:m] .= hess(λ)</code></pre><pre><code class="language-none
               iterations = 1000
         outer_iterations = 1000
              store_trace = false
+           trace_simplex = false
               show_trace = true
           extended_trace = false
               show_every = 1
