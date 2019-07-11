@@ -47,7 +47,7 @@ function split_state_function_and_Jacobian(Ts::Tuple, Ls::Tuple, NLs::Tuple, nb)
     return F, L, NL, ∇ₓF, ∇ₓL, ∇ₓNL, T
 end
 function split_state_function_and_Jacobian(T, L, NL, nb)
-    F(x,p) = NL(x,p) + L(p) * x - T(p) * x                     # full 𝐹(𝑥)
+    F(x,p) = NL(x,p) + L(x,p) - T(p) * x                     # full 𝐹(𝑥)
     ∇ₓNL(x,p) = sparse(Diagonal(𝔇(NL(x .+ ε,p))))     # Jacobian of nonlinear part
     ∇ₓL(p) = sparse(Diagonal(𝔇(L(zeros(nb) .+ ε,p))))     # Jacobian of nonlinear part
     ∇ₓF(x,p) = ∇ₓNL(x,p) + ∇ₓL(p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)

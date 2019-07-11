@@ -100,8 +100,8 @@ end
 Returns the Crank-Nicolson-leapfrog-step increment (out of place) using stored factors.
 See [`crank_nicolson_leapfrog_step_A⁺_and_A⁻`](@ref) for more information.
 """
-function crank_nicolson_leapfrog_step(xᵢ, xᵢ₋₁, p, A⁺::Factorization, A⁻, G)
-    return A⁺ \ (G(xᵢ,p) + A⁻ * xᵢ₋₁)
+function crank_nicolson_leapfrog_step(xᵢ, xᵢ₋₁, p, A⁺::Factorization, A⁻, NL)
+    return A⁺ \ (NL(xᵢ,p) + A⁻ * xᵢ₋₁)
 end
 """
     crank_nicolson_leapfrog_step_A⁺_and_A⁻(p, δt, T, ∇ₓL)
