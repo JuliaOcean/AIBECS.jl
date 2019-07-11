@@ -88,7 +88,8 @@ The `FLUX` operator is defined by
 
     FLUX * x = w * x(above) ≃ Φ.
 """
-buildFLUX(w, Iabove) = sparse(Diagonal(w)) * Iabove
+buildFLUX(w::Vector, Iabove) = sparse(Diagonal(w)) * Iabove
+buildFLUX(w::Number, Iabove) = w * Iabove
 
 export buildDIV, buildPFD, buildFLUX
 
