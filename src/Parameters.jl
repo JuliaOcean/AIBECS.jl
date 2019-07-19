@@ -61,7 +61,7 @@ Example: TODO
 Note for future edit of the docs: Don't repeat yourself between add and new param functions
 """
 function add_parameter!(t::DataFrame, args...; kwargs...)
-    if any(t[:symbol] .== args[1])
+    if any(t[!,:symbol] .== args[1])
         error("Parameter $(args[1]) already exists! (Maybe delete it first?)")
     else
         push!(t, new_parameter(args...; kwargs...))
@@ -71,7 +71,7 @@ export add_parameter!
 
 delete_parameter!(t::DataFrame, i) = deleterows!(t, i)
 function delete_parameter!(t::DataFrame, s::Symbol)
-    i = findfirst(t[:symbol] .== s)
+    i = findfirst(t[!,:symbol] .== s)
     if i isa Nothing
         error("Parameter $s does not exist in that table.")
     else
@@ -125,8 +125,8 @@ function initialize_Parameters_type(t, PName="Parameters")
               """
              )
     end
-    symbols = t[:symbol]
-    optimizables = t[:optimizable]
+    symbols = t[!,:symbol]
+    optimizables = t[!,:optimizable]
     m = length(optimizables)
     m_all = size(t, 1)
     optsymbols = symbols[optimizables]
@@ -134,12 +134,12 @@ function initialize_Parameters_type(t, PName="Parameters")
     Parameters = Symbol(PName)
     eval( :(@make_struct $Parameters $schema))
 
-    printunits = t[:printunit]
-    baseunits = t[:unit]
-    values = t[:value]
+    printunits = t[!,:printunit]
+    baseunits = t[!,:unit]
+    values = t[!,:value]
 
-    μs = [μ for (μ, opt) in zip(t[:mean_obs], optimizables) if opt]
-    σ²s = [σ² for (σ², opt) in zip(t[:variance_obs], optimizables) if opt]
+    μs = [μ for (μ, opt) in zip(t[!,:mean_obs], optimizables) if opt]
+    σ²s = [σ² for (σ², opt) in zip(t[!,:variance_obs], optimizables) if opt]
 
     @eval begin
         # Printing functionality
