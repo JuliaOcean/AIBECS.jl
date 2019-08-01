@@ -245,7 +245,7 @@ DIP_3D = rearrange_into_3Darray(DIP, wet3D)
 DIP_2D = DIP_3D[:,:,iz] * ustrip(1.0u"mol/m^3" |> u"mmol/m^3")
 lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 
-# Create the Cartopy canvas
+# Create the Cartopy canvas, make the data cyclic in order for the plot to look good in Cartopy, and plot the filled contour via `contourf`
 
 ENV["MPLBACKEND"]="qt5agg"
 using PyPlot, PyCall
@@ -255,20 +255,12 @@ cfeature = pyimport("cartopy.feature")
 ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
 ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
 ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
-
-# Making the data cyclic in order for the plot to look good in Cartopy
-
 lon_cyc = [lon; 360+lon[1]]
 DIP_2D_cyc = hcat(DIP_2D, DIP_2D[:,1])
-
-# And plot
-
 plt = contourf(lon_cyc, lat, DIP_2D_cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1)
 colorbar(plt, orientation="horizontal");
 title("PO₄ at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
 gcf()
-
-
 
 #---------------------------------------------------------
 # ## Optimizing the model parameters
