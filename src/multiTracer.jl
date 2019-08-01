@@ -14,9 +14,13 @@ Returns the state function `F` and its jacobian, `∇ₓF`.
 function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb)
     nt = length(Ts)
     tracers(x) = state_to_tracers(x, nb, nt)
+    tracer(x,i) = state_to_tracer(x, nb, nt, i)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
-    G(x,p) = reduce(vcat, [Gⱼ(tracers(x)..., p) for Gⱼ in Gs]) # nonlinear part
-    F(x,p) = G(x,p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
+    function G(x,p)
+        xs = tracers(x)
+        return reduce(vcat, [Gⱼ(xs..., p) for Gⱼ in Gs]) # nonlinear part
+    end
+    F(x,p) = G(x,p) - reduce(vcat, [Tⱼ(p) * tracer(x,j) for (j,Tⱼ) in enumerate(Ts)])
     ∇ₓG(x,p) = local_jacobian(Gs, x, p, nt, nb)     # Jacobian of nonlinear part
     ∇ₓF(x,p) = ∇ₓG(x,p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
     return F, ∇ₓF
@@ -27,7 +31,29 @@ function state_function_and_Jacobian(T, G)
     ∇ₓF(x,p) = ∇ₓG(x,p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
     return F, ∇ₓF
 end
-export state_function_and_Jacobian
+
+function inplace_state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb)
+    nt = length(Ts)
+    tracers(x) = state_to_tracers(x, nb, nt)
+    tracer(x,i) = state_to_tracer(x, nb, nt, i)
+    T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
+    #F(x,p) = G(x,p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
+    function F!(dx,x,p)
+        xs = tracers(x)
+        for (j, (Tⱼ, Gⱼ!)) in enumerate(zip(Ts, Gs))
+            ij = tracer_indices(nb,nt,j)
+            @views dx[ij] .= Gⱼ!(dx[ij], xs..., p) 
+            @views dx[ij] .-= Tⱼ(p) * x[ij]
+        end
+        return dx
+    end
+    ∇ₓG(x,p) = inplace_local_jacobian(Gs, x, p, nt, nb)     # Jacobian of nonlinear part
+    ∇ₓF(x,p) = ∇ₓG(x,p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
+    return F!, ∇ₓF
+end
+
+
+export state_function_and_Jacobian, inplace_state_function_and_Jacobian
 
 """
     F, ∇ₓF = state_function_and_Jacobian(Ts, Gs, nb)
@@ -58,6 +84,9 @@ export split_state_function_and_Jacobian
 function local_jacobian(Gs, x, p, nt, nb)
     return reduce(vcat, [local_jacobian_row(Gⱼ, x, p, nt, nb) for Gⱼ in Gs])
 end
+function inplace_local_jacobian(Gs, x, p, nt, nb)
+    return reduce(vcat, [inplace_local_jacobian_row(Gⱼ, x, p, nt, nb) for Gⱼ in Gs])
+end
 
 𝔇(x) = DualNumbers.dualpart.(x)      # dual part
 
@@ -65,6 +94,11 @@ function local_jacobian_row(Gⱼ, x, p, nt, nb)
     e(j) = kron([j == k for k in 1:nt], trues(nb))
     tracers(x) = state_to_tracers(x, nb, nt)
     return reduce(hcat, [sparse(Diagonal(𝔇(Gⱼ(tracers(x + ε * e(j))..., p)))) for j in 1:nt])
+end
+function inplace_local_jacobian_row(Gⱼ, x, p, nt, nb)
+    e(j) = kron([j == k for k in 1:nt], trues(nb))
+    tracers(x) = state_to_tracers(x, nb, nt)
+    return reduce(hcat, [sparse(Diagonal(𝔇(Gⱼ(Vector{Dual{Float64}}(undef,nb), tracers(x + ε * e(j))..., p)))) for j in 1:nt])
 end
 
 #=============================================
@@ -92,7 +126,14 @@ function generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, μp, σ²p)
     ∇ₚf(x, p) = ωp * ∇mismatch(p, μp, σ²p)
     return ∇ₚf
 end
+
+generate_objective_and_derivatives(ωs, μx, σ²x, v, ωp, μp, σ²p) =
+      generate_objective(ωs, μx, σ²x, v, ωp, μp, σ²p),
+    generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, μp, σ²p),
+    generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, μp, σ²p)
+
 export generate_objective, generate_∇ₓobjective, generate_∇ₚobjective
+export generate_objective_and_derivatives
 
 """
     mismatch(x, xobs, σ²xobs, v)
@@ -121,7 +162,7 @@ end
 
 # TODO
 # Talk about it with FP
-# Assumptions: 
+# Assumptions:
 # 1. The prior distributions of the parameters, p, are log-normal
 # 2. The values `mean_obs` and `variance_obs` are the non-log mean and variance,
 # Then the mean and variance of the prior of log(p) are

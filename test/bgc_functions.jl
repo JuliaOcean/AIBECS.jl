@@ -16,25 +16,25 @@ Sources minus sinks
 ===========================================#
 # Geological Restoring
 function geores(x, p)
-    τg, xgeo = p.τg, p.xgeo
-    return (xgeo .- x) / τg
+    τgeo, xgeo = p.τgeo, p.xgeo
+    return @. (xgeo - x) / τgeo
 end
 # Uptake of phosphate (DIP)
 relu(x) = (x .≥ 0) .* x
 function uptake(DIP, p)
-    τu, ku, z₀ = p.τu, p.ku, p.z₀
+    τ, k, z₀ = p.τ, p.k, p.z₀
     DIP⁺ = relu(DIP)
-    return 1/τu * DIP⁺.^2 ./ (DIP⁺ .+ ku) .* (z .≤ z₀)
+    return @. 1 / τ * DIP⁺^2 / (DIP⁺ + k) * (z ≤ z₀)
 end
 # Remineralization DOP into DIP
 function remineralization(DOP, p)
     κDOP = p.κDOP
-    return κDOP * DOP
+    return @. κDOP * DOP
 end
 # Dissolution of POP into DOP
 function dissolution(POP, p)
     κPOP = p.κPOP
-    return κPOP * POP
+    return @. κPOP * POP
 end
 # Add them up into sms functions (Sources Minus Sinks)
 function sms_DIP(DIP, DOP, POP, p)
@@ -51,9 +51,28 @@ end
 sms_all = (sms_DIP, sms_DOP, sms_POP) # bundles all the source-sink functions in a tuple
 
 #===========================================
+In-place sources minus sinks
+===========================================#
+
+function G_DIP!(dx, DIP, DOP, POP, p)
+    τgeo, xgeo, τ, k, z₀, κDOP = p.τgeo, p.xgeo, p.τ, p.k, p.z₀, p.κDOP
+    dx .= @. (xgeo - DIP) / τgeo - (DIP ≥ 0) / τ * DIP^2 / (DIP + k) * (z ≤ z₀) + κDOP * DOP
+end
+function G_DOP!(dx, DIP, DOP, POP, p)
+    τgeo, xgeo, τ, k, z₀, κDOP, κPOP, σ = p.τgeo, p.xgeo, p.τ, p.k, p.z₀, p.κDOP, p.κPOP, p.σ
+    dx = @. σ * (DIP ≥ 0) / τ * DIP^2 / (DIP + k) * (z ≤ z₀) - κDOP * DOP + κPOP * POP
+end
+function G_POP!(dx, DIP, DOP, POP, p)
+    τgeo, xgeo, τ, k, z₀, κDOP, κPOP, σ = p.τgeo, p.xgeo, p.τ, p.k, p.z₀, p.κDOP, p.κPOP, p.σ
+    dx = @. (1 - σ) * (DIP ≥ 0) / τ * DIP^2 / (DIP + k) * (z ≤ z₀) - κPOP * POP
+end
+Gs = (G_DIP!, G_DOP!, G_POP!)
+
+#===========================================
 AIBECS F and ∇ₓF
 ===========================================#
 F, ∇ₓF = state_function_and_Jacobian(T_all, sms_all, nb)
+F!, ∇ₓF! = inplace_state_function_and_Jacobian(T_all, Gs, nb)
 
 #===========================================
 AIBECS split operators for CNLF
@@ -83,7 +102,7 @@ Tests
     end
     nt = length(T_all)
     n = nt * nb
-    x = p₀.xgeo * ones(n)
+    x = p₀.xgeo * ones(n) .* exp.(cos.(collect(1:n))/10)
     @testset "State function" begin
         F₀ = F(x, p₀)
         v_all = repeat(v, nt)
@@ -95,5 +114,38 @@ Tests
         ∇ₓF₀ = ∇ₓF(x, p₀)
         @test ∇ₓF₀ isa SparseMatrixCSC
         @test size(∇ₓF₀) == (n,n)
+    end
+end
+
+
+@testset "In-place functions" begin
+    nt = length(T_all)
+    n = nt * nb
+    x = p₀.xgeo * ones(n) .* exp.(cos.(collect(1:n))/10)
+    dx = similar(x)
+    @testset "F! ≈ F" begin
+        F₀ = F!(dx, x, p₀)
+        @test F₀ ≈ F(x,p₀) rtol=1e-10
+    end
+    @testset "∇ₓF! ≈ ∇ₓF" begin
+        @test ∇ₓF(x,p₀) ≈ ∇ₓF!(x,p₀) rtol=1e-10
+    end
+end
+
+@testset "Linear/nonlinear split functions" begin
+    nt = length(T_all)
+    n = nt * nb
+    x = p₀.xgeo * ones(n) .* exp.(cos.(collect(1:n))/10)
+    @testset "split F ≈ F" begin
+        @test F2(x,p₀) ≈ F(x,p₀) rtol=1e-10
+    end
+    @testset "split F ≈ L + NL" begin
+        @test F2(x,p₀) ≈ L(x,p₀) + NL(x,p₀) - T(p₀) * x rtol=1e-10
+    end
+    @testset "split ∇ₓF ≈ ∇ₓF" begin
+        @test ∇ₓF(x,p₀) ≈ ∇ₓF2(x,p₀) rtol=1e-10
+    end
+    @testset "split ∇ₓF ≈ T + ∇ₓNL" begin
+        @test ∇ₓF2(x,p₀) ≈ ∇ₓL(p₀) + ∇ₓNL(x,p₀) - T(p₀) rtol=1e-10
     end
 end

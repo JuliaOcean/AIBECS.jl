@@ -4,10 +4,10 @@ add_parameter!(t, :xgeo, 2.17u"mmol/m^3",
     variance_obs = ustrip(upreferred(0.1 * 2.17u"mmol/m^3"))^2,
     description = "Geological mean P concentration",
     LaTeX = "\\state^\\mathrm{geo}")
-add_parameter!(t, :τg, 1.0u"Myr",
+add_parameter!(t, :τgeo, 1.0u"Myr",
     description = "Geological restoring timescale",
     LaTeX = "\\tau_\\mathrm{geo}")
-add_parameter!(t, :ku, 10.0u"μmol/m^3",
+add_parameter!(t, :k, 10.0u"μmol/m^3",
     optimizable = true,
     description = "Half-saturation constant (Michaelis-Menten)",
     LaTeX = "k_\\vec{u}")
@@ -33,7 +33,7 @@ add_parameter!(t, :κPOP, 1/5.25u"d",
 add_parameter!(t, :σ, 0.3u"1",
     description = "Fraction of quick local uptake recycling",
     LaTeX = "\\sigma")
-add_parameter!(t, :τu, 30.0u"d",
+add_parameter!(t, :τ, 30.0u"d",
     optimizable = true,
     description = "Maximum uptake rate timescale",
     LaTeX = "\\tau_\\vec{u}")
@@ -49,7 +49,7 @@ m = length(p₀)
 @testset "Parameters" begin
     @test t isa DataFrames.DataFrame
     @test_throws ErrorException initialize_Parameters_type(t)
-    @test_throws ErrorException add_parameter!(t, :τu, 30.0u"d")
+    @test_throws ErrorException add_parameter!(t, :τ, 30.0u"d")
     @test_throws ErrorException delete_parameter!(t, :not_a_parameter)
     @test size(t) == (m_all, 9) # m_all is # of params
     @test size(p₀) == (m,)
