@@ -10,3 +10,4 @@ WorldOceanAtlasTools = "04f20302-f1b9-11e8-29d9-7d841cb0a64a"
 
 [compat]
 Documenter = "~0.22"
+Literate = "1.1.0"
