@@ -251,8 +251,10 @@ ENV["MPLBACKEND"]="qt5agg"
 using PyPlot, PyCall
 clf()
 ccrs = pyimport("cartopy.crs")
+cfeature = pyimport("cartopy.feature")
 ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()
+ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
+ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
 
 # Making the data cyclic in order for the plot to look good in Cartopy
 
@@ -393,7 +395,8 @@ DIPnew, _ = state_to_tracers(s_optimized, nb, 2)
 figure()
 δDIPlevels = -20:2:20
 ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()
+ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
+ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
 plt2 = contourf(lon_cyc, lat, δDIPold_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
 cbar2 = colorbar(plt2, orientation="horizontal", extend="both")
 cbar2.set_label("δDIP / DIP [%]")
@@ -406,7 +409,8 @@ gcf()
 
 figure()
 ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()
+ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
+ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
 plt3 = contourf(lon_cyc, lat, δDIPnew_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
 cbar3 = colorbar(plt3, orientation="horizontal", extend="both")
 cbar3.set_label("δDIP / DIP [%]")
