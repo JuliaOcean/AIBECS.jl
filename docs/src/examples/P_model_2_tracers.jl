@@ -115,7 +115,7 @@ T_all = (T_DIP, T_POP) ;
 # In any event the long timescale allows us to prescribe the total inventory of P in a way that yields the same solution we would have gotten had we time-stepped the model to steady-state with the total inventory prescribed by the initial condition.
 # We define the geological restoring simply as
 
-geores(x, p) = (p.xgeo .- x) / p.τg
+geores(x, p) = (p.DIPgeo .- x) / p.τgeo
 
 # ##### Uptake (DIP → POP)
 
@@ -153,6 +153,27 @@ end
 
 sms_all = (sms_DIP, sms_POP) # bundles all the source-sink functions in a tuple
 
+# For the sake of this notebook, however, we write more efficient BGC functions for the sources and sinks by using "in place" functions that mutate a preallocated vector to avoid allocations.
+# `G_DIP!` replaces `sms_DIP`:
+
+function G_DIP!(dDIP, DIP, POP, p)
+    τ, k, z₀, κ, DIPgeo, τgeo = p.τ, p.k, p.z₀, p.κ, p.DIPgeo, p.τgeo
+    dDIP .= @. -(DIP ≥ 0) / τ * DIP^2 / (DIP + k) * (z ≤ z₀) + κ * POP + (DIPgeo - DIP) / τgeo
+    return dDIP
+end
+
+# Note the use of the `@.` macro to "fuse" the loops together, which is faster than looping for each operation.
+# And `G_POP!` replaces `sms_POP`:
+
+function G_POP!(dPOP, DIP, POP, p)
+    τ, k, z₀, κ = p.τ, p.k, p.z₀, p.κ
+    dPOP .= @. (DIP ≥ 0) / τ * DIP^2 / (DIP + k) * (z ≤ z₀) - κ * POP
+    return dPOP
+end
+
+# which we bundle into
+
+Gs = (G_DIP!, G_POP!)
 
 # ### Parameters
 
@@ -164,11 +185,11 @@ t = empty_parameter_table()    # empty table of parameters
 
 # Then, we add every parameter that we need
 
-add_parameter!(t, :xgeo, 2.12u"mmol/m^3",
+add_parameter!(t, :DIPgeo, 2.12u"mmol/m^3",
                optimizable = true,
                variance_obs = ustrip(upreferred(0.1 * 2.17u"mmol/m^3"))^2,
                description = "Mean PO₄ concentration")
-add_parameter!(t, :τg, 1.0u"Myr",
+add_parameter!(t, :τgeo, 1.0u"Myr",
                description = "Geological restoring timescale")
 add_parameter!(t, :k, 6.62u"μmol/m^3",
                optimizable = true,
@@ -209,16 +230,19 @@ p = Pcycle_Parameters()
 
 # ### Generate state function and Jacobian
 
-# We generate the state function and its Jacobian in a single line
+# We generate the in-place state function `F!` and its Jacobian in a single line
+# and the out-of-place `F` for use by the solver.
+# (Using `dx = similar(x)` creates a vector of the same type and size as `x` but without spending time copying its values, which is OK because we always fill the entire `dx` in calls to `g_DIP!` and G_POP!`.)
 
 nb = length(iwet)
-F, ∇ₓF = state_function_and_Jacobian(T_all, sms_all, nb)
+F!, ∇ₓF = inplace_state_function_and_Jacobian(T_all, Gs, nb)
+F(x::Vector{Tx}, p::Pcycle_Parameters{Tp}) where {Tx,Tp} = F!(Vector{promote_type(Tx,Tp)}(undef,length(x)),x,p)
 
 # ### Solve for the steady-state
 
 # We start from an initial guess,
 
-x = p.xgeo * ones(2nb) # initial iterate
+x = p.DIPgeo * ones(2nb) # initial iterate
 
 # Create an instance of the steady-state problem
 
