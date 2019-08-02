@@ -366,16 +366,16 @@ hess(s, λ) = s[1:m,1:m] .= hess(λ)
 
 opt = Optim.Options(store_trace = false, show_trace = true, extended_trace = false)
 
+# The starting parameters are
+
+p
+
 # Run optimization
 
 results = optimize(obj, grad, hess, λ, NewtonTrustRegion(), opt)
 
 # Because we started from an other optimized set of parameters, this should only take a few iterations.
-# The starting parameters were
-
-p
-
-# and the optimized ones are
+# The optimized parameters are
 
 p_optimized = λ2p(results.minimizer)
 
