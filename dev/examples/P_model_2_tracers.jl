@@ -115,7 +115,7 @@ T_all = (T_DIP, T_POP) ;
 # In any event the long timescale allows us to prescribe the total inventory of P in a way that yields the same solution we would have gotten had we time-stepped the model to steady-state with the total inventory prescribed by the initial condition.
 # We define the geological restoring simply as
 
-geores(x, p) = (p.xgeo .- x) / p.τg
+geores(x, p) = (p.DIPgeo .- x) / p.τgeo
 
 # ##### Uptake (DIP → POP)
 
@@ -153,6 +153,27 @@ end
 
 sms_all = (sms_DIP, sms_POP) # bundles all the source-sink functions in a tuple
 
+# For the sake of this notebook, however, we write more efficient BGC functions for the sources and sinks by using "in place" functions that mutate a preallocated vector to avoid allocations.
+# `G_DIP!` replaces `sms_DIP`:
+
+function G_DIP!(dDIP, DIP, POP, p)
+    τ, k, z₀, κ, DIPgeo, τgeo = p.τ, p.k, p.z₀, p.κ, p.DIPgeo, p.τgeo
+    dDIP .= @. -(DIP ≥ 0) / τ * DIP^2 / (DIP + k) * (z ≤ z₀) + κ * POP + (DIPgeo - DIP) / τgeo
+    return dDIP
+end
+
+# Note the use of the `@.` macro to "fuse" the loops together, which is faster than looping for each operation.
+# And `G_POP!` replaces `sms_POP`:
+
+function G_POP!(dPOP, DIP, POP, p)
+    τ, k, z₀, κ = p.τ, p.k, p.z₀, p.κ
+    dPOP .= @. (DIP ≥ 0) / τ * DIP^2 / (DIP + k) * (z ≤ z₀) - κ * POP
+    return dPOP
+end
+
+# which we bundle into
+
+Gs = (G_DIP!, G_POP!)
 
 # ### Parameters
 
@@ -164,11 +185,11 @@ t = empty_parameter_table()    # empty table of parameters
 
 # Then, we add every parameter that we need
 
-add_parameter!(t, :xgeo, 2.12u"mmol/m^3",
+add_parameter!(t, :DIPgeo, 2.12u"mmol/m^3",
                optimizable = true,
                variance_obs = ustrip(upreferred(0.1 * 2.17u"mmol/m^3"))^2,
                description = "Mean PO₄ concentration")
-add_parameter!(t, :τg, 1.0u"Myr",
+add_parameter!(t, :τgeo, 1.0u"Myr",
                description = "Geological restoring timescale")
 add_parameter!(t, :k, 6.62u"μmol/m^3",
                optimizable = true,
@@ -209,16 +230,19 @@ p = Pcycle_Parameters()
 
 # ### Generate state function and Jacobian
 
-# We generate the state function and its Jacobian in a single line
+# We generate the in-place state function `F!` and its Jacobian in a single line
+# and the out-of-place `F` for use by the solver.
+# (Using `dx = similar(x)` creates a vector of the same type and size as `x` but without spending time copying its values, which is OK because we always fill the entire `dx` in calls to `g_DIP!` and G_POP!`.)
 
 nb = length(iwet)
-F, ∇ₓF = state_function_and_Jacobian(T_all, sms_all, nb)
+F!, ∇ₓF = inplace_state_function_and_Jacobian(T_all, Gs, nb)
+F(x::Vector{Tx}, p::Pcycle_Parameters{Tp}) where {Tx,Tp} = F!(Vector{promote_type(Tx,Tp)}(undef,length(x)),x,p)
 
 # ### Solve for the steady-state
 
 # We start from an initial guess,
 
-x = p.xgeo * ones(2nb) # initial iterate
+x = p.DIPgeo * ones(2nb) # initial iterate
 
 # Create an instance of the steady-state problem
 
@@ -245,28 +269,22 @@ DIP_3D = rearrange_into_3Darray(DIP, wet3D)
 DIP_2D = DIP_3D[:,:,iz] * ustrip(1.0u"mol/m^3" |> u"mmol/m^3")
 lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 
-# Create the Cartopy canvas
+# Create the Cartopy canvas, make the data cyclic in order for the plot to look good in Cartopy, and plot the filled contour via `contourf`
 
 ENV["MPLBACKEND"]="qt5agg"
 using PyPlot, PyCall
 clf()
 ccrs = pyimport("cartopy.crs")
+cfeature = pyimport("cartopy.feature")
 ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()
-
-# Making the data cyclic in order for the plot to look good in Cartopy
-
+ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
+ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
 lon_cyc = [lon; 360+lon[1]]
 DIP_2D_cyc = hcat(DIP_2D, DIP_2D[:,1])
-
-# And plot
-
 plt = contourf(lon_cyc, lat, DIP_2D_cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1)
 colorbar(plt, orientation="horizontal");
 title("PO₄ at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
 gcf()
-
-
 
 #---------------------------------------------------------
 # ## Optimizing the model parameters
@@ -348,16 +366,16 @@ hess(s, λ) = s[1:m,1:m] .= hess(λ)
 
 opt = Optim.Options(store_trace = false, show_trace = true, extended_trace = false)
 
+# The starting parameters are
+
+p
+
 # Run optimization
 
 results = optimize(obj, grad, hess, λ, NewtonTrustRegion(), opt)
 
 # Because we started from an other optimized set of parameters, this should only take a few iterations.
-# The starting parameters were
-
-p
-
-# and the optimized ones are
+# The optimized parameters are
 
 p_optimized = λ2p(results.minimizer)
 
@@ -393,7 +411,8 @@ DIPnew, _ = state_to_tracers(s_optimized, nb, 2)
 figure()
 δDIPlevels = -20:2:20
 ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()
+ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
+ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
 plt2 = contourf(lon_cyc, lat, δDIPold_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
 cbar2 = colorbar(plt2, orientation="horizontal", extend="both")
 cbar2.set_label("δDIP / DIP [%]")
@@ -406,7 +425,8 @@ gcf()
 
 figure()
 ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()
+ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
+ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
 plt3 = contourf(lon_cyc, lat, δDIPnew_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
 cbar3 = colorbar(plt3, orientation="horizontal", extend="both")
 cbar3.set_label("δDIP / DIP [%]")
