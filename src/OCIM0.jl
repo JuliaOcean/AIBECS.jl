@@ -31,8 +31,8 @@ function register_OCIM0()
             - Primeau, F. W., Holzer, M., and DeVries, T. (2013), Southern Ocean nutrient trapping and the efficiency of the biological pump, J. Geophys. Res. Oceans, 118, 2547–2564, doi:10.1002/jgrc.20181.
             - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, https://doi.org/10.1175/JPO-D-10-05011.1
             """,
-            "https://files.figshare.com/15584666/OCIM0.1.bson",
-            "5a5365b87360a959cc1957e5982e95648d8c2af4632bd03888b646afd05be391",
+            "https://files.figshare.com/17302670/OCIM0.1.bson",
+            "dad4238521a414eb947d3b7630560912638854e5b4e6ca6791b0a0bbeb35807e",
             fetch_method = fallback_download
         )
     )
