@@ -30,21 +30,39 @@ Importantly,
 
 So M is useful!
 """
-function interpolation_matrix(lat_obs, lon_obs, depth_obs, grd, wet3D)
+function interpolation_matrix(df_obs, grd, wet3D)
     iwet = findall(vec(wet3D))
     grdbox_centers = [ustrip.(grd.lat_3D[iwet]) ustrip.(grd.lon_3D[iwet]) ustrip.(grd.depth_3D[iwet])]
     grdbox_centers = permutedims(grdbox_centers, [2, 1])
     kdtree = KDTree(grdbox_centers)
-    n_obs = length(lat_obs)
+    n_obs = size(df_obs, 1)
     I = 1:n_obs
     J = Int64[]
     for i in I
-        push!(J, knn(kdtree, [lat_obs[i], lon_obs[i], depth_obs[i]], 1, true)[1][1])
+        push!(J, knn(kdtree, collect(df_obs[i, [:Latitude, :Longitude, :Depth]]), 1, true)[1][1])
     end
     V = trues(n_obs)
     n_wet = length(iwet)
     return sparse(I, J, V, n_obs, n_wet)
 end
+
+function interpolation_index(df_obs, grd, wet3D)
+    iwet = findall(vec(wet3D))
+    grdbox_centers = [ustrip.(grd.lat_3D[iwet]) ustrip.(grd.lon_3D[iwet]) ustrip.(grd.depth_3D[iwet])]
+    grdbox_centers = permutedims(grdbox_centers, [2, 1])
+    kdtree = KDTree(grdbox_centers)
+    n_obs = size(df_obs, 1)
+    I = 1:n_obs
+    J = Int64[]
+    for i in I
+        push!(J, knn(kdtree, collect(df_obs[i, [:Latitude, :Longitude, :Depth]]), 1, true)[1][1])
+    end
+    V = trues(n_obs)
+    n_wet = length(iwet)
+    return sparse(I, J, V, n_obs, n_wet)
+end
+
+
 
 #=
 Dummy data for testing

@@ -146,6 +146,15 @@ function mismatch(x, xobs, σ²xobs, v)
     return 0.5 * transpose(δx) * W * δx / (transpose(xobs) * W * xobs)
 end
 
+struct Observations
+    df::DataFrame
+    J::Vector{Int64}
+end
+
+function mismatch(obs, state, tracer, model)
+    
+end
+
 mismatch(x, ::Missing, args...) = 0
 
 """
