@@ -5,7 +5,7 @@
 
 #md # !!! tip
 #md #     This example is also available as a Jupyter notebook:
-#md #     [`P_model_2_tracers.ipynb`](@__NBVIEWER_ROOT_URL__examples/generated/P_model_2_tracers.ipynb)
+#md #     [`P_model_2_tracers.ipynb`](@__NBVIEWER_ROOT_URL__/examples/generated/P_model_2_tracers.ipynb)
 
 #md # !!! warn
 #md #     This example is not finished yet.

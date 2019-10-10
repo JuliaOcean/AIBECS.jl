@@ -5,7 +5,7 @@
 
 #md # !!! tip
 #md #     This example is also available as a Jupyter notebook:
-#md #     [`tracer_transport_operators.ipynb`](@__NBVIEWER_ROOT_URL__examples/generated/tracer_transport_operators.ipynb)
+#md #     [`tracer_transport_operators.ipynb`](@__NBVIEWER_ROOT_URL__/examples/generated/tracer_transport_operators.ipynb)
 
 # To model marine biogeochemical processes on a global scale we need to be able to account for the movement of chemical constituents both horizontally and vertically.
 # We do this with a **tracer transport operator**.

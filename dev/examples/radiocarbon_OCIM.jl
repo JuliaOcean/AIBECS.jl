@@ -5,7 +5,7 @@
 
 #md # !!! tip
 #md #     This example is also available as a Jupyter notebook:
-#md #     [`radiocarbon_OCIM.ipynb`](@__NBVIEWER_ROOT_URL__examples/generated/radiocarbon_OCIM.ipynb)
+#md #     [`radiocarbon_OCIM.ipynb`](@__NBVIEWER_ROOT_URL__/examples/generated/radiocarbon_OCIM.ipynb)
 
 
 #---------------------------------------------------------
