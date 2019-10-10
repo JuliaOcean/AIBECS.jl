@@ -5,7 +5,7 @@
 
 #md # !!! tip
 #md #     This example is also available as a Jupyter notebook:
-#md #     [`ideal_mean_age.ipynb`](@__NBVIEWER_ROOT_URL__examples/generated/ideal_mean_age.ipynb)
+#md #     [`ideal_mean_age.ipynb`](@__NBVIEWER_ROOT_URL__/examples/generated/ideal_mean_age.ipynb)
 
 #---------------------------------------------------------
 # ## The model

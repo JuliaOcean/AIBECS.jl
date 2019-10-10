@@ -5,7 +5,7 @@
 
 #md # !!! tip
 #md #     This example is also available as a Jupyter notebook:
-#md #     [`p_cycle_DIP_DOP_POP.ipynb`](@__NBVIEWER_ROOT_URL__examples/generated/p_cycle_DIP_DOP_POP.ipynb)
+#md #     [`p_cycle_DIP_DOP_POP.ipynb`](@__NBVIEWER_ROOT_URL__/examples/generated/p_cycle_DIP_DOP_POP.ipynb)
 
 #---------------------------------------------------------
 # ## Tracer equations
