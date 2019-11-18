@@ -113,9 +113,9 @@ julia> initialize_Parameters_type(t, "MyPara") # creates MyPara
 """
 function initialize_Parameters_type(t, PName="Parameters")
     if isdefined(@__MODULE__, Symbol(PName))
-        error(
-              """
-              The name `$PName` is already used. Chose a different one.
+        @warn """
+              The name `$PName` is already used.
+              Will error if you changed the set of parameters.
               You can specify the name of the new parameters type via the syntax:
 
               julia> initialize_Parameters_type(t, PName)
@@ -123,7 +123,6 @@ function initialize_Parameters_type(t, PName="Parameters")
               See examples in the documentation of `initialize_Parameters_type`.
               (Type `?` and then `initialize_Parameters_type` to see the help.)
               """
-             )
     end
     symbols = t[!,:symbol]
     optimizables = t[!,:optimizable]
