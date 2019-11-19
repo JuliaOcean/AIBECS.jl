@@ -48,7 +48,7 @@ m = length(p₀)
 
 @testset "Parameters" begin
     @test t isa DataFrames.DataFrame
-    @test_throws ErrorException initialize_Parameters_type(t)
+    initialize_Parameters_type(t)
     @test_throws ErrorException add_parameter!(t, :τ, 30.0u"d")
     @test_throws ErrorException delete_parameter!(t, :not_a_parameter)
     @test size(t) == (m_all, 9) # m_all is # of params

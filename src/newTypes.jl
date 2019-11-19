@@ -21,3 +21,45 @@ function Base.:\(Jf::AgedJacobianFactors, y)
 end
 
 
+
+#= 
+TODO
+Work in progress to add some output types to use for plotting, etc.
+=#
+
+"""
+    ModelOutput
+
+Contains all the Model output.
+To be sent to, e.g., plotting routines.
+"""
+struct ModelOutput
+    name::String
+    grid::OceanGrid
+    tracers::Vector{Tracer}
+    transports::Vector{Transport}
+    fluxes::Vector{Flux}
+    parameters::DataFrame
+end
+
+"""
+    Tracer
+
+Modelled tracer data and metadata
+"""
+struct Tracer
+    name::String
+    description::String
+    values::Vector
+    transport_name::String
+end
+
+"""
+    Flux
+
+Flux between two tracers
+"""
+struct Flux
+    name::String
+end
+
