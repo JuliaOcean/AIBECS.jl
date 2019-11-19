@@ -84,7 +84,7 @@ T_DIP(p) = T_OCIM
 
 # For the sinking of particles, we are going to create a sparse matrix that depends on the parameters, too, which define how fast particles sink.
 
-T_POP(p) = buildPFD(grd, sinking_speed = w(p))
+T_POP(p) = buildPFD(grd, settling_velocity = w(p))
 
 # for which we need to define the sinking speed `w(p)` as a function of the parameters `p`.
 # Following the assumption that it increases linearly with depth, we write it as
