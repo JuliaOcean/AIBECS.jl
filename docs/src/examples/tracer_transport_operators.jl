@@ -100,7 +100,7 @@ grd.lat_3D
 # `wet3D` is a 3D array representing the 3D ocean with `true` for "wet" boxes and `false` for "dry" boxes.
 # Let's have a look at its contents:
 
-wet3D = grid.wet3D
+wet3D = grd.wet3D
 
 # It's a 2×2×2 `BitArray`, i.e., an array of bit elements (the `true` and `false` entries).
 # You can check that it matches our "shoebox" model.
