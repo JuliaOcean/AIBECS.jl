@@ -1,14 +1,14 @@
 using AIBECS
 
-wet3D, grd, T_Circulation = OCIM0.load() ;
+grd, T_Circulation = OCIM0.load() ;
 
-iwet = indices_of_wet_boxes(wet3D)
+iwet = indices_of_wet_boxes(grd)
 nb = length(iwet)
-z = ustrip.(vector_of_depths(wet3D, grd))
-ztop = vector_of_top_depths(wet3D, grd) ;
+z = ustrip.(vector_of_depths(grd))
+ztop = vector_of_top_depths(grd) ;
 
-DIV = buildDIV(wet3D, iwet, grd)
-Iabove = buildIabove(wet3D, iwet) ;
+DIV = buildDIV(grd)
+Iabove = buildIabove(grd) ;
 
 T_DIP(p) = T_Circulation
 T_DOP(p) = T_Circulation
@@ -102,7 +102,7 @@ depth = grd.depth
 iz = findfirst(depth .> 200u"m")
 iz, depth[iz]
 
-DIP_3D = rearrange_into_3Darray(DIP, wet3D)
+DIP_3D = rearrange_into_3Darray(DIP, grd)
 DIP_2D = DIP_3D[:,:,iz] * ustrip(1.0u"mol/m^3" |> u"mmol/m^3")
 lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 

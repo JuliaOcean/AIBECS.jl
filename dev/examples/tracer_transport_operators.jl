@@ -65,37 +65,14 @@ using AIBECS
 
 # We then load the shoebox model via
 
-wet3D, grd, T = Primeau_2x2x2.load() ;
+grd, T = Primeau_2x2x2.load() ;
 
-# where we have loaded 3 objects, `wet3D`, `grd`, and `T`.
+# where we have loaded 2 objects, `grd` and `T`.
 
-# `wet3D` is 3D array representing the 3D ocean with `true` for "wet" boxes and `false` for "dry" boxes.
-# Let's have a look at its contents:
-
-wet3D
-
-# It's a 2×2×2 `BitArray`, i.e., an array of bit elements (the `true` and `false` entries).
-# You can check that it matches our "shoebox" model.
-# (Well, except for the orientation, for which northwards in the box model is downwards in the array.)
-
-# We can find all the wet boxes simply via
-
-findall(wet3D)
-
-# These are the 3D indices of the wet boxes, `(i,j,k)`, called the "cartesian" indices.
-# If you want the "linear" indices, i.e., the numbers as shown in the image of the shoebox model, you can simply transform `wet3D` into a vector, via
-
-iwet = findall(vec(wet3D))
-
-# We can also check that we indeed have the expected number of wet boxes via
-
-nb = length(iwet)
-
-# Now let's look at the grid, `grd`:
+# `grd` is an `OceanGrid` object, of size 2×2×2:
 
 grd
 
-# It's an `OceanGrid` object, of size 2×2×2, as expected.
 # This object is defined in the [OceanGrids](https://github.com/briochemc/OceanGrids.jl) package, on which AIBECS depends.
 # There are many ways to look inside the grid, one of which is to iterate over it:
 
@@ -119,8 +96,30 @@ grd.lat_3D
 #nb # > **Note**
 #nb # > Julia comes with [Unitful](https://github.com/PainterQubits/Unitful.jl), a package for using units, which AIBECS uses.
 
+# Inside of `grd`, there is information of which boxes of the grid are "wet" (or "dry").
+# `wet3D` is a 3D array representing the 3D ocean with `true` for "wet" boxes and `false` for "dry" boxes.
+# Let's have a look at its contents:
 
-# Finally, let's have a look at the transport matrix `T`, which represents $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$, i.e., the flux divergence operator for dissolved tracers:
+wet3D = grd.wet3D
+
+# It's a 2×2×2 `BitArray`, i.e., an array of bit elements (the `true` and `false` entries).
+# You can check that it matches our "shoebox" model.
+# (Well, except for the orientation, for which northwards in the box model is downwards in the array.)
+
+# We can find all the wet boxes simply via
+
+findall(wet3D)
+
+# These are the 3D indices of the wet boxes, `(i,j,k)`, called the "cartesian" indices.
+# If you want the "linear" indices, i.e., the numbers as shown in the image of the shoebox model, you can simply transform `wet3D` into a vector, via
+
+iwet = findall(vec(wet3D))
+
+# We can also check that we indeed have the expected number of wet boxes via
+
+nb = length(iwet)
+
+# Now let's have a look at the transport matrix `T`, which represents $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$, i.e., the flux divergence operator for dissolved tracers:
 
 T
 

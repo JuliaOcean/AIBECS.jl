@@ -1,14 +1,6 @@
 using AIBECS
 
-wet3D, grd, T = Primeau_2x2x2.load() ;
-
-wet3D
-
-findall(wet3D)
-
-iwet = findall(vec(wet3D))
-
-nb = length(iwet)
+grd, T = Primeau_2x2x2.load() ;
 
 grd
 
@@ -17,6 +9,14 @@ grd
 grd.depth_3D
 
 grd.lat_3D
+
+wet3D = grd.wet3D
+
+findall(wet3D)
+
+iwet = findall(vec(wet3D))
+
+nb = length(iwet)
 
 T
 

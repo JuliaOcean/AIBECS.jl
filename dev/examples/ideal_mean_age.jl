@@ -116,7 +116,7 @@ using AIBECS
 # (For more details, see Tim DeVries's [website](https://tdevries.eri.ucsb.edu/models-and-data-products/) and references therein.)
 # With AIBECS, the OCIM0.1 and OCIM1 circulations can be loaded really easily, by simply typing
 
-wet3D, grd, T_OCIM = AIBECS.OCIM1.load()
+grd, T_OCIM = AIBECS.OCIM1.load()
 typeof(T_OCIM), size(T_OCIM)
 
 #
@@ -127,9 +127,8 @@ typeof(T_OCIM), size(T_OCIM)
 #nb # > Julia may ask you to download the OCIM matrix for you, in which case you should say yes (i.e., type `y`).
 #nb # > Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
 #
-# Additionally to downloading the OCIM file, the `load()` command loads 3 variables in the Julia workspace:
-# - `wet3D` — a 3D array of the model grid, filled with `1`'s at "wet" grid boxes and `0`'s and "land" grid boxes.
-# - `grd` — a `OceanGrid` object containing information about the 3D grid of the OCIM circulation, like the latitude, longitude, and depth of each grid boxes.
+# Additionally to downloading the OCIM file, the `load()` command loads 2 variables in the Julia workspace:
+# - `grd` — a `OceanGrid` object containing information about the 3D grid of the OCIM circulation, like the latitude, longitude, and depth of each grid boxes, as well as information on which boxes are "wet" or "dry".
 # - `T_OCIM` — the transport matrix representing advection and diffusion.
 #
 # The second line in command above tells you the type and the size of `T_OCIM`.
@@ -180,7 +179,7 @@ source_age(age, p) = 1
 # (You can see the list of functions by typing `varinfo(AIBECS)` at the REPL.)
 # Here we will use the vector of grid box depths, `z`, which AIBECS can generate for us via
 
-z = vector_of_depths(wet3D, grd)
+z = vector_of_depths(grd)
 
 # So what is the top layer?
 # Let's investigate what's the minimum depth:
@@ -250,7 +249,7 @@ p₀ = IdealAgeParameters()
 # The vector `x₀` will be our initial guess for the state.
 # Let's assume that the age is `1` (seconds) everywhere (as an initial guess):
 
-nb = number_of_wet_boxes(wet3D)  # number of wet boxes
+nb = number_of_wet_boxes(grd)  # number of wet boxes
 x₀ = ones(nb)
 
 # The first line above defines the number of wet grid boxes, `nb`.
@@ -348,11 +347,11 @@ age = solve(prob, CTKAlg())
 # First, we must rearrange `age` into the 3D model grid.
 # For that we will need the vector of the indices of wet points in the 3D grid, which we will denote by `iwet`, and which AIBECS generates via
 
-iwet = indices_of_wet_boxes(wet3D)
+iwet = indices_of_wet_boxes(grd)
 
 # We then rearrange the column vector `age` into a 3D array via
 
-age_3D = fill(NaN, size(wet3D)) # creates a 3D array of NaNs of the same size as `wet3D`
+age_3D = fill(NaN, size(grd)) # creates a 3D array of NaNs of the same size as the grid
 age_3D[iwet] = age              # Fills the wet grid boxes with the age values
 size(age_3D)                    # Just to check the size of age_3D
 

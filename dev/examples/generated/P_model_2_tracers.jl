@@ -1,14 +1,14 @@
 using AIBECS
 
-wet3D, grd, T_OCIM = OCIM0.load() ;
+grd, T_OCIM = OCIM0.load() ;
 
 T_DIP(p) = T_OCIM
 
-T_POP(p) = buildPFD(grd, wet3D, sinking_speed = w(p))
+T_POP(p) = buildPFD(grd, settling_velocity = w(p))
 
 w(p) = p.w₀ .+ p.w′ * z
 
-iwet = findall(wet3D)
+iwet = findall(vec(grd.wet3D))
 z = ustrip.(grd.depth_3D[iwet])
 
 T_all = (T_DIP, T_POP) ;
@@ -93,7 +93,7 @@ DIP, POP = state_to_tracers(s, nb, 2)
 iz = findfirst(grd.depth .> 2000u"m")
 iz, grd.depth[iz]
 
-DIP_3D = rearrange_into_3Darray(DIP, wet3D)
+DIP_3D = rearrange_into_3Darray(DIP, grd)
 DIP_2D = DIP_3D[:,:,iz] * ustrip(1.0u"mol/m^3" |> u"mmol/m^3")
 lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 
@@ -121,7 +121,7 @@ using WorldOceanAtlasTools
 ωs = [1.0, 0.0] # the weight for the mismatch (weight of POP = 0)
 ωp = 1e-4       # the weight for the parameters prior estimates
 
-v = ustrip.(vector_of_volumes(wet3D, grd))
+v = ustrip.(vector_of_volumes(grd))
 f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 ∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 ∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))

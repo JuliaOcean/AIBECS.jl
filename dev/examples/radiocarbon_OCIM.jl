@@ -59,7 +59,7 @@ using AIBECS
 
 # We then load the OCIM1 model (the grid and the transport) via
 
-wet3D, grd, T = OCIM1.load() ;
+grd, T = OCIM1.load() ;
 
 # #### Sources and Sinks
 
@@ -75,7 +75,7 @@ end
 # We must define the air–sea exchange rate, `Λ(x,p)`, which requires us to define which boxes are located at the surface first.
 # This is done, e.g., via
 
-iwet = findall(vec(wet3D))
+iwet = indices_of_wet_boxes(grd)
 surface_boxes = grd.depth_3D[iwet] .== grd.depth[1]
 
 # The air–sea exchange rate is then given by

@@ -1,13 +1,13 @@
 using AIBECS
 
-wet3D, grd, T = OCIM1.load() ;
+grd, T = OCIM1.load() ;
 
 function G(x, p)
     τ, Ratm = p.τ, p.Ratm
     return Λ(Ratm .- x, p) - x / τ
 end
 
-iwet = findall(vec(wet3D))
+iwet = indices_of_wet_boxes(grd)
 surface_boxes = grd.depth_3D[iwet] .== grd.depth[1]
 
 function Λ(x, p)

@@ -1,13 +1,13 @@
 using AIBECS
 
-wet3D, grd, T_OCIM = AIBECS.OCIM1.load()
+grd, T_OCIM = AIBECS.OCIM1.load()
 typeof(T_OCIM), size(T_OCIM)
 
 T_age(p) = T_OCIM
 
 source_age(age, p) = 1
 
-z = vector_of_depths(wet3D, grd)
+z = vector_of_depths(grd)
 
 minimum(z)
 
@@ -25,7 +25,7 @@ t
 
 p₀ = IdealAgeParameters()
 
-nb = number_of_wet_boxes(wet3D)  # number of wet boxes
+nb = number_of_wet_boxes(grd)  # number of wet boxes
 x₀ = ones(nb)
 
 T_matrices = (T_age,)           # bundles all the transport matrices in a tuple
@@ -37,9 +37,9 @@ prob = SteadyStateProblem(F, ∇ₓF, x₀, p₀)
 
 age = solve(prob, CTKAlg())
 
-iwet = indices_of_wet_boxes(wet3D)
+iwet = indices_of_wet_boxes(grd)
 
-age_3D = fill(NaN, size(wet3D)) # creates a 3D array of NaNs of the same size as `wet3D`
+age_3D = fill(NaN, size(grd)) # creates a 3D array of NaNs of the same size as the grid
 age_3D[iwet] = age              # Fills the wet grid boxes with the age values
 size(age_3D)                    # Just to check the size of age_3D
 
