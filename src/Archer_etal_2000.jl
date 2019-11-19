@@ -46,7 +46,7 @@ function build_grid()
     elon = [0,360] * u"°"
     elat = [-90, -90+fraction_area_high*180, 90] * u"°"
     edepth = [0u"m", depth_low, depth_high, depth_ocean]
-    return OceanGrid(elon, elat, edepth)
+    return OceanGrid(elon, elat, edepth, wet3D)
 end
 
 function build_T(grid)
@@ -78,11 +78,10 @@ end
 """
     load
 
-Returns wet3D, grid, and T (in that order).
+Returns grid and T (in that order).
 """
 function load()
     print("Creating 6-box model")
-    wet3D = build_wet3D()
     grid = build_grid()
     T = build_T(grid)
     println(" ✔")
@@ -101,7 +100,7 @@ function load()
             so that particulate sinking flux divergence operators can be built.
             (See the comments at the start of the Archer_etal_2000.jl file for details.)
             """
-    return wet3D, grid, T
+    return grid, T
 end
 
 end

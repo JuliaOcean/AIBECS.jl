@@ -7,28 +7,28 @@ using ..GridTools
 
 
 """
-    buildPFD(w, DIV, Iabove)
+    buildPFD(grid; settling_velocity=40u"m/s")
 
-Builds the particle flux divergence operator `PFD`
-for a particle sinking speed w.
+Builds the particle flux divergence operator `PFD` for a given particle sinking speed
+(`settling_velocity`, with default value of 40 m s⁻¹).
 
 Schematic of a grid cell:
 ```
-     top  ┌─────────────────────────────┐   ┬
-          │      ↓ w            ↓ Φ     │   │
-          │ (sinking speed)    (flux)   │   │
-          │                             │   │
-          │            x                │   dz
-          │      (particle conc.)       │   │
-          │                             │   │
-          │                             │   │
-  bottom  └─────────────────────────────┘   ┴
+     top  ┌─────────────────────────────────┐   ┬
+          │      ↓ w                ↓ Φ     │   │
+          │ (settling velovity)    (flux)   │   │
+          │                                 │   │
+          │            x                    │   dz
+          │      (particle conc.)           │   │
+          │                                 │   │
+          │                                 │   │
+  bottom  └─────────────────────────────────┘   ┴
 ```
 
 - dz is the height of grid cell [m]
 - w is the particle sinking speed at the top of the grid cell [m s⁻¹]
-- Φ is the flux at the top of the grid cell [mmol m⁻² s⁻¹]
-- x is the particle concentration of the cell [mmol m⁻³]
+- Φ is the flux at the top of the grid cell [mol m⁻² s⁻¹]
+- x is the particle concentration of the cell [mol m⁻³]
 
 The PFD operator is defined by
 
@@ -50,28 +50,36 @@ And FLUX, the sinking particle flux operator, is defined by
 # Example
 
 ```julia-repl
-julia> PFD = buildPFD(w)
+julia> buildPFD(grid, settling_velocity=1.0) # 1.0 m/s (SI units assumed)
 ```
+"""
+function buildPFD(grid; settling_velocity=40u"m/s")
+    iwet = findall(vec(grid.wet3D))
+    DIV = buildDIV(grid)
+    Iabove = buildIabove(grid.wet3D, iwet)
+    w = ustrip.(upreferred.(settling_velocity))
+    return DIV * buildFLUX(w, Iabove)
+end
+"""
+    buildPFD(w, DIV, Iabove)
+
+Returns `DIV * buildFLUX(w, Iabove)` 
+
+This function is useful to avoid reconstructing `DIV` and `Iabove` every time.
+It should allow for faster runs.
 """
 buildPFD(w, DIV, Iabove) = DIV * buildFLUX(w, Iabove)
 
-function buildPFD(grid, wet3D; sinking_speed=1.0)
-    w = sinking_speed
-    iwet = findall(vec(wet3D))
-    DIV = buildDIV(wet3D, iwet, grid)
-    Iabove = buildIabove(wet3D, iwet)
-    return DIV * buildFLUX(w, Iabove)
-end
-
 """
-    buildDIV(wet3D, iwet, grid)
+    buildDIV(grid)
 
 Build the DIV operator such that
 
     DIV * Φ = 1/dz * (Φ - Φ[below]) ≃ dΦ/dz.
 """
-function buildDIV(wet3D, iwet, grid)
-    Ibelow = buildIbelow(wet3D, iwet)
+function buildDIV(grid)
+    Ibelow = buildIbelow(grid)
+    iwet = indices_of_wet_boxes(grid)
     dz = ustrip.(grid.δz_3D[iwet])
     return sparse(Diagonal(dz.^(-1))) * (Ibelow - I) # divergence with positive downwards
 end

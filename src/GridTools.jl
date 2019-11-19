@@ -10,7 +10,7 @@ Off-diaongal matrices
 """
     buildIbelow(wet3D, iwet)
 
-Build the shifted-diagonal sparse matrix of the indices of below neighbours.
+Builds the shifted-diagonal sparse matrix of the indices of below neighbours.
 
 Ibelow[i,j] = 1 if the box represented by the linear index i
 lies directly below the box represented by the linear index j.
@@ -24,17 +24,31 @@ function buildIbelow(wet3D, iwet)
     idx .= idx[:, :, [2:ndepth + 1; 1]]      # downward shift
     return In[idx[:], :][iwet, iwet]
 end
+"""
+    buildIbelow(grid)
+
+Builds the shifted-diagonal sparse matrix of the indices of below neighbours for `grid`.
+See `buildIbelow(wet3D, iwet)`.
+"""
+buildIbelow(grid) = buildIbelow(grid.wet3D, indices_of_wet_boxes(grid))
 export buildIbelow
 
 """
     buildIabove(wet3D, iwet)
 
-Build the shifted-diagonal sparse matrix of the indices of above neighbours.
+Builds the shifted-diagonal sparse matrix of the indices of above neighbours.
 
 Iabove[i,j] = 1 if the box represented by the linear index i
 lies directly above the box represented by the linear index j.
 """
 buildIabove(wet3D, iwet) = copy(transpose(buildIbelow(wet3D, iwet)))
+"""
+    buildIabove(grid)
+
+Builds the shifted-diagonal sparse matrix of the indices of above neighbours for `grid`.
+See `buildIabove(wet3D, iwet)`.
+"""
+buildIabove(grid) = copy(transpose(buildIbelow(grid)))
 export buildIabove
 
 
@@ -53,43 +67,63 @@ array_of_volumes(grid) = grid.volume_3D
 export array_of_volumes
 
 """
-    indices_of_wet_boxes(wet3D)
+    wet_boxes(grid)
+
+Returns the 3D BitArray of wet boxes of the grid.
+"""
+wet_boxes(grid) = grid.wet3D
+export wet_boxes
+
+"""
+    indices_of_wet_boxes(wet3D::BitArray)
 
 Returns the vector of the indices of wet grid boxes.
 """
-indices_of_wet_boxes(wet3D) = (LinearIndices(wet3D))[findall(!iszero, wet3D)]
+indices_of_wet_boxes(wet3D::BitArray) = findall(vec(wet3D))
+"""
+    indices_of_wet_boxes(grid)
+
+Returns the vector of the indices of wet grid boxes.
+"""
+indices_of_wet_boxes(grid) = indices_of_wet_boxes(grid.wet3D)
 export indices_of_wet_boxes
 
 """
-    number_of_wet_boxes(wet3D)
+    number_of_wet_boxes(wet3D::BitArray)
 
 Returns the number of wet grid boxes.
 """
-number_of_wet_boxes(wet3D) = length(indices_of_wet_boxes(wet3D))
+number_of_wet_boxes(wet3D::BitArray) = length(indices_of_wet_boxes(wet3D))
+"""
+    number_of_wet_boxes(grid)
+
+Returns the number of wet grid boxes.
+"""
+number_of_wet_boxes(grid) = number_of_wet_boxes(grid.wet3D)
 export number_of_wet_boxes
 
 """
-    vector_of_volumes(wet3D, grid)
+    vector_of_volumes(grid)
 
 Returns the vector of volumes of wet boxes.
 """
-vector_of_volumes(wet3D, grid) = array_of_volumes(grid)[indices_of_wet_boxes(wet3D)]
+vector_of_volumes(grid) = array_of_volumes(grid)[indices_of_wet_boxes(grid.wet3D)]
 export vector_of_volumes
 
 """
-    vector_of_depths(wet3D, grid)
+    vector_of_depths(grid)
 
 Returns the vector of depths of the center of wet boxes.
 """
-vector_of_depths(wet3D, grid) = grid.depth_3D[indices_of_wet_boxes(wet3D)]
+vector_of_depths(grid) = grid.depth_3D[indices_of_wet_boxes(grid.wet3D)]
 export vector_of_depths
 
 """
-    vector_of_depths(wet3D, grid)
+    vector_of_depths(grid)
 
 Returns the vector of depths of the top of wet boxes.
 """
-vector_of_top_depths(wet3D, grid) = grid.depth_top_3D[indices_of_wet_boxes(wet3D)]
+vector_of_top_depths(grid) = grid.depth_top_3D[indices_of_wet_boxes(grid.wet3D)]
 export vector_of_top_depths
 
 #===================================
@@ -132,27 +166,39 @@ export weighted_norm²
 ===================================#
 
 """
-    rearrange_into_3Darray(x, wet3D)
+    rearrange_into_3Darray(x, wet3D::BitArray)
 
 Returns a 3D array of `x` rearranged to the `true` entries of `wet3D`.
 Entries where `wet3D` is `false` are filled with `NaN`s.
 """
-function rearrange_into_3Darray(x, wet3D)
+function rearrange_into_3Darray(x, wet3D::BitArray)
     iwet = indices_of_wet_boxes(wet3D)
     x3d = fill(NaN, size(wet3D))
     x3d[iwet] .= x
     return x3d
 end
+"""
+    rearrange_into_3Darray(x, grid)
+
+Returns a 3D array of `x` rearranged to the wet boxes of the grid.
+"""
+rearrange_into_3Darray(x, grid) = rearrange_into_3Darray(x, grid.wet3D)
 
 """
-    rearrange_into_1Dvector(x3d, wet3D)
+    rearrange_into_1Dvector(x3d, wet3D::BitArray)
 
 Returns a 1D vector of `x3d` from the linear indices where `wet3D` is `true`.
 """
-function rearrange_into_1Dvector(x3d, wet3D)
+function rearrange_into_1Dvector(x3d, wet3D::BitArray)
     iwet = indices_of_wet_boxes(wet3D)
     return x3d[iwet]
 end
+"""
+    rearrange_into_1Dvector(x3d, grid)
+
+Returns the 1D vector equivalent of the 3D array `x3d` according to `grid`.
+"""
+rearrange_into_1Dvector(x3d, grid) = rearrange_into_1Dvector(x3d, grid.wet3D)
 export rearrange_into_3Darray, rearrange_into_1Dvector
 
 #=============================================

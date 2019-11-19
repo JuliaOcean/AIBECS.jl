@@ -31,8 +31,9 @@ function register_OCIM1()
             - DeVries, T., 2014: The oceanic anthropogenic CO2 sink: Storage, air‐sea fluxes, and transports over the industrial era, Global Biogeochem. Cycles, 28, 631–647, doi:10.1002/2013GB004739.
             - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, https://doi.org/10.1175/JPO-D-10-05011.1
             """,
-            "https://files.figshare.com/17302703/OCIM1.bson",
-            "45ebe60e166dcd1b5bdbdf787713b41cb1d5bb2bf4c61a57c8497367a68354e6",
+            "https://files.figshare.com/18789332/OCIM1.bson",
+            # use `sha2_256` (no quotes) to figure out the hash on first try
+            "28d4290c04844180191e71d5e1bc832ff43c1127dd621b719c6622a2288d5e24",
             fetch_method = fallback_download
         )
     )
@@ -42,13 +43,13 @@ end
 """
     load
 
-Returns wet3d, grd, and T (in that order) from FigShare repository.
+Returns `grd` and `T` (in that order) from FigShare repository.
 """
 function load()
     print("Loading OCIM1")
     register_OCIM1()
     bson_file = @datadep_str string("AIBECS_OCIM1/", "OCIM1.bson")
-    BSON.@load bson_file T grid wet3D
+    BSON.@load bson_file T grid
     println(" ✔")
     @info """You are about to use OCIM1 model.
           If you use it for research, please cite:
@@ -60,7 +61,7 @@ function load()
           at the root of the AIBECS.jl package repository.
           (Look for the "DeVries_Primeau_2011" and "DeVries_2014" keys.)
           """
-    return wet3D, grid, ustrip.(T)
+    return grid, ustrip.(T)
 end
 
 end # end module

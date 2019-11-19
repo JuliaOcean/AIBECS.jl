@@ -2,7 +2,7 @@
 Transport matrices
 ===========================================#
 T_DIP(p) = T_Circulation
-T_DOP(p) = T_Circulation
+T_DOP = T_DIP
 S₀ = buildPFD(ones(nb), DIV, Iabove)
 S′ = buildPFD(ztop, DIV, Iabove)
 function T_POP(p)

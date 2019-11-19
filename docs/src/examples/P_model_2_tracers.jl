@@ -75,7 +75,7 @@ using AIBECS
 
 # We load the circulation and grid of the OCIM0.1 via
 
-wet3D, grd, T_OCIM = OCIM0.load() ;
+grd, T_OCIM = OCIM0.load() ;
 
 # where the operator $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$ is represented by the sparse matrix `T_OCIM`.
 # In AIBECS, all the transport matrices must be declared as functions of the parameters `p`, so we simply define
@@ -84,7 +84,7 @@ T_DIP(p) = T_OCIM
 
 # For the sinking of particles, we are going to create a sparse matrix that depends on the parameters, too, which define how fast particles sink.
 
-T_POP(p) = buildPFD(grd, wet3D, sinking_speed = w(p))
+T_POP(p) = buildPFD(grd, sinking_speed = w(p))
 
 # for which we need to define the sinking speed `w(p)` as a function of the parameters `p`.
 # Following the assumption that it increases linearly with depth, we write it as
@@ -93,7 +93,7 @@ w(p) = p.w₀ .+ p.w′ * z
 
 # For this to work, we must create a vector of depths, `z`, which is simply done via
 
-iwet = findall(wet3D)
+iwet = findall(vec(grd.wet3D))
 z = ustrip.(grd.depth_3D[iwet])
 
 # (We must strip the units via `ustrip` because units do not percolate through the functionality of AIBECS flawlessly at this early stage of development.)
@@ -265,7 +265,7 @@ iz, grd.depth[iz]
 
 #-
 
-DIP_3D = rearrange_into_3Darray(DIP, wet3D)
+DIP_3D = rearrange_into_3Darray(DIP, grd)
 DIP_2D = DIP_3D[:,:,iz] * ustrip(1.0u"mol/m^3" |> u"mmol/m^3")
 lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 
@@ -307,7 +307,7 @@ using WorldOceanAtlasTools
 
 # We then generate the objective function and some derivatives using the PO₄ mean and variance
 
-v = ustrip.(vector_of_volumes(wet3D, grd))
+v = ustrip.(vector_of_volumes(grd))
 f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 ∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 ∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))

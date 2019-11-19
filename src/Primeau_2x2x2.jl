@@ -30,10 +30,10 @@ function build_grid()
     elon = [0,180,360] * u"°"
     elat = [-90, 0, 90] * u"°"
     edepth = [0, 200, 3700] * u"m"
-    return OceanGrid(elon, elat, edepth)
+    return OceanGrid(elon, elat, edepth, build_wet3D())
 end
 
-function build_T(grid, wet3D)
+function build_T(grid)
     # From Archer et al. [2000]
     v3D = array_of_volumes(grid)
     nb = length(v3D)
@@ -49,7 +49,7 @@ function build_T(grid, wet3D)
     T += CG.flux_divergence_operator_from_advection(MIX, [2, 6], v3D, nb)
 
     # Only keep wet points
-    iwet = findall(vec(wet3D))
+    iwet = findall(vec(grid.wet3D))
 
     return T[iwet, iwet]
 end
@@ -58,15 +58,14 @@ end
 """
     load
 
-Returns wet3D, grd, and T (in that order).
+Returns `grd` and `T` (in that order).
 """
 function load()
     print("Creating François Primeau's 2x2x2 model")
-    wet3D = build_wet3D()
     grd = build_grid()
-    T = build_T(grd, wet3D)
+    T = build_T(grd)
     println(" ✔")
-    return wet3D, grd, ustrip.(T)
+    return grd, ustrip.(T)
 end
 
 end

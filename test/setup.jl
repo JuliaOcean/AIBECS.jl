@@ -1,21 +1,23 @@
 
 # Load the circulation and grid
-wet3D, grid, T_Circulation_unit = Circulation.load()
+grid, T_Circulation_unit = Circulation.load()
 T_Circulation = ustrip.(T_Circulation_unit) # strip units for now
 
 # Define useful constants and arrays
-iwet = indices_of_wet_boxes(wet3D)
-nb = number_of_wet_boxes(wet3D)
-v = ustrip.(vector_of_volumes(wet3D, grid)) # strip units for now
-z = ustrip.(vector_of_depths(wet3D, grid)) # strip units for now
-ztop = ustrip.(vector_of_top_depths(wet3D, grid)) # strip units for now
+iwet = indices_of_wet_boxes(grid)
+nb = number_of_wet_boxes(grid)
+v = ustrip.(vector_of_volumes(grid)) # strip units for now
+z = ustrip.(vector_of_depths(grid)) # strip units for now
+ztop = ustrip.(vector_of_top_depths(grid)) # strip units for now
 # And matrices
-DIV = buildDIV(wet3D, iwet, grid)
-Iabove = buildIabove(wet3D, iwet)
+DIV = buildDIV(grid)
+Iabove = buildIabove(grid)
 
 @testset "Circulation and grid" begin
     @testset "wet3D" begin
+        wet3D = wet_boxes(grid)
         @test wet3D isa BitArray{3}
+        @test wet3D == grid.wet3D
     end
     @testset "grid" begin
         @test grid isa OceanGrid
@@ -41,7 +43,7 @@ end
     end
     @testset "nb (number of wet boxes)" begin
         @test nb isa Int
-        @test nb == sum(vec(wet3D))
+        @test nb == sum(vec(grid.wet3D))
     end
     @testset "v (vector of volumes)" begin
         @test v isa Vector{Float64}
