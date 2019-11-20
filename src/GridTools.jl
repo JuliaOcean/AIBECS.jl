@@ -173,7 +173,7 @@ Entries where `wet3D` is `false` are filled with `NaN`s.
 """
 function rearrange_into_3Darray(x, wet3D::BitArray)
     iwet = indices_of_wet_boxes(wet3D)
-    x3d = fill(NaN, size(wet3D))
+    x3d = Array{Union{Missing,Float64},3}(undef, size(wet3D))
     x3d[iwet] .= x
     return x3d
 end
@@ -184,22 +184,7 @@ Returns a 3D array of `x` rearranged to the wet boxes of the grid.
 """
 rearrange_into_3Darray(x, grid) = rearrange_into_3Darray(x, grid.wet3D)
 
-"""
-    rearrange_into_1Dvector(x3d, wet3D::BitArray)
-
-Returns a 1D vector of `x3d` from the linear indices where `wet3D` is `true`.
-"""
-function rearrange_into_1Dvector(x3d, wet3D::BitArray)
-    iwet = indices_of_wet_boxes(wet3D)
-    return x3d[iwet]
-end
-"""
-    rearrange_into_1Dvector(x3d, grid)
-
-Returns the 1D vector equivalent of the 3D array `x3d` according to `grid`.
-"""
-rearrange_into_1Dvector(x3d, grid) = rearrange_into_1Dvector(x3d, grid.wet3D)
-export rearrange_into_3Darray, rearrange_into_1Dvector
+export rearrange_into_3Darray
 
 #=============================================
 unpacking of multi-tracers
