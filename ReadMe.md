@@ -28,7 +28,7 @@
 </p>
 <p>
   <a href="https://travis-ci.com/briochemc/AIBECS.jl">
-    <img alt="Build Status" src="https://travis-ci.com/briochemc/AIBECS.jl.svg?branch=master">
+    <img alt="Build Status" src="https://img.shields.io/travis/com/briochemc/AIBECS.jl/master?label=OSX/Linux&logo=travis&logoColor=white">
   </a>
   <a href='https://coveralls.io/github/briochemc/AIBECS.jl'>
     <img src='https://coveralls.io/repos/github/briochemc/AIBECS.jl/badge.svg' alt='Coverage Status' />
@@ -36,7 +36,7 @@
 </p>
 <p>
   <a href="https://ci.appveyor.com/project/briochemc/AIBECS-jl">
-    <img alt="Build Status" src="https://ci.appveyor.com/api/projects/status/m5e7bg8txf39hqby/branch/master?svg=true">
+    <img alt="Build Status" src="https://img.shields.io/appveyor/ci/briochemc/AIBECS-jl/master?label=Windows&logo=appveyor&logoColor=white">
   </a>
   <a href="https://codecov.io/gh/briochemc/AIBECS.jl">
     <img src="https://codecov.io/gh/briochemc/AIBECS.jl/branch/master/graph/badge.svg" />
