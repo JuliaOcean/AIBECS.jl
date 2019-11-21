@@ -48,14 +48,14 @@
 
 
 
-**AIBECS** (for **A**lgebraic **I**mplicit **B**iogeochemical **E**lemental **C**ycling **S**ystem, pronounced like the cool [ibex](https://en.wikipedia.org/wiki/Ibex)) is a Julia package that provides ocean biogeochmistry modelers with an easy-to-use interface for creating and running models of the ocean system.
+**AIBECS** (for **A**lgebraic **I**mplicit **B**iogeochemical **E**lemental **C**ycling **S**ystem, pronounced like the cool [ibex](https://en.wikipedia.org/wiki/Ibex)) is a Julia package that provides ocean biogeochemistry modelers with an easy-to-use interface for creating and running models of the ocean system.
 
 AIBECS is a system because it allows you to chose some biogeochemical tracers, define their interactions, select an ocean circulation and *Voilà!* — your model is ready to run.
 
 ## Getting started
 
 
-Head over to the [documentation](https://briochemc.github.io/AIBECS.jl/stable/) and find your way to some simple Jupyter notebooks to get you started with AIBECS!
+Head over to the [documentation](https://briochemc.github.io/AIBECS.jl/stable/) and find your way to some simple examples (also available as Jupyter notebooks) to get you started!
 
 
 ## The Maths
