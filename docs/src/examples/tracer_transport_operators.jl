@@ -290,15 +290,12 @@ x_hist, t_hist = time_steps(x₀, Δt, 1000, F, ∇ₓF) # runs the simulation
 
 # Once it's done, we can plot the evolution of radiocarbon through time via
 
-using PyPlot
-clf()
+using Plots
 C14age_hist = -log.(x_hist) * ustrip(p.τ * u"s" |> u"yr")
-plot(t_hist * ustrip(1u"s" |> u"yr"), C14age_hist')
-xlabel("simulation time (years)")
-ylabel("¹⁴C age (years)")
-legend("box " .* string.(iwet))
-title("Simulation of the evolution of ¹⁴C age with Crank-Nicolson time steps")
-gcf()
+p = plot(t_hist * ustrip(1u"s" |> u"yr"), C14age_hist'; label="box " .* string.(iwet))
+xlabel!(p, "simulation time (years)")
+ylabel!(p, "Radiocarbon age (years)")
+title!(p, "Radiocarbon age vs simulation time (Crank-Nicolson)")
 
 # The box model took more than 4000 years to spin up to equilibrium.
 # For a box model that's no big deal because it is not computationally expensive to run the model, but for a big circulation model waiting for the model to spinup is painfully long.

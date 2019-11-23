@@ -149,40 +149,45 @@ R = solve(prob, CTKAlg()).u             # solve the problem
 
 C14age = -log.(R) * p.τ * u"s" .|> u"yr"
 
-
 # ### Plot the radiocarbon age
 
-# First, we must rearrange the age from its column vector shape into the corresponding 3D field.
-# We start by filling a 3D array of the same size as the grid with some `NaN`s. 
-# (It serves as a blank canvas that we will "color" in with our computed age.)
+# The AIBECS now comes with some recipes for plotting.
+# Without going into too much detail, Julia comes with a versatile plotting library called [Plots.jl](https://github.com/JuliaPlots/Plots.jl), which we will use in these examples.
 
-C14age_3D = fill(NaN, size(grd))     # creates a 3D array of NaNs
+##md # !!! warn
+#md #     Make sure you have installed [Plots.jl](https://github.com/JuliaPlots/Plots.jl) and a backend (e.g., GR.jl or PyPlot.jl).
 
-# We use the indices of wet boxes, `iwet`, to fill in the 3D array, via
+#nb # > **Warning!**
+#nb # > Make sure you have installed [Plots.jl](https://github.com/JuliaPlots/Plots.jl) and a backend (e.g., GR.jl or PyPlot.jl).
 
-C14age_3D[iwet] .= ustrip.(C14age)   # Fills the wet grid boxes with the age values
+# So first, let's tell Julia we want to use Plots.jl.
 
-# where we have removed the unit (for plotting).
-# We then pick a layer to plot, e.g., the first layer with a depth larger than 700m.
-# For that, we create `iz`, which is the index of that layer:
+using Plots
 
-iz = findfirst(grd.depth .> 700u"m") # aim for a depth of ~ 700 m
+# Then, we can plot a horizontal map of the age at 700m in a single line, via
 
-# We then take a horizontal 2D slice of the 3D age at index `iz`
+horizontalslice(C14age, grd, 700; color=:viridis)
 
-C14age_3D_1000m_yr = C14age_3D[:,:,iz]
+#md # !!! tip
+#md #     The function `horizontalslice(x, grd, depth)` is provided by AIBECS.
+#md #     It is actually just a recipe for Plots.jl that figures out a few things for you,
+#md #     like extracting the slice at the given depth.
+#md #     But you can customize it to your liking, by appending keyword arguments,
+#md #     like `color=:viridis` here.
+#md #     Head over to the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package
+#md #     documentation to see a more complete list of attributes
 
-# Finally, we plot the radiocarbon age using Cartopy, via:
+#nb # > **Tip!**
+#nb # > The function `horizontalslice(x, grd, depth)` is provided by AIBECS.
+#nb # > It is actually just a recipe for Plots.jl that figures out a few things for you,
+#nb # > like extracting the slice at the given depth.
+#nb # > But you can customize it to your liking, by appending keyword arguments,
+#nb # > like `color=:viridis` here.
+#nb # > Head over to the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package
+#nb # > documentation to see a more complete list of attributes
 
-ENV["MPLBACKEND"]="qt5agg"
-using PyPlot, PyCall
-clf()
-ccrs = pyimport("cartopy.crs")
-ax = subplot(projection=ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()
-lon_cyc = ustrip.([grd.lon; grd.lon[1] + 360u"°"]) # making it cyclic for Cartopy
-age_cyc = hcat(C14age_3D_1000m_yr, C14age_3D_1000m_yr[:,1])
-p = contourf(lon_cyc, ustrip.(grd.lat), age_cyc, levels=0:100:2000, transform=ccrs.PlateCarree(), zorder=-1)
-colorbar(p, orientation="horizontal")
-title("¹⁴C age at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM1 circulation")
-gcf() # gets the current figure to display
+# We can also have a look at a zonal average in centuries (or hectoyears, `hyr`), via
+
+zonalaverage(C14age .|> u"hyr", grd; color=:viridis)
+
+# List of plotting recipes coming soon!

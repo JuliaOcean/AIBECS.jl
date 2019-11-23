@@ -9,7 +9,7 @@ using Flatten, FieldMetadata, DataFrames
 using BSON
 @reexport using OceanGrids            # To store the grid
 @reexport using Unitful, UnitfulAstro
-using RecipesBase
+using RecipesBase, Interpolations, Distances
 
 include("GridTools.jl")
 include("CirculationGeneration.jl")

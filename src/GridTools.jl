@@ -192,6 +192,11 @@ unpacking of multi-tracers
 
 state_to_tracers(x, nb, nt) = ntuple(i -> state_to_tracer(x, nb, nt, i), nt)
 state_to_tracer(x, nb, nt, i) = x[tracer_indices(nb, nt, i)]
+function state_to_tracers(x, grd) 
+    nb = number_of_wet_boxes(grd)
+    nt = Int(round(length(x) / nb))
+    return state_to_tracers(x, nb, nt)
+end
 tracer_indices(nb, nt, i) = (i-1)*nb+1 : i*nb
 tracers_to_state(xs) = reduce(vcat, xs)
 export state_to_tracers, state_to_tracer, tracers_to_state, tracer_indices
