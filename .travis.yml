@@ -32,12 +32,12 @@ jobs:
     - stage: "Documentation"
       julia: 1.1
       os: linux
-      before_script:
-        - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
-                                    Pkg.add("Conda"); using Conda;
-                                    Conda.add("matplotlib"); Conda.add("cartopy")';
-        - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
-                                    Pkg.add("PyCall"); ENV["PYTHON"]=""; Pkg.build("PyCall")' 
+      #before_script:
+      #  - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
+      #                              Pkg.add("Conda"); using Conda;
+      #                              Conda.add("matplotlib"); Conda.add("cartopy")';
+      #  - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
+      #                              Pkg.add("PyCall"); ENV["PYTHON"]=""; Pkg.build("PyCall")' 
       script:
         - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
                                     Pkg.develop(PackageSpec(path=pwd()))'
