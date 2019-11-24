@@ -4,9 +4,14 @@ ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 # Generate examples
 include("generate.jl")
 
-EXAMPLES_jl = [f for f in readdir(EXAMPLEDIR) if endswith(f, ".jl")]
-EXAMPLES_md = [replace(f, ".jl" => ".md") for f in EXAMPLES_jl]
-GENERATEDEXAMPLES = [joinpath("examples", "generated", f) for f in EXAMPLES_md]
+tutorials_jl = [f for f in readdir(tutorials_directory) if endswith(f, ".jl")]
+howtos_jl = [f for f in readdir(howtos_directory) if endswith(f, ".jl")]
+
+tutorials_md = [replace(f, ".jl" => ".md") for f in tutorials_jl]
+howtos_md = [replace(f, ".jl" => ".md") for f in howtos_jl]
+
+generated_tutorials = [joinpath("tutorials", "generated", f) for f in tutorials_md]
+generated_howtos = [joinpath("howtos", "generated", f) for f in howtos_md]
 
 makedocs(
     sitename="AIBECS.jl",
@@ -16,9 +21,10 @@ makedocs(
     # organisation
     pages = Any[
         "Home" => "index.md",
-        "Prerequisites" => "prerequisites.md",
-        "Examples" => GENERATEDEXAMPLES,
-        "Function index" => "functions.md"
+        "Tutorials" => generated_tutorials,
+        "How-to guides" => generated_howtos,
+        "Explanation" => "explanation.md",
+        "Reference" => "reference.md"
         ]
 )
 

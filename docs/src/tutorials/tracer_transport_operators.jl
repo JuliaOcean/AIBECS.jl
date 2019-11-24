@@ -1,44 +1,37 @@
 
 #---------------------------------------------------------
-# # Tracer Transport Operators
+# # How the ocean circulation is represented
 #---------------------------------------------------------
 
-#md # !!! tip
-#md #     This example is also available as a Jupyter notebook:
-#md #     [`tracer_transport_operators.ipynb`](@__NBVIEWER_ROOT_URL__/examples/generated/tracer_transport_operators.ipynb)
+#md # !!! note
+#md #     This tutorial is also available as a Jupyter notebook:
+#md #     [`tracer_transport_operators.ipynb`](@__NBVIEWER_ROOT_URL__/tutorials/generated/tracer_transport_operators.ipynb)
 
-# To model marine biogeochemical processes on a global scale we need to be able to account for the movement of chemical constituents both horizontally and vertically.
-# We do this with a **tracer transport operator**.
-# When this operator acts on a tracer field it produces the advective-diffusive divergence of the tracer.
+#---------------------------------------------------------
+# ## Transport operator
+#---------------------------------------------------------
+
+# To model marine biogeochemical tracers on a global scale we need to be able to account for their movement within the 3D ocean.
+# We do this with a tracer **transport operator**, generically denoted by $\mathcal{T}$.
+# When the operator acts on a tracer field, it produces the divergence of the tracer.
+# In other words, for a tracer with concentration $x(\boldsymbol{r})$ at location $\boldsymbol{r}$, its divergence at $\boldsymbol{r}$ is $(\mathcal{T} x)(\boldsymbol{r})$.
+
+# In the case of the ocean circulation, i.e., the currents and eddies that transport marine tracers floating around in sea water, the transport operator can be represented by
+#
+# $$\mathcal{T} = \nabla \cdot \left[ \boldsymbol{u}(\boldsymbol{r}) - \mathbf{K}(\boldsymbol{r}) \cdot \nabla \right]$$
+#
+# where the vector $\boldsymbol{u}$ represents the mean marine current velocity at location $\boldsymbol{r}$.
+# Thus, $\boldsymbol{u}(\boldsymbol{r})$ is a 3D vector aligned with the ocean currents and whose amplitude, in m/s, gives the speed of the moving sear water at location $\boldsymbol{r}$.
+# The 3×3 matrix $\mathbf{K}(\boldsymbol{r})$ is the eddy diffusivity matrix.
+# It represents the effective mixing effect of unresolved eddies, i.e., these turbulent vortices that are too small relative to the model grid to be captured.
+# Most of the mixing in the ocean occurs along isopycnals, an effect that can be represented by an adequate choice for $\mathbf{K}$.
 
 #---------------------------------------------------------
 # ## Discretization
 #---------------------------------------------------------
 
-# In order to represent the transport operator on a computer one needs to discretize the tracer concentration field and the operator.
-# Once discretized the tracer field is represented as a vector and the operator is represented as a sparse matrix.
-
-#md # !!! note
-#md #     A sparse matrix behaves the same way as a regular matrix.
-#md #     The only difference is that in a sparse matrix the majority of the entries are zeros.
-#md #     These zeros are not stored explicitly to save computer memory making it possible to deal with fairly high resolution ocean models.
-#nb # > **Note**
-#nb # > A sparse matrix behaves the same way as a regular matrix.
-#nb # > The only difference is that in a sparse matrix the majority of the entries are zeros.
-#nb # > These zeros are not stored explicitly to save computer memory making it possible to deal with fairly high resolution ocean models.
-
-# Mathematically, the discretization converts an expression with partial derivatives into a matrix vector product.
-# For the ocean circulation, we do the following conversion
-#
-# $$\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] C \longrightarrow \mathbf{T} \, \boldsymbol{C}$$
-#
-# where $C(\boldsymbol{r})$ is a tracer concentration at location $\boldsymbol{r}$.
-# (We often omit the $\boldsymbol{r}$ dependency in equations for brevity.)
-# The $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] C$ term is the flux divergence of the tracer due to the marine currents and turbulent eddies.
-# ($\boldsymbol{u}$ is the 3D current velocity and $\mathbf{K}$ the diffusivity matrix.)
-# The matrix $\mathbf{T}$ is the flux divergence transport matrix and $\boldsymbol{C}$ is the tracer concentration vector.
-#
-# One can go a long way towards understanding what a tracer transport operator is by playing with a simple model with only a few boxes, which is the goal of this example.
+# In order to represent the ocean circulation on a computer one needs to **discretize** the 3D ocean into a discrete grid, i.e., a grid with a finite number of boxes.
+# One can go a long way towards understanding what a tracer transport operator is by playing with a simple model with only a few boxes, which is the goal of this tutorial.
 
 # The simple box model we consider is embeded in a 2×2×2 "shoebox".
 # It has 5 *wet* boxes and 3 *dry* boxes, as illustrated below:
@@ -53,28 +46,66 @@
 # - a zonal current in a reentrant cycling through boxes 1 → 3 → 1 (shown in the "layer 1" panel above)
 # - vertical mixing representing deep convection between boxes 2 ↔ 6 (not shown)
 
+#---------------------------------------------------------
+# ## Vectorization
+#---------------------------------------------------------
+
+# The 3D tracer field, $x(\boldsymbol{r})$, is **vectorized**, in the sense that the concentrations in each box are rearranged into a column vector.
+
+#md # ```@raw html
+#md # <img src="https://user-images.githubusercontent.com/4486578/61757212-fe3ba480-ae02-11e9-8d17-d72866eaafb5.gif" width =800>
+#md # ```
+#nb # <img src="https://user-images.githubusercontent.com/4486578/61757212-fe3ba480-ae02-11e9-8d17-d72866eaafb5.gif" width =800>
+
+# The continuous transport operator $\mathcal{T}$ can then be represented by a matrix, denoted by $\mathbf{T}$, and sometimes called the *transport matrix*.
+# It turns out that in most cases, this matrix is sparse.
+
+#md # !!! note
+#md #     A sparse matrix behaves the same way as a regular matrix.
+#md #     The only difference is that in a sparse matrix the majority of the entries are zeros.
+#md #     These zeros are not stored explicitly to save computer memory making it possible to deal with fairly high resolution ocean models.
+#nb # > **Note**
+#nb # > A sparse matrix behaves the same way as a regular matrix.
+#nb # > The only difference is that in a sparse matrix the majority of the entries are zeros.
+#nb # > These zeros are not stored explicitly to save computer memory making it possible to deal with fairly high resolution ocean models.
+
+# Mathematically, the discretization and vetorization convert an expression with partial derivatives into a matrix vector product.
+# In summary, for the ocean circulation, we do the following conversion
+#
+# $$\mathcal{T} x = \nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right] x \longrightarrow \mathbf{T} \, \boldsymbol{x}$$
+#
+# (We ommitted the $\boldsymbol{r}$ dependency in equations for brevity.)
+
+
 
 
 #---------------------------------------------------------
-# ## The model grid and the transport matrix
+# ## Using an ocean circulation in AIBECS
 #---------------------------------------------------------
 
-# Like for any models using AIBECS, we start by telling Julia just that:
+# ### Loading the grid and the circulation
+
+# We will now simulate the transport of a marine tracer controlled by the toy circulation we just saw. 
+# Like for any Julia package, we start by telling Julia that we are going to *use* the package.
 
 using AIBECS
 
-# We then load the shoebox model via
+# The circulation we just saw is available in AIBECS.
+# We load it via
 
 grd, T = Primeau_2x2x2.load() ;
 
-# where we have loaded 2 objects, `grd` and `T`.
+# which loads 2 objects, `grd`, the model grid, and `T`, the transport matrix.
+# (Note that in the line above we suppressed the output with `;`, like in MATLAB.)
 
-# `grd` is an `OceanGrid` object, of size 2×2×2:
+# `grd` is an `OceanGrid` object, of size 2×2×2.
 
 grd
 
-# This object is defined in the [OceanGrids](https://github.com/briochemc/OceanGrids.jl) package, on which AIBECS depends.
-# There are many ways to look inside the grid, one of which is to iterate over it:
+# It is a special type for ocean grids, defined in the [OceanGrids](https://github.com/briochemc/OceanGrids.jl) package, on which AIBECS depends.
+
+# There are many ways to look inside the grid, one of which is to iterate over it.
+# For example
 
 [println(box) for box in grd] ;
 
@@ -82,7 +113,7 @@ grd
 # The `grd` object also contains other information about the grid, like the 3D depths of the boxes:
 
 grd.depth_3D
-
+a
 # or the 3D latitudes:
 
 grd.lat_3D
@@ -92,15 +123,15 @@ grd.lat_3D
 # This helps ensure that degrees of latitude are not confused with meters for example.
 
 #md # !!! note
-#md #     Julia comes with [Unitful](https://github.com/PainterQubits/Unitful.jl), a package for using units, which AIBECS uses.
+#md #     Julia depends on and comes with [Unitful](https://github.com/PainterQubits/Unitful.jl), a package for using units, which AIBECS uses.
 #nb # > **Note**
-#nb # > Julia comes with [Unitful](https://github.com/PainterQubits/Unitful.jl), a package for using units, which AIBECS uses.
+#nb # > Julia depense on and comes with [Unitful](https://github.com/PainterQubits/Unitful.jl), a package for using units, which AIBECS uses.
 
 # Inside of `grd`, there is information of which boxes of the grid are "wet" (or "dry").
 # `wet3D` is a 3D array representing the 3D ocean with `true` for "wet" boxes and `false` for "dry" boxes.
 # Let's have a look at its contents:
 
-wet3D = grd.wet3D
+grd.wet3D
 
 # It's a 2×2×2 `BitArray`, i.e., an array of bit elements (the `true` and `false` entries).
 # You can check that it matches our "shoebox" model.
@@ -108,35 +139,27 @@ wet3D = grd.wet3D
 
 # We can find all the wet boxes simply via
 
-findall(wet3D)
+findall(grd.wet3D)
 
 # These are the 3D indices of the wet boxes, `(i,j,k)`, called the "cartesian" indices.
-# If you want the "linear" indices, i.e., the numbers as shown in the image of the shoebox model, you can simply transform `wet3D` into a vector, via
+# If you want the "linear" indices, i.e., the numbers as shown in the image of the shoebox model, you can transform `wet3D` into a vector first, via
 
-iwet = findall(vec(wet3D))
+iwet = findall(vec(grd.wet3D))
 
 # We can also check that we indeed have the expected number of wet boxes via
 
 nb = length(iwet)
 
-# Now let's have a look at the transport matrix `T`, which represents $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \cdot \nabla \right]$, i.e., the flux divergence operator for dissolved tracers:
+# Now let's have a look at the transport matrix `T`.
 
 T
 
-# It's a sparse matrix (a `SparseMatrixCSC` object in Julia), which only stores those entries that are not zero.
+# It's a sparse matrix (of the `SparseMatrixCSC` type in Julia), which only stores non-zero entries.
 # We can display the full matrix via
 
 Matrix(T)
 
 # to check its structure out.
-# Note that all the diagonal terms are positive, which is the sign that the transport matrix acts as a divergence, which would be positive for a box containing all the tracer.
-# For example, if there was only some tracer in box 2, then that tracer should "diverge" away from that box, resulting in the positiva value in that box:
-
-j = 2                            # index where we put some tracer
-x = 1.0 * [i == j for i in 1:nb] # vector of 0's except for index j
-x, (T * x)[j]
-
-# shows that the flux divergence `T * x` is positive where we injected the tracer.
 
 #---------------------------------------------------------
 # ## Radiocarbon
