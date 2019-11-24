@@ -173,7 +173,7 @@ Entries where `wet3D` is `false` are filled with `NaN`s.
 """
 function rearrange_into_3Darray(x, wet3D::BitArray)
     iwet = indices_of_wet_boxes(wet3D)
-    x3d = fill(NaN, size(wet3D))
+    x3d = Array{Union{Missing,Float64},3}(undef, size(wet3D))
     x3d[iwet] .= x
     return x3d
 end
@@ -184,22 +184,7 @@ Returns a 3D array of `x` rearranged to the wet boxes of the grid.
 """
 rearrange_into_3Darray(x, grid) = rearrange_into_3Darray(x, grid.wet3D)
 
-"""
-    rearrange_into_1Dvector(x3d, wet3D::BitArray)
-
-Returns a 1D vector of `x3d` from the linear indices where `wet3D` is `true`.
-"""
-function rearrange_into_1Dvector(x3d, wet3D::BitArray)
-    iwet = indices_of_wet_boxes(wet3D)
-    return x3d[iwet]
-end
-"""
-    rearrange_into_1Dvector(x3d, grid)
-
-Returns the 1D vector equivalent of the 3D array `x3d` according to `grid`.
-"""
-rearrange_into_1Dvector(x3d, grid) = rearrange_into_1Dvector(x3d, grid.wet3D)
-export rearrange_into_3Darray, rearrange_into_1Dvector
+export rearrange_into_3Darray
 
 #=============================================
 unpacking of multi-tracers
@@ -207,6 +192,11 @@ unpacking of multi-tracers
 
 state_to_tracers(x, nb, nt) = ntuple(i -> state_to_tracer(x, nb, nt, i), nt)
 state_to_tracer(x, nb, nt, i) = x[tracer_indices(nb, nt, i)]
+function state_to_tracers(x, grd) 
+    nb = number_of_wet_boxes(grd)
+    nt = Int(round(length(x) / nb))
+    return state_to_tracers(x, nb, nt)
+end
 tracer_indices(nb, nt, i) = (i-1)*nb+1 : i*nb
 tracers_to_state(xs) = reduce(vcat, xs)
 export state_to_tracers, state_to_tracer, tracers_to_state, tracer_indices

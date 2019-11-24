@@ -191,7 +191,7 @@ depth = grd.depth
 iz = findfirst(depth .> 200u"m")
 iz, depth[iz]
 
-#-
+# Unfinished example! TODO
 
 DIP_3D = rearrange_into_3Darray(DIP, grd)
 DIP_2D = DIP_3D[:,:,iz] * ustrip(1.0u"mol/m^3" |> u"mmol/m^3")
@@ -199,16 +199,4 @@ lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
 
 # and plot
 
-ENV["MPLBACKEND"]="qt5agg"
-using PyPlot, PyCall
-clf()
-ccrs = pyimport("cartopy.crs")
-ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()
-# making it cyclic for Cartopy
-lon_cyc = [lon; 360+lon[1]]
-DIP_2D_cyc = hcat(DIP_2D, DIP_2D[:,1])
-# And plot
-p = contourf(lon_cyc, lat, DIP_2D_cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1)
-colorbar(p, orientation="horizontal");
-gcf()
+

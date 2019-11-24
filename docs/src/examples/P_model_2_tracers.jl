@@ -101,8 +101,6 @@ z = ustrip.(grd.depth_3D[iwet])
 
 T_all = (T_DIP, T_POP) ;
 
-
-
 # ### Local sources and sinks
 
 # ##### Geological Restoring
@@ -254,37 +252,44 @@ s = solve(prob, CTKAlg()).u
 
 # ### Plotting
 
-# For plotting, we first unpack the state
+# The AIBECS now comes with some recipes for plotting.
+# Without going into too much detail, Julia comes with a versatile plotting library called [Plots.jl](https://github.com/JuliaPlots/Plots.jl), which we will use in these examples.
 
-DIP, POP = state_to_tracers(s, nb, 2)
+##md # !!! warn
+#md #     Make sure you have installed [Plots.jl](https://github.com/JuliaPlots/Plots.jl) and a backend (e.g., GR.jl or PyPlot.jl).
 
-# We will plot the concentration of DIP at a given depth horizon
+#nb # > **Warning!**
+#nb # > Make sure you have installed [Plots.jl](https://github.com/JuliaPlots/Plots.jl) and a backend (e.g., GR.jl or PyPlot.jl).
 
-iz = findfirst(grd.depth .> 2000u"m")
-iz, grd.depth[iz]
+# So first, let's tell Julia we want to use Plots.jl.
 
-#-
+using Plots
 
-DIP_3D = rearrange_into_3Darray(DIP, grd)
-DIP_2D = DIP_3D[:,:,iz] * ustrip(1.0u"mol/m^3" |> u"mmol/m^3")
-lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
+# Then, we unpack the state into the DIP and POP tracers.
 
-# Create the Cartopy canvas, make the data cyclic in order for the plot to look good in Cartopy, and plot the filled contour via `contourf`
+DIP, POP = state_to_tracers(s, grd)
 
-ENV["MPLBACKEND"]="qt5agg"
-using PyPlot, PyCall
-clf()
-ccrs = pyimport("cartopy.crs")
-cfeature = pyimport("cartopy.feature")
-ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
-ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
-lon_cyc = [lon; 360+lon[1]]
-DIP_2D_cyc = hcat(DIP_2D, DIP_2D[:,1])
-plt = contourf(lon_cyc, lat, DIP_2D_cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1)
-colorbar(plt, orientation="horizontal");
-title("PO₄ at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
-gcf()
+# We can plot the concentration of DIP at a given depth via
+
+horizontalslice(DIP, grd, 2000; color=:viridis)
+
+#md # !!! tip
+#md #     The function `horizontalslice(x, grd, depth)` is provided by AIBECS.
+#md #     It is actually just a recipe for Plots.jl that figures out a few things for you,
+#md #     like extracting the slice at the given depth.
+#md #     But you can customize it to your liking, by appending keyword arguments,
+#md #     like `color=:viridis` here.
+#md #     Head over to the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package
+#md #     documentation to see a more complete list of attributes
+
+#nb # > **Tip!**
+#nb # > The function `horizontalslice(x, grd, depth)` is provided by AIBECS.
+#nb # > It is actually just a recipe for Plots.jl that figures out a few things for you,
+#nb # > like extracting the slice at the given depth.
+#nb # > But you can customize it to your liking, by appending keyword arguments,
+#nb # > like `color=:viridis` here.
+#nb # > Head over to the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package
+#nb # > documentation to see a more complete list of attributes
 
 #---------------------------------------------------------
 # ## Optimizing the model parameters
@@ -308,7 +313,7 @@ using WorldOceanAtlasTools
 # We then generate the objective function and some derivatives using the PO₄ mean and variance
 
 v = ustrip.(vector_of_volumes(grd))
-f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
+f = generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 ∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 ∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 
@@ -386,55 +391,26 @@ p_optimized = λ2p(results.minimizer)
 prob_optimized = SteadyStateProblem(F, ∇ₓF, s, p_optimized)
 s_optimized = solve(prob_optimized, CTKAlg()).u
 
-# Like earlier, we fill in a 3D array of `NaN`s with the values we want to plot.
-# Here, we fill the arrays with the fractional difference bewteen modeled and observed DIP:
+# The we calculate the fractional difference bewteen modeled and observed DIP, before and after optimization:
 
-DIPold, _ = state_to_tracers(s, nb, 2)
-DIPnew, _ = state_to_tracers(s_optimized, nb, 2)
-δDIPold_3D = fill(NaN, size(grd))
-δDIPold_3D[iwet] .= 100(DIPold - μDIPobs) ./ μDIPobs
-δDIPnew_3D = fill(NaN, size(grd))
-δDIPnew_3D[iwet] .= 100(DIPnew - μDIPobs) ./ μDIPobs
+optimized_DIP, POPnew = state_to_tracers(s_optimized, grd)
+δDIP_before = 100(DIP - μDIPobs) ./ μDIPobs
+δDIP_after = 100(optimized_DIP - μDIPobs) ./ μDIPobs
 
-# And take a slice at depth index `iz`
+# And take a slice at 2000m.
+# Note the keyword arguments to set the contour `levels` and the `balance` colormap
+# (list of Plots.jl colormaps available [here](https://docs.juliaplots.org/latest/colors/))
 
-δDIPold_2D = δDIPold_3D[:,:,iz]
-δDIPnew_2D = δDIPnew_3D[:,:,iz]
-
-# We make those 2D slices cyclic along the longitude for Cartopy
-
-δDIPold_cyc = hcat(δDIPold_2D, δDIPold_2D[:,1])
-δDIPnew_cyc = hcat(δDIPnew_2D, δDIPnew_2D[:,1])
-
-# And we plot the mismatch of the old, OCIM1-optimized field
-
-figure()
-δDIPlevels = -20:2:20
-ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
-ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
-plt2 = contourf(lon_cyc, lat, δDIPold_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
-cbar2 = colorbar(plt2, orientation="horizontal", extend="both")
-cbar2.set_label("δDIP / DIP [%]")
-title("old DIP mismatch at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
-gcf()
+horizontalslice(δDIP_before, grd, 2000; levels=-20:2:20, color=:balance)
 
 # We can see a significant negative bias in the North Atlantic.
 # This is probably due to having swapped the circulation from OCIM1 to OCIM0.1.
 # Let's plot the OCIM-0.1-optimized mismatch
 
-figure()
-ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
-ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
-plt3 = contourf(lon_cyc, lat, δDIPnew_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
-cbar3 = colorbar(plt3, orientation="horizontal", extend="both")
-cbar3.set_label("δDIP / DIP [%]")
-title("new DIP mismatch at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
-gcf()
+horizontalslice(δDIP_after, grd, 2000; levels=-20:2:20, color=:balance)
 
 # This shows that most of the negative bias has been corrected.
-# (The green patch in the North Atlantic has dissipated.)
+# (The blue patch in the North Atlantic has dissipated.)
 # Of course, this optimization was "easy", because there were only 2 tracers, few parameters, and we started from a pretty good solution.
 # However, this type of optimization can really improve the skill of models, even current "state-of-the-art" ones.
 # Such optimizations turn average models into better tools for cutting-edge oceanography research.

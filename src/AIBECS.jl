@@ -9,6 +9,7 @@ using Flatten, FieldMetadata, DataFrames
 using BSON
 @reexport using OceanGrids            # To store the grid
 @reexport using Unitful, UnitfulAstro
+using RecipesBase, Interpolations, Distances
 
 include("GridTools.jl")
 include("CirculationGeneration.jl")
@@ -28,5 +29,8 @@ include("Primeau_2x2x2.jl")
 
 # AWESOME OCIM data
 include("AO.jl") # TODO talk about it to Seth
+
+# Recipes for plotting
+include("plot_recipes.jl")
 
 end # module
