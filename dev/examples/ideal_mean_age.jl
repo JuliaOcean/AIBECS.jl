@@ -40,7 +40,7 @@
 #
 # $$\frac{\partial\boldsymbol{a}}{\partial t} = -\mathbf{T} \, \boldsymbol{a} + 1 - \boldsymbol{\Lambda} \, \boldsymbol{a},$$
 #
-# where $\boldsymbol{\Lambda}$ is a diagonal matrix with entries equal to $1 / \tau$ in the surface layer of the model grid and 0 otherwise. 
+# where $\boldsymbol{\Lambda}$ is a diagonal matrix with entries equal to $1 / \tau$ in the surface layer of the model grid and 0 otherwise.
 # The timescale $\tau$ is chosen to be very small, ensuring that $\boldsymbol{a}$ is very close to $0$ at the surface.
 # The first term represents the transport by the ocean circulation, the second term the source of 1 second per second everywhere, and the last term the fast relaxation.
 
@@ -233,10 +233,10 @@ t
 # The lines above created a table that contains all the info for generating the parameters vector, $\boldsymbol{p}$.
 # To generate the parameters in AIBECS we do:
 
-p₀ = IdealAgeParameters()
+p = IdealAgeParameters()
 
 # where we have used the constructor `IdealAgeParameters`, whose name we defined in the previous cell.
-# Here we did not really need to create `p₀` as a parameters vector, since it has only one element, `τ`, in it.
+# Here we did not really need to create `p` as a parameters vector, since it has only one element, `τ`, in it.
 # However, we are here to learn, and this structure and functionality comes in very handy when one deals with many parameters.
 # (And as you can imagine, having all the parameters in a nice table ready for being used in a publication comes quite handy!)
 
@@ -245,12 +245,12 @@ p₀ = IdealAgeParameters()
 # #### State function and Jacobian
 #--------------------------
 
-# Similarly to `p₀`, let's create a state `x₀` to start with.
-# The vector `x₀` will be our initial guess for the state.
+# Similarly to `p`, let's create a state `x` to start with.
+# The vector `x` will be our initial guess for the state.
 # Let's assume that the age is `1` (seconds) everywhere (as an initial guess):
 
 nb = number_of_wet_boxes(grd)  # number of wet boxes
-x₀ = ones(nb)
+x = ones(nb)
 
 # The first line above defines the number of wet grid boxes, `nb`.
 # Here, this is also the length of the state vector `x`, because there is only one tracer, `age`.
@@ -262,7 +262,7 @@ x₀ = ones(nb)
 T_matrices = (T_age,)           # bundles all the transport matrices in a tuple
 sources_minus_sinks = (sms_age,) # bundles all the source-sink functions in a tuple
 F, ∇ₓF = state_function_and_Jacobian(T_matrices, sources_minus_sinks, nb) # generates the state function (and its Jacobian!)
-F(x₀,p₀)
+F(x,p)
 
 # That's it!
 # We have just created a model of the mean age.
@@ -287,7 +287,7 @@ F(x₀,p₀)
 # Yes, AIBECS just automatically created an exact derivative of your input, using autodifferentiation via dual numbers.
 # (I'd be very excited to detail how this is implemented here, but it is an entirely different discussion.)
 
-# The last line just checks that our generated `F` works with our initial guess `x₀` and parameter vector `p₀`.
+# The last line just checks that our generated `F` works with our initial guess `x` and parameter vector `p`.
 
 # #### Solving for the steady-state
 #--------------------------
@@ -312,7 +312,7 @@ F(x₀,p₀)
 
 # First, we create an instance of the steady-state problem, via
 
-prob = SteadyStateProblem(F, ∇ₓF, x₀, p₀)
+prob = SteadyStateProblem(F, ∇ₓF, x, p)
 
 # where we have simply provided the state function, $\boldsymbol{F}$, the Jacobian, $\nabla_{\boldsymbol{x}}\boldsymbol{F}$, the initial guess and the parameters.
 # The `SteadyStateProblem` function is a standard "DiffEqBase" constructor that I have overloaded in my package so that you can easily generate the model here.
@@ -337,83 +337,48 @@ age = solve(prob, CTKAlg())
 
 
 
-
 #---------------------------------------------------------
 # ## Figures
 #---------------------------------------------------------
 
-# We will plot a horizontal slice of the age at about 1000m depth using Cartopy.
+# First, let's tell Julia we want to use Plots.jl.
 
-# First, we must rearrange `age` into the 3D model grid.
-# For that we will need the vector of the indices of wet points in the 3D grid, which we will denote by `iwet`, and which AIBECS generates via
+using Plots
 
-iwet = indices_of_wet_boxes(grd)
+# We will plot the age at a depth of about 1000m.
+# For convenience, we would rather express the age in years
+# (instead of the default SI unit of time, seconds, which is too small).
 
-# We then rearrange the column vector `age` into a 3D array via
+age_in_yrs = age * u"s" .|> u"yr"
 
-age_3D = fill(NaN, size(grd)) # creates a 3D array of NaNs of the same size as the grid
-age_3D[iwet] = age              # Fills the wet grid boxes with the age values
-size(age_3D)                    # Just to check the size of age_3D
+# A few things happened here.
+# - `age * u"s"` attaches the seconds unit to it
+# - `.|> u"yr"` converts it to years (the dot in front ensures that the conversion is done for every box
 
-# The last line just shows you the size of `age_3D`, which is a 3D-array as expected.
+horizontalslice(age_in_yrs, grd, 2000; color=:magma)
 
-# Now let us find the index of the depth that is closest to 1000m.
-# To do that we must use the depth information contained in `grd`.
-# Let us first create a small vector of the depths of the grid:
+# Note how the plotting function `horizontalslice` knew about the unit of the age and placed it on the colorbar! Nice, right?
 
-depth = grd.depth
+#md # !!! tip
+#md #     The function `horizontalslice(x, grd, depth)` is provided by AIBECS.
+#md #     It is actually just a recipe for Plots.jl that figures out a few things for you,
+#md #     like extracting the slice at the given depth.
+#md #     But you can customize it to your liking, by appending keyword arguments,
+#md #     like `color=:magma` here.
+#md #     Head over to the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package
+#md #     documentation to see a more complete list of attributes
 
-# We could count the index of the entry we want, but here we will use the `findfirst` function to find the first depth index that is greater than 1000m.
-#nb # (Feel free to change the value of `iz` if you want to see a slice at another depth.)
-
-iz = findfirst(depth .> 1000u"m")
-iz, depth[iz]
-
-# We get `iz = 13`, which is a layer that lies at 1104m, close to 1000m like we wanted.
-#
-# Finally, we need the latitude and longitudes of the grid, contained in `grd`.
-# As for `depth`, we can use the OCIM's `grd` output:
-
-lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
-
-# So these are the latitudes and longitudes of the map we are about to plot.
-
-# A last thing we can do is convert the age from seconds, `u"s"`, to years, `u"yr"`, because the age is large.
-# This can be done via the Unitful package (loaded automatically by AIBECS).
-
-age_3D_1000m_yr = age_3D[:,:,iz] * ustrip(1.0u"s" |> u"yr")
-
-# Finally! Let's have a look at this ideal mean age!
-# To make figures, here, we use Cartopy.
-#nb # (You should have installed Cartopy if you went through the prerequisites correctly).
-# To use it we simply type
-
-ENV["MPLBACKEND"]="qt5agg"
-using PyPlot, PyCall
-
-#md # !!! note
-#md #     The first line is needed for Mac users.
-#md #     It's a bug that should eventually be resolved, but for now this seems to make it work.
-#nb # > **Note**
-#nb # > The first line is needed for Mac users.
-#nb # > It's a bug that should eventually be resolved, but for now this seems to make it work.
+#nb # > **Tip!**
+#nb # > The function `horizontalslice(x, grd, depth)` is provided by AIBECS.
+#nb # > It is actually just a recipe for Plots.jl that figures out a few things for you,
+#nb # > like extracting the slice at the given depth.
+#nb # > But you can customize it to your liking, by appending keyword arguments,
+#nb # > like `color=:magma` here.
+#nb # > Head over to the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package
+#nb # > documentation to see a more complete list of attributes
 
 
-# We import cartopy, define a new plot, add some coastlines because they are pretty, and add our slice of age at 1000m depth to it via
-
-clf()
-ccrs = pyimport("cartopy.crs")
-ax = subplot(projection=ccrs.EqualEarth(central_longitude=-155.0))
-ax.coastlines()
-lon_cyc = [lon; 360+lon[1]] # making it cyclic for Cartopy
-age_cyc = hcat(age_3D_1000m_yr, age_3D_1000m_yr[:,1])
-p = contourf(lon_cyc, lat, age_cyc, levels=0:100:1200, transform=ccrs.PlateCarree(), zorder=-1)
-colorbar(p, orientation="horizontal")
-gcf() # gets the current figure to display
-
-# That's it!
-# Good job!
-#
 # At 1000m, the age ranges from a few years below deep water formation regions (Wedell Sea, North Atlantic), and reaches a dozen of centuries in the North Pacific!
-# This is pretty good for so little work!
+# Anyway, that's pretty much it!
+# Good job!
 

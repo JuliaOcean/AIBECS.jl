@@ -88,29 +88,13 @@ prob = SteadyStateProblem(F, ∇ₓF, x, p)
 
 s = solve(prob, CTKAlg()).u
 
-DIP, POP = state_to_tracers(s, nb, 2)
+##md # !!! warn
 
-iz = findfirst(grd.depth .> 2000u"m")
-iz, grd.depth[iz]
+using Plots
 
-DIP_3D = rearrange_into_3Darray(DIP, grd)
-DIP_2D = DIP_3D[:,:,iz] * ustrip(1.0u"mol/m^3" |> u"mmol/m^3")
-lat, lon = ustrip.(grd.lat), ustrip.(grd.lon)
+DIP, POP = state_to_tracers(s, grd)
 
-ENV["MPLBACKEND"]="qt5agg"
-using PyPlot, PyCall
-clf()
-ccrs = pyimport("cartopy.crs")
-cfeature = pyimport("cartopy.feature")
-ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
-ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
-lon_cyc = [lon; 360+lon[1]]
-DIP_2D_cyc = hcat(DIP_2D, DIP_2D[:,1])
-plt = contourf(lon_cyc, lat, DIP_2D_cyc, levels=0:0.2:3.6, transform=ccrs.PlateCarree(), zorder=-1)
-colorbar(plt, orientation="horizontal");
-title("PO₄ at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
-gcf()
+horizontalslice(DIP, grd, 2000; color=:viridis)
 
 using WorldOceanAtlasTools
 μDIPobs3D, σ²DIPobs3D = WorldOceanAtlasTools.fit_to_grid(grd, 2018, "phosphate", "annual", "1°", "an")
@@ -122,7 +106,7 @@ using WorldOceanAtlasTools
 ωp = 1e-4       # the weight for the parameters prior estimates
 
 v = ustrip.(vector_of_volumes(grd))
-f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
+f = generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 ∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 ∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_obs(p), variance_obs(p))
 
@@ -170,39 +154,13 @@ p_optimized = λ2p(results.minimizer)
 prob_optimized = SteadyStateProblem(F, ∇ₓF, s, p_optimized)
 s_optimized = solve(prob_optimized, CTKAlg()).u
 
-DIPold, _ = state_to_tracers(s, nb, 2)
-DIPnew, _ = state_to_tracers(s_optimized, nb, 2)
-δDIPold_3D = fill(NaN, size(grd))
-δDIPold_3D[iwet] .= 100(DIPold - μDIPobs) ./ μDIPobs
-δDIPnew_3D = fill(NaN, size(grd))
-δDIPnew_3D[iwet] .= 100(DIPnew - μDIPobs) ./ μDIPobs
+optimized_DIP, POPnew = state_to_tracers(s_optimized, grd)
+δDIP_before = 100(DIP - μDIPobs) ./ μDIPobs
+δDIP_after = 100(optimized_DIP - μDIPobs) ./ μDIPobs
 
-δDIPold_2D = δDIPold_3D[:,:,iz]
-δDIPnew_2D = δDIPnew_3D[:,:,iz]
+horizontalslice(δDIP_before, grd, 2000; levels=-20:2:20, color=:balance)
 
-δDIPold_cyc = hcat(δDIPold_2D, δDIPold_2D[:,1])
-δDIPnew_cyc = hcat(δDIPnew_2D, δDIPnew_2D[:,1])
-
-figure()
-δDIPlevels = -20:2:20
-ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
-ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
-plt2 = contourf(lon_cyc, lat, δDIPold_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
-cbar2 = colorbar(plt2, orientation="horizontal", extend="both")
-cbar2.set_label("δDIP / DIP [%]")
-title("old DIP mismatch at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
-gcf()
-
-figure()
-ax = subplot(projection = ccrs.EqualEarth(central_longitude=-155.0))
-ax.add_feature(cfeature.COASTLINE, edgecolor="#000000") # black coast lines
-ax.add_feature(cfeature.LAND, facecolor="#CCCCCC")      # gray land
-plt3 = contourf(lon_cyc, lat, δDIPnew_cyc, cmap="PiYG_r", levels=δDIPlevels, transform=ccrs.PlateCarree(), zorder=-1, extend="both")
-cbar3 = colorbar(plt3, orientation="horizontal", extend="both")
-cbar3.set_label("δDIP / DIP [%]")
-title("new DIP mismatch at $(string(round(typeof(1u"m"),grd.depth[iz]))) depth using the OCIM0.1 circulation")
-gcf()
+horizontalslice(δDIP_after, grd, 2000; levels=-20:2:20, color=:balance)
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
 

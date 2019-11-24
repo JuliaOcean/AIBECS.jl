@@ -68,15 +68,12 @@ end
 x₀ = ones(5)             #
 x_hist, t_hist = time_steps(x₀, Δt, 1000, F, ∇ₓF) # runs the simulation
 
-using PyPlot
-clf()
+using Plots
 C14age_hist = -log.(x_hist) * ustrip(p.τ * u"s" |> u"yr")
-plot(t_hist * ustrip(1u"s" |> u"yr"), C14age_hist')
-xlabel("simulation time (years)")
-ylabel("¹⁴C age (years)")
-legend("box " .* string.(iwet))
-title("Simulation of the evolution of ¹⁴C age with Crank-Nicolson time steps")
-gcf()
+plt = plot(t_hist * ustrip(1u"s" |> u"yr"), C14age_hist'; label="box " .* string.(iwet))
+xlabel!(plt, "simulation time (years)")
+ylabel!(plt, "Radiocarbon age (years)")
+title!(plt, "Radiocarbon age vs simulation time (Crank-Nicolson)")
 
 prob = SteadyStateProblem(F, ∇ₓF, x, p)
 x_final = solve(prob, CTKAlg()).u
