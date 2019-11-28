@@ -43,7 +43,7 @@ See the list of examples to get an idea of how to generate parameters for your m
 Generate a simple parameter type via
 
 ```jldoctest
-julia> @with_kw struct SimpleParams{T} <: AbstractParameters{T}
+julia> struct SimpleParams{T} <: AbstractParameters{T}
            α::T
            β::T
            γ::T
@@ -54,33 +54,8 @@ SimpleParams
 To create an instance of the `SimpleParams(Float64)` type, you can do
 
 ```jldoctest
-julia> SimpleParams(α=1.0, β=2.0, γ=3.0)
+julia> p = SimpleParams(1.0, 2.0, 3.0)
 SimpleParams{Float64}
-│ Row │ Symbol │ Value   │
-│     │ Symbol │ Float64 │
-├─────┼────────┼─────────┤
-│ 1   │ α      │ 1.0     │
-│ 2   │ β      │ 2.0     │
-│ 3   │ γ      │ 3.0     │
-```
-
-The parameter types you define in AIBECS can contain default values, if you want then to, 
-thanks to the Parameters.jl interface. For example, 
-
-```jldoctest
-julia> @with_kw struct SimpleParamsWithDefault{T} <: AbstractParameters{T}
-           α::T = 1.0
-           β::T = 2.0
-           γ::T = 3.0
-       end
-SimpleParamsWithDefault
-```
-
-This allows for very simple generation of instances of that type.
-
-```jldoctest
-julia> SimpleParamsWithDefault()
-SimpleParamsWithDefault{Float64}
 │ Row │ Symbol │ Value   │
 │     │ Symbol │ Float64 │
 ├─────┼────────┼─────────┤
@@ -98,7 +73,7 @@ julia> function simplef(p)
        end
 simplef (generic function with 1 method)
 
-julia> simplef(SimpleParamsWithDefault()) # 1.0 + 3.0
+julia> simplef(p) # 1.0 + 3.0
 4.0
 ```
 
@@ -106,34 +81,53 @@ More complex examples are permitted by adding metadata (thanks to FieldMetadata.
 You can add units
 
 ```jldoctest
-julia> @units @with_kw struct UnitParams{T} <: AbstractParameters{T}
-           α::T = 1.0 | u"km"
-           β::T = 2.0 | u"hr"
-           γ::T = 3.0 | u"mol"
+julia> @units struct UnitParams{T} <: AbstractParameters{T}
+           α::T | u"km"
+           β::T | u"hr"
+           γ::T | u"m/s"
        end ;
 
-julia> UnitParams()
+julia> p = UnitParams(1.0, 2.0, 3.0)
 UnitParams{Float64}
 │ Row │ Symbol │ Value   │ Unit     │
 │     │ Symbol │ Float64 │ Unitful… │
 ├─────┼────────┼─────────┼──────────┤
 │ 1   │ α      │ 1.0     │ km       │
 │ 2   │ β      │ 2.0     │ hr       │
-│ 3   │ γ      │ 3.0     │ mol      │
+│ 3   │ γ      │ 3.0     │ m s^-1   │
 ```
 
 Note that when adding units to your parameters, they will be converted to SI
 when unpacked, as in, e.g.,
 
 ```jldoctest
-julia> function speed(p::UnitParams)
-           @unpack α, β = p
-           return α / β
+julia> function speed(p)
+           @unpack α, β, γ = p
+           return α / β + γ
        end
 speed (generic function with 1 method)
 
-julia> speed(UnitParams()) # 1.0 km / 2.0 hr in m/s
-0.1388888888888889
+julia> speed(p) # (1.0 km / 2.0 hr + 3 m/s) in m/s
+3.138888888888889
+```
+
+Another example for optimizable/flattenable parameters
+
+```jldoctest
+julia> @optimizable @units @initial_value struct OptParams{T} <: AbstractParameters{T}
+           α::T | 3.6 | u"km"  | true 
+           β::T | 1.0 | u"hr"  | false
+           γ::T | 1.0 | u"m/s" | true
+       end ;
+
+julia> p = OptParams(initial_value(OptParams)...)
+OptParams{Float64}
+│ Row │ Symbol │ Value   │ Initial value │ Unit     │ Optimizable │
+│     │ Symbol │ Float64 │ Float64       │ Unitful… │ Bool        │
+├─────┼────────┼─────────┼───────────────┼──────────┼─────────────┤
+│ 1   │ α      │ 3.6     │ 3.6           │ km       │ 1           │
+│ 2   │ β      │ 1.0     │ 1.0           │ hr       │ 0           │
+│ 3   │ γ      │ 1.0     │ 1.0           │ m s^-1   │ 1           │
 ```
 
 Thanks to the FieldMetaData interface, you can chain the following preloaded metadata:
@@ -218,9 +212,23 @@ flattenable_values(p::T) where {T <: AbstractParameters} = [getfield(p, s) for s
 """
     vec(p)
 
-same as `flattenable_values(p)`.
+Returns a **SI-unit-converted** vector of flattenable values of `p`.
+
+Note that `vec(p) ≠ flattenable_values(p)` if `p` has units.
 """
-vec(p::AbstractParameters) = flattenable_values(p)
+vec(p::T) where {T <: AbstractParameters} = [Parameters.unpack(p, Val(s)) for s in flattenable_symbols(T)]
+
+"""
+    reconstruct(T, v)
+
+Reconstructs the parameter of type `T` from optimizable vector `v`.
+"""
+function reconstruct(::Type{T}, v::Vector) where {T <: AbstractParameters}
+    all(isnothing, initial_value(T)) && error("Can't reconstruct without initial values")
+    vunits = units(T)[[optimizable(T)...]]
+    v = @. v * upreferred(vunits) |> vunits |> ustrip
+    return Flatten.reconstruct(T(initial_value(T)...), v)
+end
 
 """
     length(p::AbstractParameter)
@@ -292,21 +300,26 @@ Returns a LaTeX-formatted table of the parameters.
 """
 latex(p::AbstractParameters) = show(stdout, MIME("text/latex"), table(p))
 
-#"""
-#    getproperty(p::AbstractParameters, s)
-#
-#Returns the value of the parameter of symbol `s` in `p`.
-#
-#Note that the value returned is unitless, but if `p` has units, the value is converted to SI units beforehand.
-#"""
-#Base.getproperty(p::T, s::Symbol) where {T <: AbstractParameters} = ustrip(upreferred(getfield(p, s) * units(T, s)))
+
 
 @inline Parameters.unpack(p::T, ::Val{f}) where {T<:AbstractParameters,f} = ustrip(upreferred(getproperty(p, f) * units(T, f)))
 
 
-#=
+
+# basic comparison operations
+Base.:≈(p₁::T, p₂::T) where {T <: AbstractParameters} = vec(p₁) ≈ vec(p₂)
+Base.:(==)(p₁::T, p₂::T) where {T <: AbstractParameters} = vec(p₁) == vec(p₂)
+
+# basic math operations
 
 
-=#
-
+# Type conversions
+function Base.convert(::Type{T1}, p::T2) where {T1<:AbstractParameters, T2<:AbstractParameters} 
+    if T1.name.wrapper ≠ T2.name.wrapper
+        error("Can't convert type $T2 into type $T1")
+    else
+        return T1.name.wrapper(convert(Vector{T1.parameters[1]}, values(p))...)
+    end
+end
+Base.convert(::Type{AbstractParameters{T}}, p::AbstractParameters{T}) where T = p
 
