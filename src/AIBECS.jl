@@ -3,9 +3,9 @@ module AIBECS
 using Reexport
 @reexport using SparseArrays
 using SuiteSparse, LinearAlgebra, Printf
-using DualNumbers, DualMatrixTools
-using HyperDualNumbers, HyperDualMatrixTools
-using Flatten, FieldMetadata, DataFrames
+using DualNumbers
+@reexport using Parameters
+using FieldMetadata, Flatten, DataFrames, Distributions
 using BSON
 @reexport using OceanGrids            # To store the grid
 @reexport using Unitful, UnitfulAstro

@@ -198,7 +198,7 @@ minimum(z)
 # Then, we implement the local sink by restoring the age to `0` with a timescale `τ`, via
 
 function sink_age(age, p)
-    τ = p.τ
+    @unpack τ = p
     return age .* (z .< 20u"m") / τ
 end
 
@@ -223,17 +223,17 @@ sms_age(age, p) = source_age(age, p) .- sink_age(age, p)
 
 # We must define the parameters... And AIBECS comes with an API for that!
 
-t = empty_parameter_table()    # initialize table of parameters
-add_parameter!(t, :τ, 1u"s")   # add the parameter we want (τ = 1s)
-initialize_Parameters_type(t, "IdealAgeParameters")  # Generate the parameter type
-t
+import AIBECS: units
+@units struct IdealAgeParameters{T} <: AbstractParameters{T}
+    τ::T | u"s"
+end
 
 # Note, in particular, that we gave our parameter `τ` a unit.
 # Yes, Julia comes with some nice functionality to deal with units directly!
 # The lines above created a table that contains all the info for generating the parameters vector, $\boldsymbol{p}$.
 # To generate the parameters in AIBECS we do:
 
-p = IdealAgeParameters()
+p = IdealAgeParameters(1.0)
 
 # where we have used the constructor `IdealAgeParameters`, whose name we defined in the previous cell.
 # Here we did not really need to create `p` as a parameters vector, since it has only one element, `τ`, in it.

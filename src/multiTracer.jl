@@ -180,16 +180,16 @@ and are converted to their log counterparts in the mismatch formula.
 function mismatch(p, m, v)
     μ = LNμ(m, v)
     σ² = LNσ²(m, v)
-    δλ = log.(optvec(p)) .- μ
+    δλ = log.(vec(p)) .- μ
     W = Diagonal(1 ./ σ²)
     return 0.5 * transpose(δλ) * W * δλ
 end
 function ∇mismatch(p, m, v)
     μ = LNμ(m, v)
     σ² = LNσ²(m, v)
-    δλ = log.(optvec(p)) .- μ
+    δλ = log.(vec(p)) .- μ
     W = Diagonal(1 ./ σ²)
-    return transpose(W * δλ ./ optvec(p))
+    return transpose(W * δλ ./ vec(p))
 end
 
 # Lognormal mean and variance and variance conversions (from Wikipedia)

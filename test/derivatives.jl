@@ -8,22 +8,24 @@
 @testset "Derivatives" begin
     nt = length(T_all)
     n = nt * nb
-    x₀ = p₀.xgeo * ones(n)
+    @unpack xgeo = p
+    x = xgeo * ones(n)
+    testp = reconstruct(typeof(p), 2vec(p)) # other value for testing p
     @testset "∇ₓF" begin
-        @test ForwardDiff.jacobian(x -> F(x, p₀), x₀) ≈ ∇ₓF(x₀, p₀) rtol = 1e-14
-        @test ForwardDiff.jacobian(x -> F(x, 2p₀), x₀) ≈ ∇ₓF(x₀, 2p₀) rtol = 1e-14
-        @test ForwardDiff.jacobian(x -> F(x, p₀), 2x₀) ≈ ∇ₓF(2x₀, p₀) rtol = 1e-14
-        @test ForwardDiff.jacobian(x -> F(x, p₀), -x₀) ≈ ∇ₓF(-x₀, p₀) rtol = 1e-14
+        @test ForwardDiff.jacobian(x -> F(x, p), x) ≈ ∇ₓF(x, p) rtol = 1e-14
+        @test ForwardDiff.jacobian(x -> F(x, p), 2x) ≈ ∇ₓF(2x, p) rtol = 1e-14
+        @test ForwardDiff.jacobian(x -> F(x, p), -x) ≈ ∇ₓF(-x, p) rtol = 1e-14
+        @test ForwardDiff.jacobian(x -> F(x, testp), x) ≈ ∇ₓF(x, testp) rtol = 1e-14
     end
     @testset "∇ₚf" begin
-        @test ForwardDiff.jacobian(p -> [f(x₀, p)], p₀) ≈ ∇ₚf(x₀, p₀) rtol = 1e-14
-        @test ForwardDiff.jacobian(p -> [f(x₀, p)], 2p₀) ≈ ∇ₚf(x₀, 2p₀) rtol = 1e-14
-        @test ForwardDiff.jacobian(p -> [f(2x₀, p)], p₀) ≈ ∇ₚf(2x₀, p₀) rtol = 1e-14
+        @test ForwardDiff.jacobian(p -> [f(x, p)], p) ≈ ∇ₚf(x, p) rtol = 1e-14
+        @test ForwardDiff.jacobian(p -> [f(x, p)], testp) ≈ ∇ₚf(x, testp) rtol = 1e-14
+        @test ForwardDiff.jacobian(p -> [f(2x, p)], p) ≈ ∇ₚf(2x, p) rtol = 1e-14
     end
     @testset "∇ₓf" begin
-        @test ForwardDiff.jacobian(x -> [f(x, p₀)], x₀) ≈ ∇ₓf(x₀, p₀) rtol = 1e-14
-        @test ForwardDiff.jacobian(x -> [f(x, 2p₀)], x₀) ≈ ∇ₓf(x₀, 2p₀) rtol = 1e-14
-        @test ForwardDiff.jacobian(x -> [f(x, p₀)], 2x₀) ≈ ∇ₓf(2x₀, p₀) rtol = 1e-14
+        @test ForwardDiff.jacobian(x -> [f(x, p)], x) ≈ ∇ₓf(x, p) rtol = 1e-14
+        @test ForwardDiff.jacobian(x -> [f(x, testp)], x) ≈ ∇ₓf(x, testp) rtol = 1e-14
+        @test ForwardDiff.jacobian(x -> [f(x, p)], 2x) ≈ ∇ₓf(2x, p) rtol = 1e-14
     end
 end
 

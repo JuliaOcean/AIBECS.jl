@@ -6,7 +6,8 @@
     Nt = 10000 # number of time steps taken
     nt = length(T_all)
     n = nt * nb
-    x₀ = p₀.xgeo * ones(n)
+    @unpack xgeo = p
+    x₀ = xgeo * ones(n)
 
     Implicit_methods = [
                         AIBECS.crank_nicolson_step,
@@ -18,9 +19,9 @@
         @testset "$(string(sf))" for sf in Implicit_methods
             x = copy(x₀)
             for i in 1:Nt
-                x .= sf(x,p₀, δt, F, ∇ₓF)
+                x .= sf(x, p, δt, F, ∇ₓF)
             end
-            @test norm(x) / norm(F(x,p₀)) > ustrip(upreferred(1u"kyr"))
+            @test norm(x) / norm(F(x,p)) > ustrip(upreferred(1u"kyr"))
         end
     end
 
@@ -32,28 +33,28 @@
         @testset "$(string(sf))" for sf in Explicit_methods
             x = copy(x₀)
             for i in 1:100Nt              # more smaller steps
-                x .= sf(x, p₀, 0.01δt, F) # for explicit scheme
+                x .= sf(x, p, 0.01δt, F) # for explicit scheme
             end
-            @test norm(x) / norm(F(x,p₀)) > ustrip(upreferred(1u"kyr"))
+            @test norm(x) / norm(F(x,p)) > ustrip(upreferred(1u"kyr"))
         end
     end
 
     @testset "Crank Nicolson_leapfrog" begin
         x, xᵢ, xᵢ₋₁ = copy(x₀), copy(x₀), copy(x₀)
         for i in 1:Nt
-            x .= AIBECS.crank_nicolson_leapfrog_step(xᵢ, xᵢ₋₁, p₀, δt, T, ∇ₓL, NL)
+            x .= AIBECS.crank_nicolson_leapfrog_step(xᵢ, xᵢ₋₁, p, δt, T, ∇ₓL, NL)
             xᵢ₋₁ .= xᵢ
             xᵢ .= x
         end
-        @test norm(x) / norm(F(x,p₀)) > ustrip(upreferred(1u"kyr"))
-        A⁺, A⁻ = AIBECS.crank_nicolson_leapfrog_step_A⁺_and_A⁻(p₀, δt, T, ∇ₓL)
+        @test norm(x) / norm(F(x,p)) > ustrip(upreferred(1u"kyr"))
+        A⁺, A⁻ = AIBECS.crank_nicolson_leapfrog_step_A⁺_and_A⁻(p, δt, T, ∇ₓL)
         x, xᵢ, xᵢ₋₁ = copy(x₀), copy(x₀), copy(x₀)
         for i in 1:Nt
-            x .= AIBECS.crank_nicolson_leapfrog_step(xᵢ, xᵢ₋₁, p₀, A⁺, A⁻, NL)
+            x .= AIBECS.crank_nicolson_leapfrog_step(xᵢ, xᵢ₋₁, p, A⁺, A⁻, NL)
             xᵢ₋₁ .= xᵢ
             xᵢ .= x
         end
-        @test norm(x) / norm(F(x,p₀)) > ustrip(upreferred(1u"kyr"))
+        @test norm(x) / norm(F(x,p)) > ustrip(upreferred(1u"kyr"))
     end
 
 end

@@ -8,9 +8,11 @@ WOA = WorldOceanAtlasTools
 μx = (μDIPobs, missing, missing)
 σ²x = (σ²DIPobs, missing, missing)
 # generate mismatch functions
-f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs(p₀), variance_obs(p₀))
-∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs(p₀), variance_obs(p₀))
-∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_obs(p₀), variance_obs(p₀))
+mean_obs = vec(p)
+variance_obs = 0.01 * vec(p).^2 
+f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs, variance_obs)
+∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs, variance_obs)
+∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_obs, variance_obs)
 
 #===========================================
 Tests
@@ -19,19 +21,20 @@ Tests
 @testset "Mismatch / cost functions" begin
     nt = length(T_all)
     n = nt * nb
-    x₀ = p₀.xgeo * ones(n)
-    f₀ = f(x₀, p₀)
-    ∇ₓf₀ = ∇ₓf(x₀, p₀)
-    ∇ₚf₀ = ∇ₚf(x₀, p₀)
+    m = length(p)
+    x = p.xgeo * ones(n)
+    fval = f(x, p)
+    ∇ₓfval = ∇ₓf(x, p)
+    ∇ₚfval = ∇ₚf(x, p)
     @testset "Mismatch function" begin
-        @test f₀ isa Float64
-        @test f₀ > 0
+        @test fval isa Float64
+        @test fval > 0
     end
     @testset "Derivative w.r.t the state, x" begin
-        @test size(∇ₓf₀) == (1, n)
+        @test size(∇ₓfval) == (1, n)
     end
     @testset "Derivative w.r.t the parameters, p" begin
-        @test size(∇ₚf₀) == (1, m)
+        @test size(∇ₚfval) == (1, m)
     end
     @testset "Lognormal <-> Normal" begin
         mm, vv = rand(10), rand(10)

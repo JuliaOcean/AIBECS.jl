@@ -129,12 +129,12 @@ function initialize_AgedJacobianFactor(firstJ, Jfinit, update_factors)
     end
 end
 
-function udpate_J_nonrealparts(firstJ::SparseMatrixCSC{<:Dual, <:Int}, Jfinit)
-    return DualFactors(Jfinit, dualpart.(firstJ))
-end
-function udpate_J_nonrealparts(firstJ::SparseMatrixCSC{<:Hyper, <:Int}, Jfinit)
-    return HyperDualFactors(Jfinit, ε₁part.(firstJ), ε₂part.(firstJ), ε₁ε₂part.(firstJ))
-end
+#function udpate_J_nonrealparts(firstJ::SparseMatrixCSC{<:Dual, <:Int}, Jfinit)
+#    return DualFactors(Jfinit, dualpart.(firstJ))
+#end
+#function udpate_J_nonrealparts(firstJ::SparseMatrixCSC{<:Hyper, <:Int}, Jfinit)
+#    return HyperDualFactors(Jfinit, ε₁part.(firstJ), ε₂part.(firstJ), ε₁ε₂part.(firstJ))
+#end
 
 function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint="", maxItNewton=50, update_factors=true, firstJ=false)
     if preprint ≠ ""
@@ -170,13 +170,13 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
     if preprint ≠ ""
         print(preprint)
         @printf "%3s   %8s   %8s   %7s   %7s" "iteration" "|F(x)|" "|δx|/|x|" "Jac age" "fac age"
-        if solType == Complex{Float64}
-            @printf "%12s" "|δix|/|ix|"
-        elseif solType == Dual{Float64}
-            @printf "%12s" "|δεx|/|εx|"
-        elseif solType == Hyper{Float64} 
-            @printf "%12s" "|δhx|/|hx|"
-        end
+        #if solType == Complex{Float64}
+        #    @printf "%12s" "|δix|/|ix|"
+        #elseif solType == Dual{Float64}
+        #    @printf "%12s" "|δεx|/|εx|"
+        #elseif solType == Hyper{Float64} 
+        #    @printf "%12s" "|δhx|/|hx|"
+        #end
         println("")
         print(preprint)
         @printf "%5d       %8.1e   %8s   %7s   %7s\n" i NFᵢ "" "" ""
@@ -231,17 +231,17 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
         # Here I chose to only look at the relative step size, |δx|/|x|
         if solType == Float64
             nonrealtolx = false
-        elseif solType == Complex{Float64}
-            RNimδxᵢ = nrm(imag.(δxᵢ)) / nrm(imag.(xᵢ₋₁))
-            nonrealtolx = (RNimδxᵢ > 1e-7)
-        elseif solType == Dual{Float64}
-            RNεδxᵢ = nrm(dualpart.(δxᵢ)) / nrm(dualpart.(xᵢ₋₁))
-            nonrealtolx = (RNεδxᵢ > 1e-7)
-        elseif solType == Hyper{Float64}
-            RNhδxᵢ = nrm(ε₁part.(δxᵢ)) / nrm(ε₁part.(xᵢ₋₁)) +
-                     nrm(ε₂part.(δxᵢ)) / nrm(ε₂part.(xᵢ₋₁)) +
-                     nrm(ε₁ε₂part.(δxᵢ)) / nrm(ε₁ε₂part.(xᵢ₋₁))
-            nonrealtolx = (RNhδxᵢ > 1e-7)
+        #elseif solType == Complex{Float64}
+        #    RNimδxᵢ = nrm(imag.(δxᵢ)) / nrm(imag.(xᵢ₋₁))
+        #    nonrealtolx = (RNimδxᵢ > 1e-7)
+        #elseif solType == Dual{Float64}
+        #    RNεδxᵢ = nrm(dualpart.(δxᵢ)) / nrm(dualpart.(xᵢ₋₁))
+        #    nonrealtolx = (RNεδxᵢ > 1e-7)
+        #elseif solType == Hyper{Float64}
+        #    RNhδxᵢ = nrm(ε₁part.(δxᵢ)) / nrm(ε₁part.(xᵢ₋₁)) +
+        #             nrm(ε₂part.(δxᵢ)) / nrm(ε₂part.(xᵢ₋₁)) +
+        #             nrm(ε₁ε₂part.(δxᵢ)) / nrm(ε₁ε₂part.(xᵢ₋₁))
+        #    nonrealtolx = (RNhδxᵢ > 1e-7)
         end
 
         if preprint ≠ ""
@@ -257,13 +257,13 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
             @printf "%8.1e   %8.1e   " NFᵢ RNδxᵢ
             print_marker(JF.age)
             print_marker(JF.facage)
-            if solType == Complex{Float64}
-                @printf "%8.1e" RNimδxᵢ
-            elseif solType == Dual{Float64}
-                @printf "%8.1e" RNεδxᵢ
-            elseif solType == Hyper{Float64} 
-                @printf "%8.1e" RNhδxᵢ
-            end
+            #if solType == Complex{Float64}
+            #    @printf "%8.1e" RNimδxᵢ
+            #elseif solType == Dual{Float64}
+            #    @printf "%8.1e" RNεδxᵢ
+            #elseif solType == Hyper{Float64} 
+            #    @printf "%8.1e" RNhδxᵢ
+            #end
             println("")
         end
     end

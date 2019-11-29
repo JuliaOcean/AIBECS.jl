@@ -1,227 +1,334 @@
-
-function empty_parameter_table()
-    return DataFrame(
-        symbol = Symbol[],
-        value = Float64[],
-        unit = Unitful.Units[],
-        printunit = Unitful.Units[],
-        mean_obs = Float64[],
-        variance_obs = Float64[],
-        optimizable = Bool[],
-        description = String[],
-        LaTeX = String[]
-    )
-end
-export empty_parameter_table
-
-"""
-    new_parameter(symbol::Symbol,
-                  quantity;
-                  mean_obs=ustrip(upreferred(quantity)),
-                  variance_obs=ustrip(upreferred(quantity))^2,
-                  optimizable=false,
-                  description="",
-                  LaTeX="")
-
-Creats a parameter (to be added to the parameters table).
-If keyword argument `optimizable = false`, then observation mean and
-variance are set to `NaN`.
-Otherwise, these are set to keyword arguments `mean_obs` (and `variance_obs`)
-if supplied, or to `quantity` (and its square), after converting it to
-the preferred unit and stripping it of said unit if not.
-Example: TODO
-"""
-new_parameter(symbol::Symbol,
-              quantity;
-              mean_obs=ustrip(upreferred(quantity)),
-              variance_obs=ustrip(upreferred(quantity))^2,
-              optimizable=false,
-              description="",
-              LaTeX="") = [symbol,
-                           ustrip(upreferred(quantity)),
-                           unit(upreferred(quantity)),
-                           unit(quantity),
-                           optimizable ? mean_obs : NaN,
-                           optimizable ? variance_obs : NaN,
-                           optimizable,
-                           description,
-                           LaTeX]
-export new_parameter
-
-"""
-    add_parameter!(t::DataFrame, args...; kwargs...)
-
-Adds a parameter to the parameters table `t`.
-If keyword argument `optimizable = false`, then observation mean and
-variance are set to `NaN`.
-Otherwise, these are set to keyword arguments `mean_obs` (and `variance_obs`)
-if supplied, or to `quantity` (and its square), after converting it to
-the preferred unit and stripping it of said unit if not.
-Example: TODO
-Note for future edit of the docs: Don't repeat yourself between add and new param functions
-"""
-function add_parameter!(t::DataFrame, args...; kwargs...)
-    if any(t[!,:symbol] .== args[1])
-        error("Parameter $(args[1]) already exists! (Maybe delete it first?)")
-    else
-        push!(t, new_parameter(args...; kwargs...))
-    end
-end
-export add_parameter!
-
-delete_parameter!(t::DataFrame, i) = deleterows!(t, i)
-function delete_parameter!(t::DataFrame, s::Symbol)
-    i = findfirst(t[!,:symbol] .== s)
-    if i isa Nothing
-        error("Parameter $s does not exist in that table.")
-    else
-        deleterows!(t, i)
-    end
-end
-export delete_parameter!
-
-#==================
-Generate Parameters
-==================#
-
 import Flatten: flattenable
+@metadata initial_value nothing
+import FieldMetadata: @units, units
+import FieldMetadata: @prior, prior
+import FieldMetadata: @description, description
+@metadata bounds nothing
+import FieldMetadata: @logscaled, logscaled
+@metadata reference nothing
 
-macro make_struct(struct_name, schema...)
-    fields = [:($(x[1])::U | $(x[2])) for x in schema...]
-    esc(quote @flattenable mutable struct $struct_name{U} <: AbstractVector{U}
-        $(fields...)
-        end
-    end)
+
+
+"""
+    AbstractParameters{T} <: AbstractVector{T}
+
+An abstract type for AIBECS model parameters.
+
+Parameters in AIBECS use the following convenience packages:
+
+- Parameters
+- FieldMetadata
+- FieldDefaults
+- Flatten
+- Unitful
+- DataFrames
+- Distributions
+
+These aim to allow for some nice features, which include
+
+- nice syntax for unpacking parameters in functions via Parameters' `@unpack` macro
+- additional metadata on parameters
+- easy conversion to and from vectors
+- use of units and automatic conversions if necessary
+- pretty table-format displays
+- loading and saving to and from CSV files
+- prior estimates for bayesian inference and optimization
+
+See the list of examples to get an idea of how to generate parameters for your model.
+
+# Examples
+
+Generate a simple parameter type via
+
+```jldoctest
+julia> struct SimpleParams{T} <: AbstractParameters{T}
+           α::T
+           β::T
+           γ::T
+       end
+SimpleParams
+```
+
+To create an instance of the `SimpleParams(Float64)` type, you can do
+
+```jldoctest
+julia> p = SimpleParams(1.0, 2.0, 3.0)
+SimpleParams{Float64}
+│ Row │ Symbol │ Value   │
+│     │ Symbol │ Float64 │
+├─────┼────────┼─────────┤
+│ 1   │ α      │ 1.0     │
+│ 2   │ β      │ 2.0     │
+│ 3   │ γ      │ 3.0     │
+```
+
+One of the core features from Parameters is unpacking in functions, e.g.,
+
+```jldoctest
+julia> function simplef(p)
+           @unpack α, γ = p
+           return α + γ
+       end
+simplef (generic function with 1 method)
+
+julia> simplef(p) # 1.0 + 3.0
+4.0
+```
+
+More complex examples are permitted by adding metadata (thanks to FieldMetadata.jl).
+You can add units
+
+```jldoctest
+julia> @units struct UnitParams{T} <: AbstractParameters{T}
+           α::T | u"km"
+           β::T | u"hr"
+           γ::T | u"m/s"
+       end ;
+
+julia> p = UnitParams(1.0, 2.0, 3.0)
+UnitParams{Float64}
+│ Row │ Symbol │ Value   │ Unit     │
+│     │ Symbol │ Float64 │ Unitful… │
+├─────┼────────┼─────────┼──────────┤
+│ 1   │ α      │ 1.0     │ km       │
+│ 2   │ β      │ 2.0     │ hr       │
+│ 3   │ γ      │ 3.0     │ m s^-1   │
+```
+
+Note that when adding units to your parameters, they will be converted to SI
+when unpacked, as in, e.g.,
+
+```jldoctest
+julia> function speed(p)
+           @unpack α, β, γ = p
+           return α / β + γ
+       end
+speed (generic function with 1 method)
+
+julia> speed(p) # (1.0 km / 2.0 hr + 3 m/s) in m/s
+3.138888888888889
+```
+
+Another example for optimizable/flattenable parameters
+
+```jldoctest
+julia> @flattenable @units @initial_value struct OptParams{T} <: AbstractParameters{T}
+           α::T | 3.6 | u"km"  | true 
+           β::T | 1.0 | u"hr"  | false
+           γ::T | 1.0 | u"m/s" | true
+       end ;
+
+julia> p = OptParams(initial_value(OptParams)...)
+OptParams{Float64}
+│ Row │ Symbol │ Value   │ Initial value │ Unit     │ Optimizable │
+│     │ Symbol │ Float64 │ Float64       │ Unitful… │ Bool        │
+├─────┼────────┼─────────┼───────────────┼──────────┼─────────────┤
+│ 1   │ α      │ 3.6     │ 3.6           │ km       │ 1           │
+│ 2   │ β      │ 1.0     │ 1.0           │ hr       │ 0           │
+│ 3   │ γ      │ 1.0     │ 1.0           │ m s^-1   │ 1           │
+```
+
+Thanks to the FieldMetaData interface, you can chain the following preloaded metadata:
+
+- initial_value
+- units (from Unitful.jl and UnitfulAstro.jl)
+- prior (from Distributions.jl)
+- description (`String`)
+- bounds (2-element `Tuple`)
+- logscaled (`Bool`)
+- flattenable (to convert to vectors of optimizable parameters only)
+- reference (`String`)
+
+Here is an example of parameter with all the possible metadata available in AIBECS:
+
+```jldoctest
+julia> @reference @flattenable @logscaled @bounds @description @prior @units @initial_value struct FullParams{T} <: AbstractParameters{T}
+           α::T | 1.0 | u"km"  | Normal(0,1)    | "The distance"   | (-Inf, Inf) | false | false | "Jean et al., 2042" 
+           β::T | 2.0 | u"hr"  | LogNormal(0,1) | "The time"       | (   0, Inf) | true  | true  | "Claude et al. 1983" 
+           γ::T | 3.0 | u"mol" | Normal(1,2)    | "The # of moles" | (  -1,   1) | false | true  | "Dusse et al. 2000"
+       end ;
+
+julia> FullParams(4.0, 5.0, 6.0)
+FullParams{Float64}
+│ Row │ Symbol │ Value   │ Initial value │ Unit     │ Prior                            │ Description    │ Bounds      │ Logscaled │ Optimizable │ Reference          │
+│     │ Symbol │ Float64 │ Float64       │ Unitful… │ Distribu…                        │ String         │ Tuple…      │ Bool      │ Bool        │ String             │
+├─────┼────────┼─────────┼───────────────┼──────────┼──────────────────────────────────┼────────────────┼─────────────┼───────────┼─────────────┼────────────────────┤
+│ 1   │ α      │ 4.0     │ 1.0           │ km       │ Normal{Float64}(μ=0.0, σ=1.0)    │ The distance   │ (-Inf, Inf) │ 0         │ 0           │ Jean et al., 2042  │
+│ 2   │ β      │ 5.0     │ 2.0           │ hr       │ LogNormal{Float64}(μ=0.0, σ=1.0) │ The time       │ (0, Inf)    │ 1         │ 1           │ Claude et al. 1983 │
+│ 3   │ γ      │ 6.0     │ 3.0           │ mol      │ Normal{Float64}(μ=1.0, σ=2.0)    │ The # of moles │ (-1, 1)     │ 0         │ 1           │ Dusse et al. 2000  │
+```
+
+Note that there is no check that the metadata you give is consistent.
+These metadata will hopefully be useful for advanced usage of AIBECS, e.g., using prior information and/or bounds for optimization.
+"""
+abstract type AbstractParameters{T} <: AbstractVector{T} end
+
+"""
+    symbols(p)
+
+Returns the symbols in `p`.
+
+Can also be used directly on the type of `p`
+(because the symbols of `p::T` are contained in the type `T`).
+"""
+symbols(::Type{T}) where {T <: AbstractParameters} = fieldnames(T)
+symbols(::T) where {T <: AbstractParameters} = symbols(T)
+
+"""
+    flattenable_symbols(p)
+
+Returns the flattenable symbols in `p`.
+
+The flattenable symbols are those symbols that are kepth when using `p` as a vector,
+e.g., when doing `vec(p)`.
+(Useful when passing parameters to an optimization routine expeting a vector of optimizable parameters.)
+
+Can also be used directly on the type of `p`
+(because the flattenable symbols of `p::T` are contained in the type `T`).
+"""
+flattenable_symbols(::T) where {T <: AbstractParameters} = flattenable_symbols(T)
+flattenable_symbols(::Type{T}) where {T <: AbstractParameters} = fieldnames(T)[collect(flattenable(T))]
+
+"""
+    values(p::T) where {T <: AbstractParameters}
+
+Returns a vector of **all** the values of `p`.
+
+Note that `values(p)` is different from `vec(p)`.
+"""
+Base.values(p::T) where {T <: AbstractParameters} = [getfield(p, s) for s in symbols(T)]
+
+"""
+    flattenable_values(p::T) where {T <: AbstractParameters}
+
+Returns a vector of the **flattenable** values of `p`.
+
+Note that `vec(p)` is different from `values(p)`.
+"""
+flattenable_values(p::T) where {T <: AbstractParameters} = [getfield(p, s) for s in flattenable_symbols(T)]
+
+"""
+    vec(p::T) where {T <: AbstractParameters}
+
+Returns a **SI-unit-converted** vector of flattenable values of `p`.
+
+Note that `vec(p) ≠ flattenable_values(p)` if `p` has units.
+"""
+Base.vec(p::T) where {T <: AbstractParameters} = [Parameters.unpack(p, Val(s)) for s in flattenable_symbols(T)]
+
+
+"""
+    length(p::AbstractParameter)
+
+Returns the length of the **flattened/optimzable** vector of `p`.
+
+May be different from the number of parameters.
+Can also be used directly on the type of `p`.
+"""
+Base.length(::T) where {T <: AbstractParameters} = sum(flattenable(T))
+Base.length(::Type{T}) where {T <: AbstractParameters} = sum(flattenable(T))
+
+"""
+    size(p::AbstractParameter)
+
+Returns the size of the **flattened/optimzable** vector of `p`.
+
+May be different from the number of parameters.
+Can also be used directly on the type of `p`.
+"""
+Base.size(::T) where {T <: AbstractParameters} = (length(T),)
+Base.size(::Type{T}) where {T <: AbstractParameters} = (length(T),)
+
+function Base.show(io::IO, p::T) where T <: AbstractParameters
+    print(T)
+    t = table(p)
+    show(io, t; summary=false)
+end
+function Base.show(io::IO, m::MIME"text/plain", p::T) where T <: AbstractParameters
+    print(T)
+    t = table(p)
+    show(io, m, t; summary=false)
+end
+
+function table(p::T, nf::NamedTuple) where {T <: AbstractParameters}
+    t = DataFrame(Symbol = collect(symbols(p)), Value = values(p))
+    for (n,f) in zip(keys(nf), nf)
+        setproperty!(t, n, collect(f(p)))
+    end
+    return t
 end
 
 """
-    initialize_Parameters_type(t, PName="Parameters")
+    table(p)
 
-Generate the type called after `PName` and all its functionality with it.
-It is recommended to use upper camel case for `PName` as for all user-defined Julia types.
-`PName` defaults to `"Parameters"`.
+Returns a `DataFrame` (a table) of `p`.
+Useful for printing and saving into an actual text/latex table.
+"""
+function table(p::AbstractParameters)
+    ks, vs = Symbol[], Function[]
+    all(isnothing, initial_value(p)) || (push!(ks, Symbol("Initial value")); push!(vs, initial_value))
+    all(isequal(1), units(p)) || (push!(ks, :Unit); push!(vs, units))
+    all(isnothing, prior(p)) || (push!(ks, Symbol("Prior")); push!(vs, prior))
+    all(isempty, description(p)) || (push!(ks, Symbol("Description")); push!(vs, description))
+    all(isnothing, bounds(p)) || (push!(ks, Symbol("Bounds")); push!(vs, bounds))
+    any(logscaled(p)) && (push!(ks, Symbol("Logscaled")); push!(vs, logscaled))
+    all(flattenable(p)) || (push!(ks, Symbol("Optimizable")); push!(vs, flattenable))
+    all(isnothing, reference(p)) || (push!(ks, Symbol("Reference")); push!(vs, reference))
+    nf = (; zip(ks, vs)...)
+    t = table(p, nf)
+end
 
-For example, use
-```
-julia> initialize_Parameters_type(t) # creates Parameters
-```
-or
-```
-julia> initialize_Parameters_type(t, "MyPara") # creates MyPara
-```
 
 """
-function initialize_Parameters_type(t, PName="Parameters")
-    if isdefined(@__MODULE__, Symbol(PName))
-        @warn """
-              The name `$PName` is already used.
-              Will error if you changed the set of parameters.
-              You can specify the name of the new parameters type via the syntax:
+    latex(p)
 
-              julia> initialize_Parameters_type(t, PName)
+Returns a LaTeX-formatted table of the parameters.
+"""
+latex(p::AbstractParameters) = show(stdout, MIME("text/latex"), table(p))
 
-              See examples in the documentation of `initialize_Parameters_type`.
-              (Type `?` and then `initialize_Parameters_type` to see the help.)
-              """
-    end
-    symbols = t[!,:symbol]
-    optimizables = t[!,:optimizable]
-    m = length(optimizables)
-    m_all = size(t, 1)
-    optsymbols = symbols[optimizables]
-    schema = [(Symbol(x),Symbol(y)) for (x,y) in zip(symbols, optimizables)]
-    Parameters = Symbol(PName)
-    eval( :(@make_struct $Parameters $schema))
+"""
+    unpack(p <: AbstractParameters, s)
 
-    printunits = t[!,:printunit]
-    baseunits = t[!,:unit]
-    values = t[!,:value]
+Unpacks the parameter `s` from `p`. 
 
-    μs = [μ for (μ, opt) in zip(t[!,:mean_obs], optimizables) if opt]
-    σ²s = [σ² for (σ², opt) in zip(t[!,:variance_obs], optimizables) if opt]
+Note this is specialized and will convert the parameter value to SI units.
+"""
+@inline Parameters.unpack(p::T, ::Val{f}) where {T<:AbstractParameters,f} = ustrip(upreferred(getproperty(p, f) * units(T, f)))
 
-    @eval begin
-        # Printing functionality
-        function Base.show(io::IO, p::$Parameters)
-            println(typeof(p))
-            for (s, pu, bu, opt) in zip($symbols, $printunits, $baseunits, $optimizables)
-                v = getfield(p, s)
-                if pu == 1
-                    val, ppu = v, ""
-                else
-                    val, ppu = ustrip(uconvert(pu, v * bu)), unicodify(pu)
-                end
-                optstr = opt ? "" : "(fixed)"
-                print_type(io, s, val, ppu, optstr)
-            end
-        end
-        Base.show(io::IO, ::MIME"text/plain", p::$Parameters) = Base.show(io, p)
-        # constants
-        $Parameters() = $Parameters($values...)
-        mean_obs(::$Parameters) = $μs
-        variance_obs(::$Parameters) = $σ²s
-        export $Parameters, mean_obs, variance_obs
-        # overloads
-        Base.length(p::$Parameters) = length(fieldnameflatten(p))
-        Base.size(p::$Parameters) = (length(p),) # ForwardDiff requirement
-        # Make $Parameters an iterable for the $Parameters to be able to `collect` it into a vector
-        Base.iterate(p::$Parameters, i=1) = i > $m_all ? nothing : (getfield(p, i), i + 1)
-        # Convert p to a vector and vice versa
-        Base.vec(p::$Parameters) = collect((p...,))
-        Base.copy(p::$Parameters) = $Parameters(vec(p)...)
-        Base.convert(::Type{$Parameters{T1}}, p::$Parameters{T2}) where {T1, T2} = $Parameters(convert(Vector{T1}, vec(p))...)
-        Base.convert(::Type{$Parameters{T}}, p::$Parameters{T}) where T = p
-        opt_para(p, v) = Flatten.reconstruct(p, v, Number)
-        opt_para(p::$Parameters{Tₚ}, v::Vector{Tᵥ}) where {Tₚ, Tᵥ} = Flatten.reconstruct(convert($Parameters{Tᵥ}, p), v, Number)
-        opt_para(v) = opt_para($Parameters(), v)
-        optvec(p::$Parameters) = collect(flatten(p, Number))
-        optvec(v) = v # ForwardDiff requirement
-        export optvec
-        # Testing equality and approx
-        Base.:≈(p₁::$Parameters, p₂::$Parameters) = vec(p₁) ≈ vec(p₂)
-        Base.:(==)(p₁::$Parameters, p₂::$Parameters) = vec(p₁) == vec(p₂)
-        # Overloads for being a subtype of Vector
-        strerror = "Index of of bounds!"
-        Base.getindex(p::$Parameters, i::Int) = i < 1 || i > $m ? error(strerror) : getfield(p, $optsymbols[i])
-        Base.setindex!(p::$Parameters, v, i::Int) = i < 1 || i > $m ? error(strerror) : setfield!(p, $optsymbols[i], v)
-        # base overloads
-        Base.:+(p::$Parameters, v::Vector) = opt_para(optvec(p) + v)
-        Base.:-(p::$Parameters, v::Vector) = opt_para(optvec(p) - v)
-        Base.:+(p₁::$Parameters, p₂::$Parameters) = opt_para(optvec(p₁) + optvec(p₂))
-        Base.:-(p₁::$Parameters, p₂::$Parameters) = opt_para(optvec(p₁) - optvec(p₂))
-        Base.:*(s::Number, p::$Parameters) = opt_para(s * optvec(p))
-        Base.:*(p::$Parameters, s::Number) = s * p
-    end
-end
-export initialize_Parameters_type
+"""
+    +(p::T, v::Vector) where {T <: AbstractParameters}
 
+Adds the flattened vector `v` to `p`.
 
-#=======
-Printing
-=======#
+**Warning:** This method for `+` is implemented only for differentiation
+using dual and hyperdual numbers.
+If you want to change the values of `p`, you should do so explicitly
+rather than use this `+` method.
+"""
+Base.:+(p::T, v::Vector) where {T <: AbstractParameters} = reconstruct(T, vec(p) + v)
 
-print_type(io, f, val::Float64, ppu, s) = @printf io "%6s = %8.2e [%s] %s\n" f val ppu s
-print_type(io, f, val::Dual{Float64}, ppu, s) = @printf io "%6s = %8.2e + %8.2eε [%s] %s\n" f ℜ(val) 𝔇(val) ppu s
-print_type(io, f, val::Complex{Float64}, ppu, s) = @printf io "%6s = %8.2e + %8.2ei [%s] %s\n" f ℜ(val) ℑ(val) ppu s
-print_type(io, f, val::Hyper{Float64}, ppu, s) = @printf io "%6s = %8.2e + %8.2eε₁ + %8.2eε₂ + %8.2eε₁ε₂ [%s] %s\n" f ℜ(val) ℌ₁(val) ℌ₂(val) ℌ(val) ppu s
-ℜ(x::Complex) = real(x)
-ℑ(x::Complex) = imag(x)
-ℜ(x::Dual) = DualNumbers.realpart(x)
-𝔇(x::Dual) = DualNumbers.dualpart(x)
-ℜ(x::Hyper) = HyperDualNumbers.realpart(x)
-ℌ(x::Hyper) = HyperDualNumbers.ε₁ε₂part(x)
-ℌ₁(x::Hyper) = HyperDualNumbers.ε₁part(x)
-ℌ₂(x::Hyper) = HyperDualNumbers.ε₂part(x)
+"""
+    reconstruct(T, v)
 
-function unicodify(U::Unitful.Units)
-    str = string(U)
-    str = replace(str, r"\^-1" => s"⁻¹")
-    str = replace(str, r"\^-2" => s"⁻²")
-    str = replace(str, r"\^-3" => s"⁻³")
-    str = replace(str, r"\^1" => s"¹")
-    str = replace(str, r"\^2" => s"²")
-    str = replace(str, r"\^3" => s"³")
-    return str
+Reconstructs the parameter of type `T` from flattenable vector `v`.
+"""
+function reconstruct(::Type{T}, v::Tv) where {T <: AbstractParameters, Tv <: Vector}
+    all(isnothing, initial_value(T)) && error("Can't reconstruct without initial values")
+    vunits = units(T)[[flattenable(T)...]]
+    v = @. v * upreferred(vunits) |> vunits |> ustrip
+    reconstructed_v = convert(Tv, collect(initial_value(T)))
+    reconstructed_v[collect(flattenable(T))] .= v
+    return T.name.wrapper(reconstructed_v...)
 end
 
+"""
+    getindex(p::T, i) where {T <: AbstractParameters}
+
+Returns the i-th element of vec(p).
+
+This is not efficient and only used for testing the derivatives with ForwardDiff.
+"""
+Base.getindex(p::T, i) where {T <: AbstractParameters} = getindex(vec(p), i)
+
+export AbstractParameters, latex
 
