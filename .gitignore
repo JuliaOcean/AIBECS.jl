@@ -1,6 +1,6 @@
 Manifest.toml
 docs/build/
 
-docs/src/examples/generated/
-docs/src/tutorials/generated/
-docs/src/howtos/generated/
+docs/src/tutorials/
+docs/src/howtos/
+docs/notebooks/

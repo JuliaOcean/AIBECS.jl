@@ -1,17 +1,33 @@
-using Documenter, AIBECS
+using Documenter, Literate, AIBECS
+
+# Ensure that the DataDeps download work remotely
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 
-# Generate examples
-include("generate.jl")
+# generate tutorials and how-to guides using Literate
+src = joinpath(@__DIR__, "src")
+lit = joinpath(@__DIR__, "lit")
+notebooks = joinpath(@__DIR__, "notebooks")
 
-tutorials_jl = [f for f in readdir(tutorials_directory) if endswith(f, ".jl")]
-howtos_jl = [f for f in readdir(howtos_directory) if endswith(f, ".jl")]
+execute = false # Set to true for executing notebooks and documenter!
+for (root, _, files) in walkdir(lit), file in files
+    splitext(file)[2] == ".jl" || continue
+    ipath = joinpath(root, file)
+    opath = splitdir(replace(ipath, lit=>src))[1]
+    opath_nb = splitdir(replace(ipath, lit=>notebooks))[1]
+    if execute
+        mdpost(str) = replace(str, "@__CODE__" => code)
+        Literate.notebook(ipath, opath_nb, execute = true)
+        Literate.markdown(ipath, opath, postprocess = mdpost)
+    else
+        Literate.notebook(ipath, opath_nb, execute = false)
+        Literate.markdown(ipath, opath, documenter = false)
+    end
+end
 
-tutorials_md = [replace(f, ".jl" => ".md") for f in tutorials_jl]
-howtos_md = [replace(f, ".jl" => ".md") for f in howtos_jl]
 
-generated_tutorials = [joinpath("tutorials", "generated", f) for f in tutorials_md]
-generated_howtos = [joinpath("howtos", "generated", f) for f in howtos_md]
+# Documentation structure
+ismd(f) = splitext(f)[2] == ".md" 
+pages(folder) = [joinpath(folder, f) for f in readdir(joinpath(src, folder)) if ismd(f)]
 
 makedocs(
     sitename="AIBECS.jl",
@@ -21,10 +37,10 @@ makedocs(
     # organisation
     pages = Any[
         "Home" => "index.md",
-        "Tutorials" => generated_tutorials,
-        "How-to guides" => generated_howtos,
-        "Explanation" => "explanation.md",
-        "Reference" => "reference.md"
+        "Tutorials" => pages("tutorials"),
+        "How-to guides" => pages("howtos"),
+        "Explanation" => pages("explanation"),
+        "Reference" => pages("reference")
         ]
 )
 
@@ -33,3 +49,13 @@ deploydocs(
     repo = "github.com/briochemc/AIBECS.jl.git",
 )
 
+
+#=
+To edit locally, make sure execute is set to false and run 
+
+
+using LiveServer
+servedocs(literate=joinpath("docs", "lit"))
+
+from the root of the package in development
+=#

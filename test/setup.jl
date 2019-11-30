@@ -15,7 +15,7 @@ Iabove = buildIabove(grid)
 
 @testset "Circulation and grid" begin
     @testset "wet3D" begin
-        wet3D = wet_boxes(grid)
+        wet3D = iswet(grid)
         @test wet3D isa BitArray{3}
         @test wet3D == grid.wet3D
     end
