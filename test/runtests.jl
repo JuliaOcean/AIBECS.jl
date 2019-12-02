@@ -20,6 +20,7 @@ Circulation = Primeau_2x2x2
 @testset "Primeau's 6-box model" begin
     # Run tests with the 6-box toy model
     include("setup.jl")
+    include("particles.jl")
     include("parameters.jl")
     include("bgc_functions.jl")
     include("gridtools.jl")

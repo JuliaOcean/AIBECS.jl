@@ -32,10 +32,29 @@ end
 end
 
 
+@userplot VerticalIntegral
+@recipe function f(p::VerticalIntegral)
+    x, grd = p.args
+    intunit = string(unit(x[1]) * u"m")
+    x3D = rearrange_into_3Darray(ustrip.(x), grd)
+    lon, lat = grd.lon .|> ustrip, grd.lat .|> ustrip
+    δz_3D = ustrip.(grd.δz_3D)
+    xvint = sum(x -> ismissing(x) ? 0.0 : x, x3D .* δz_3D, dims=3) ./ grd.wet3D[:,:,1]
+    @series begin
+        seriestype := :contourf
+        xlabel := "Longitude"
+        ylabel := "Latitude"
+        colorbar_title := intunit
+        lon, lat, view(xvint, :, :, 1)
+    end
+end
+
+
 @userplot VerticalAverage
 @recipe function f(p::VerticalAverage)
     x, grd = p.args
-    x3D = rearrange_into_3Darray(x, grd)
+    xunit = string(unit(x[1]))
+    x3D = rearrange_into_3Darray(ustrip.(x), grd)
     v = ustrip.(vector_of_volumes(grd))
     v3D = rearrange_into_3Darray(v, grd)
     lon, lat = grd.lon .|> ustrip, grd.lat .|> ustrip
@@ -51,7 +70,9 @@ end
 @userplot ZonalSlice
 @recipe function f(p::ZonalSlice)
     x, grd, lon = p.args
-    x3D = rearrange_into_3Darray(x, grd)
+    lon = mod(ustrip(lon), 360)
+    xunit = string(unit(x[1]))
+    x3D = rearrange_into_3Darray(ustrip.(x), grd)
     depth, lat = grd.depth .|> ustrip, grd.lat .|> ustrip
     ix = findfirst(ustrip(grd.lon) .≥ mod(ustrip(lon), 360))
     @series begin
@@ -59,6 +80,9 @@ end
         yflip := true
         yticks := Int.(round.(depth))
         ylims := (0, maximum(depth))
+        xlabel := "Latitude"
+        ylabel := "Depth (m)"
+        colorbar_title := xunit
         lat, depth, permutedims(view(x3D,:,ix,:), [2,1])
     end
 end

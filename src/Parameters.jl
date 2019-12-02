@@ -8,7 +8,6 @@ import FieldMetadata: @logscaled, logscaled
 @metadata reference nothing
 
 
-
 """
     AbstractParameters{T} <: AbstractVector{T}
 
@@ -329,6 +328,12 @@ Returns the i-th element of vec(p).
 This is not efficient and only used for testing the derivatives with ForwardDiff.
 """
 Base.getindex(p::T, i) where {T <: AbstractParameters} = getindex(vec(p), i)
+
+
+function (::Type{T})(args::Quantity...) where {T <: AbstractParameters}
+    all(isequal(1), units(T)) && error("Nope")
+    return T([ustrip(x |> units(T, f)) for (x,f) in zip(args, fieldnames(T))]...)
+end
 
 export AbstractParameters, latex
 

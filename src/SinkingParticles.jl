@@ -7,10 +7,10 @@ using ..GridTools
 
 
 """
-    buildPFD(grid; settling_velocity=40u"m/s")
+    buildPFD(grid; settling_velocity)
 
 Builds the particle flux divergence operator `PFD` for a given particle sinking speed
-(`settling_velocity`, with default value of 40 m s⁻¹).
+(`settling_velocity`).
 
 Schematic of a grid cell:
 ```
@@ -53,7 +53,7 @@ And FLUX, the sinking particle flux operator, is defined by
 julia> buildPFD(grid, settling_velocity=1.0) # 1.0 m/s (SI units assumed)
 ```
 """
-function buildPFD(grid; settling_velocity=40u"m/s")
+function buildPFD(grid; settling_velocity)
     iwet = findall(vec(grid.wet3D))
     DIV = buildDIV(grid)
     Iabove = buildIabove(grid.wet3D, iwet)
@@ -102,3 +102,19 @@ buildFLUX(w::Number, Iabove) = w * Iabove
 export buildDIV, buildPFD, buildFLUX
 
 end
+
+"""
+    transportoperator(grd; kwargs)
+
+Returns the transportoperator corresponding to the arguments.
+
+# Example
+
+Create the particle flux divergence with settling velocity of 100m/s
+```julia-repl
+julia> T = transportoperator(grd; w=100.0)
+```
+"""
+transportoperator(grd; w) = buildPFD(grd; settling_velocity=w)
+
+export transportoperator

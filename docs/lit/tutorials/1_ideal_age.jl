@@ -1,6 +1,6 @@
 
 #---------------------------------------------------------
-# # Ideal age
+# # [Ideal age](@id ideal-age)
 #---------------------------------------------------------
 
 #md # !!! tip
@@ -17,7 +17,7 @@
 #
 # $$\big(\partial_t + \mathbf{T}(\boldsymbol{p}) \big) \boldsymbol{x} = \boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p}),$$
 #
-# where $\boldsymbol{T}(\boldsymbol{p})$ is the transport, $\boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p})$ is the net local sources and sinks, and $\boldsymbol{p}$ is the vector of model parameters.
+# where $\mathbf{T}(\boldsymbol{p})$ is the transport, $\boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p})$ is the net local sources and sinks, and $\boldsymbol{p}$ is the vector of model parameters.
 # We will then use the AIBECS to simulate the ideal age by finding the steady-state of the system, i.e., the solution of
 #
 # $$\partial_t \boldsymbol{x} = \boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = \boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p}) - \mathbf{T}(\boldsymbol{p}) \, \boldsymbol{x} = 0.$$
