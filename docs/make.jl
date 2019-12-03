@@ -8,8 +8,8 @@ src = joinpath(@__DIR__, "src")
 lit = joinpath(@__DIR__, "lit")
 notebooks = joinpath(@__DIR__, "notebooks")
 
-execute = false # Set to true for executing notebooks and documenter!
-nb = false      # Set to true to generate the notebooks
+execute = true # Set to true for executing notebooks and documenter!
+nb = true      # Set to true to generate the notebooks
 for (root, _, files) in walkdir(lit), file in files
     splitext(file)[2] == ".jl" || continue
     ipath = joinpath(root, file)
