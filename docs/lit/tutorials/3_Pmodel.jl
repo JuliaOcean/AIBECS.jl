@@ -3,11 +3,10 @@
 # # [A coupled PO₄–POP model](@id P-model)
 #---------------------------------------------------------
 
-# In this tutorial we will explicitly simulate 2 tracers whose distributions control and feed back on each other.
+#md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/3_Pmodel.ipynb)
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/3_Pmodel.ipynb)
 
-#md # !!! tip
-#md #     This example is also available as a Jupyter notebook:
-#md #     [`P_model_2_tracers.ipynb`](@__NBVIEWER_ROOT_URL__/notebooks/tutorials/P_model_2_tracers.ipynb)
+# In this tutorial we will explicitly simulate 2 tracers whose distributions control and feed back on each other.
 
 # We consider a simple model for the cycling of phosphorus with 2 state variables consisting of phosphate (PO₄) AKA dissolved inorganic phosphorus (DIP) and particulate organic phosphorus (POP).
 # The dissolved phases are transported by advection and diffusion whereas the particulate phase sinks rapidly down the water column without any appreciable transport by the circulation.

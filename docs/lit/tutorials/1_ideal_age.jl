@@ -3,8 +3,8 @@
 # # [Ideal age](@id ideal-age)
 #---------------------------------------------------------
 
-#md # !!! tip
-#md #     This tutorial is also available as a [`Jupyter notebook`](@__NBVIEWER_ROOT_URL__/notebooks/tutorials/ideal_age.ipynb)
+#md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/1_ideal_age.ipynb)
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/1_ideal_age.ipynb)
 
 # The tracer equation for the ideal age is
 #

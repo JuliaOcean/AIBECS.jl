@@ -6,7 +6,7 @@ ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 # generate tutorials and how-to guides using Literate
 src = joinpath(@__DIR__, "src")
 lit = joinpath(@__DIR__, "lit")
-notebooks = joinpath(@__DIR__, "notebooks")
+notebooks = joinpath(src, "notebooks")
 
 execute = true # Set to true for executing notebooks and documenter!
 nb = true      # Set to true to generate the notebooks
@@ -15,12 +15,8 @@ for (root, _, files) in walkdir(lit), file in files
     ipath = joinpath(root, file)
     opath = splitdir(replace(ipath, lit=>src))[1]
     Literate.markdown(ipath, opath, documenter = execute)
-    if nb
-        opath_nb = splitdir(replace(ipath, lit=>notebooks))[1]
-        Literate.notebook(ipath, opath_nb, execute = execute)
-    end
+    nb && Literate.notebook(ipath, notebooks, execute = execute)
 end
-
 
 # Documentation structure
 ismd(f) = splitext(f)[2] == ".md" 
@@ -50,9 +46,8 @@ deploydocs(
 #=
 To edit locally, make sure execute is set to false and run 
 
-
 using LiveServer
-servedocs(literate=joinpath("docs", "lit"))
+servedocs(literate=joinpath("docs", "lit"), doc_env=true)
 
 from the root of the package in development
 =#
