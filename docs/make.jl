@@ -9,18 +9,15 @@ lit = joinpath(@__DIR__, "lit")
 notebooks = joinpath(@__DIR__, "notebooks")
 
 execute = false # Set to true for executing notebooks and documenter!
+nb = false      # Set to true to generate the notebooks
 for (root, _, files) in walkdir(lit), file in files
     splitext(file)[2] == ".jl" || continue
     ipath = joinpath(root, file)
     opath = splitdir(replace(ipath, lit=>src))[1]
-    opath_nb = splitdir(replace(ipath, lit=>notebooks))[1]
-    if execute
-        mdpost(str) = replace(str, "@__CODE__" => code)
-        Literate.notebook(ipath, opath_nb, execute = true)
-        Literate.markdown(ipath, opath, postprocess = mdpost)
-    else
-        Literate.notebook(ipath, opath_nb, execute = false)
-        Literate.markdown(ipath, opath, documenter = false)
+    Literate.markdown(ipath, opath, documenter = execute)
+    if nb
+        opath_nb = splitdir(replace(ipath, lit=>notebooks))[1]
+        Literate.notebook(ipath, opath_nb, execute = execute)
     end
 end
 

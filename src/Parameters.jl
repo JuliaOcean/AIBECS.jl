@@ -331,9 +331,17 @@ Base.getindex(p::T, i) where {T <: AbstractParameters} = getindex(vec(p), i)
 
 
 function (::Type{T})(args::Quantity...) where {T <: AbstractParameters}
-    all(isequal(1), units(T)) && error("Nope")
+    all(isequal(1), units(T)) && error("$T needs `units` for this construction to work")
     return T([ustrip(x |> units(T, f)) for (x,f) in zip(args, fieldnames(T))]...)
 end
+
+function (::Type{T})(;kwargs...) where {T <: AbstractParameters}
+    all(isnothing, initial_value(T)) && length(kwargs) ≠ length(symbols(T)) && error("$T needs `initial_value` if one of the parameters is not supplied")
+    value(f::Symbol, v::Quantity) = ustrip(v |> units(T, f))
+    value(f::Symbol, v) = v
+    return T([f ∈ keys(kwargs) ? value(f, kwargs[f]) : initial_value(T, f) for f in fieldnames(T)]...)
+end
+
 
 export AbstractParameters, latex
 

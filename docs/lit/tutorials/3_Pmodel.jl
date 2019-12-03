@@ -1,6 +1,6 @@
 
 #---------------------------------------------------------
-# # A coupled PO₄–DOP model
+# # [A coupled PO₄–POP model](@id P-model)
 #---------------------------------------------------------
 
 # In this tutorial we will explicitly simulate 2 tracers whose distributions control and feed back on each other.
@@ -8,10 +8,6 @@
 #md # !!! tip
 #md #     This example is also available as a Jupyter notebook:
 #md #     [`P_model_2_tracers.ipynb`](@__NBVIEWER_ROOT_URL__/notebooks/tutorials/P_model_2_tracers.ipynb)
-
-#---------------------------------------------------------
-# ## Tracer equations
-#---------------------------------------------------------
 
 # We consider a simple model for the cycling of phosphorus with 2 state variables consisting of phosphate (PO₄) AKA dissolved inorganic phosphorus (DIP) and particulate organic phosphorus (POP).
 # The dissolved phases are transported by advection and diffusion whereas the particulate phase sinks rapidly down the water column without any appreciable transport by the circulation.
@@ -40,10 +36,6 @@
 
 
 
-#---------------------------------------------------------
-# ## Transport operators
-#---------------------------------------------------------
-
 # We start by telling Julia we want to use the AIBECS and the OCIM0.1 circulation for DIP.
 
 using AIBECS
@@ -68,11 +60,6 @@ iwet = findall(vec(iswet(grd)))
 z = ustrip.(grd.depth_3D[iwet])
 
 # (We strip the units of `z` via `ustrip`.)
-
-#---------------------------------------------------------
-# ## Local sources and sinks
-#---------------------------------------------------------
-
 
 
 # ##### Uptake (DIP → POP)
@@ -113,39 +100,27 @@ end
 # where we have imposed a slow restoring of DIP to the global mean `D̅I̅P̅` to prescribe the global mean concentration.
 # (The `$` signs in front of `U` and `R` protect them from the broadcast macro `@.`)
 
-#---------------------------------------------------------
-# ## Local sources and sinks
-#---------------------------------------------------------
-
 # We now define and build the parameters.
 
 # In this tutorial we will specify some initial values for the parameters
 # and also include units.
 
 import AIBECS: @units, units
-@units @with_kw struct PmodelParameters{U} <: AbstractParameters{U}
-    w₀::U   | u"m/d"
-    w′::U   | u"m/d/m"
-    τDIP::U | u"d"
-    k::U    | u"μmol/m^3"
-    z₀::U   | u"m"
-    τPOP::U | u"d"
-    τgeo::U | u"Myr"
-    D̅I̅P̅::U  | u"mmol/m^3"
+import AIBECS: @initial_value, initial_value
+@units @initial_value struct PmodelParameters{U} <: AbstractParameters{U}
+    w₀::U   |  0.64 | u"m/d"
+    w′::U   |  0.13 | u"m/d/m"
+    τDIP::U | 230.0 | u"d"
+    k::U    |  6.62 | u"μmol/m^3"
+    z₀::U   |  80.0 | u"m"
+    τPOP::U |   5.0 | u"d"
+    τgeo::U |   1.0 | u"Myr"
+    D̅I̅P̅::U  |  2.12 | u"mmol/m^3"
 end
 
-# Finally, we can instantiate the parameter vector in a single line:
+# Finally, thanks to the initial values we provided, we can instantiate the parameter vector succintly as
 
-p = PmodelParameters(w₀ = 0.64u"m/d",
-                     w′ = 0.13u"m/d/m",
-                     τDIP = 230.0u"d",
-                     k = 6.62u"μmol/m^3",
-                     z₀ = 80.0u"m",
-                     τPOP = 5.0u"d",
-                     τgeo = 1.0u"Myr",
-                     D̅I̅P̅ = 2.12u"mmol/m^3")
-
-# where we have used the name of the new type that we just created.
+p = PmodelParameters()
 
 # We generate the state function `F` and its Jacobian `∇ₓF`,
 

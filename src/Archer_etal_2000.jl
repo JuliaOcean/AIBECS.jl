@@ -78,7 +78,7 @@ end
 """
     load
 
-Returns grid and T (in that order).
+Returns `grd` and `T` (in that order).
 """
 function load()
     print("Creating 6-box model")

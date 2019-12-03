@@ -1,6 +1,6 @@
 
 #---------------------------------------------------------
-# # Radiocarbon
+# # [Radiocarbon](@id radiocarbon)
 #---------------------------------------------------------
 
 #md # !!! tip
@@ -61,7 +61,7 @@ import AIBECS: @units, units
 
 # We define the parameters using the dedicated API from the AIBECS, including keyword arguments and units this time
 
-@units @with_kw struct RadiocarbonParameters{U} <: AbstractParameters{U}
+@units struct RadiocarbonParameters{U} <: AbstractParameters{U}
     λ::U    | u"m/yr"
     h::U    | u"m"
     τ::U    | u"yr"

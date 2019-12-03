@@ -43,7 +43,7 @@ end
 """
     load
 
-Returns grd and T (in that order) from FigShare repository.
+Returns `grd` and `T` (in that order) from FigShare repository.
 """
 function load()
     print("Loading OCIM0.1")

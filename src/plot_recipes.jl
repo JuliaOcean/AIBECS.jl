@@ -1,3 +1,8 @@
+"""
+    HorizontalSlice(x, grd, depth)
+
+Plots a horizontal slice of tracer `x` at depth `depth`.
+"""
 @userplot HorizontalSlice
 @recipe function f(p::HorizontalSlice)
     x, grd, depth = p.args
@@ -15,7 +20,11 @@
     end
 end
 
+"""
+    SurfaceMap(x, grd)
 
+Plots a surface map of tracer `x`.
+"""
 @userplot SurfaceMap
 @recipe function f(p::SurfaceMap)
     x, grd = p.args
@@ -31,7 +40,11 @@ end
     end
 end
 
+"""
+    VerticalIntegral(x, grd)
 
+Plots the vertical integral of tracer `x`.
+"""
 @userplot VerticalIntegral
 @recipe function f(p::VerticalIntegral)
     x, grd = p.args
@@ -49,7 +62,11 @@ end
     end
 end
 
+"""
+    VerticalAverage(x, grd)
 
+Plots the vertical average of tracer `x`.
+"""
 @userplot VerticalAverage
 @recipe function f(p::VerticalAverage)
     x, grd = p.args
@@ -67,6 +84,11 @@ end
 end
 
 
+"""
+    ZonalSlice(x, grd, lon)
+
+Plots a zonal slice of tracer `x` at longitude `lon`.
+"""
 @userplot ZonalSlice
 @recipe function f(p::ZonalSlice)
     x, grd, lon = p.args
@@ -87,7 +109,11 @@ end
     end
 end
 
+"""
+    ZonalAverage(x, grd)
 
+Plots a zonal average of tracer `x`.
+"""
 @userplot ZonalAverage
 @recipe function f(p::ZonalAverage)
     x, grd = p.args
@@ -156,9 +182,9 @@ end
 end
 
 """
-    InterpolatedDepthProfile
+    InterpolatedDepthProfile(x, grd, lat, lon)
 
-Some docstring
+Plots the profile of tracer `x` interpolated at `(lat,lon)` coordinates.
 """
 @userplot InterpolatedDepthProfile
 @recipe function f(p::InterpolatedDepthProfile)
@@ -210,7 +236,11 @@ periodic_longitude(x3D::Array{T,3}) where T = view(x3D,:,[1:size(x3D,2); 1],:)
 periodic_longitude(x2D::Array{T,2}) where T = view(x2D,:,[1:size(x3D,2); 1])
 
 
+"""
+    ZonalTransect(x, grd, ct)
 
+Plots a zonal transect of tracer `x` along cruise track `ct`.
+"""
 @userplot ZonalTransect
 @recipe function f(p::ZonalTransect)
     x, grd, ct = p.args
@@ -239,7 +269,11 @@ periodic_longitude(x2D::Array{T,2}) where T = view(x2D,:,[1:size(x3D,2); 1])
     end
 end
 
+"""
+    MeridionalTransect(x, grd, ct)
 
+Plots a meridional transect of tracer `x` along cruise track `ct`.
+"""
 @userplot MeridionalTransect
 @recipe function f(p::MeridionalTransect)
     x, grd, ct = p.args
