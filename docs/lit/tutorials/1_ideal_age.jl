@@ -10,7 +10,7 @@
 #
 # $$\left(\partial_t + \mathbf{T}\right) \boldsymbol{a} = 1 - \frac{\boldsymbol{a}}{τ} \, (\boldsymbol{z} < z_0),$$
 #
-# where the sink term on the right clamps the age to 0 at the surface (where $\boldsymbol{z} < z_0$).
+# where the sink term on the right clamps the age to $0$ at the surface (where $\boldsymbol{z} < z_0$).
 # The smaller the timescale $\tau$, the quicker $\boldsymbol{a}$ is restored to $0$ at the surface.
 
 # AIBECS can interpret tracer equations as long as you arrange them under the generic form:

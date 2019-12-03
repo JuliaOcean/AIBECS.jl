@@ -8,7 +8,9 @@ The **Algebraic Implicit Biogeochemistry Elemental Cycling System**
 
 Whatever you do, if you want to use the AIBECS, you must add it to your Julia environment like every Julia package, by typing `]add AIBECS` at the REPL.
 
-This documentation is organized in 4 parts:
+This documentation is organized in 4 parts[^1]:
+
+[^1]: following [this documentation advice](https://www.divio.com/blog/documentation/)
 
 #### 1. Tutorials
 
@@ -28,7 +30,7 @@ If you want to try AIBECS for the first time, this is where you should start.
 Here you will find goal-oriented walk-through's.
 
 - How to create and use parameters in AIBECS
-- How to plot things
+- [Plotting things](@ref plots)
 - How to simulate, i.e., solve or timestep your model
 - How to optimize parameters
 - How to simulate sinking particles
@@ -52,5 +54,6 @@ This section contains almost all the functions available in AIBECS.
 !!! note
     The AIBECS is being developed primarily by Benoît Pasquier with the help of François Primeau and J. Keith Moore from the Department of Earth System Science at the University of California, Irvine, and more recently with the help of Seth John from the Department of Earth Sciences at the University of Southern California.
 
-!!! note
-    This package is in active development, so if you have any suggestions or feature requests, do not hesitate to start an issue directly on the [AIBECS GitHub repository](https://github.com/briochemc/AIBECS.jl)!
+!!! warn
+    This package is in active development, so you should expect some bugs to happen. 
+    And if you have any suggestions or feature requests, do not hesitate to start an issue directly on the [AIBECS GitHub repository](https://github.com/briochemc/AIBECS.jl), or even better, a submit a pull request!
