@@ -115,6 +115,6 @@ Create the particle flux divergence with settling velocity of 100m/s
 julia> T = transportoperator(grd; w=100.0)
 ```
 """
-transportoperator(grd; w) = buildPFD(grd; settling_velocity=w)
+transportoperator(grd; w, DIV=buildDIV(grd), Iabove=buildIabove(grd.wet3D, findall(vec(iswet(grd))))) = buildPFD(w, DIV, Iabove)
 
 export transportoperator

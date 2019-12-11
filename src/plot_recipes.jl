@@ -304,6 +304,119 @@ Plots a meridional transect of tracer `x` along cruise track `ct`.
     end
 end
 
+
+"""
+    RatioAtStation(x, y, grd, lat, lon; zlims)
+
+Plots a meridional transect of tracer `x` along cruise track `ct`.
+
+The keyword argument `zlims=(ztop, zbottom)` can be provided
+if you only want to only plot for depths `z ∈ (ztop, zbottom)`.
+(`z` is positive downwards in this case)
+"""
+@userplot RatioAtStation
+@recipe function f(p::RatioAtStation; zlims=(0,Inf))
+    x, y, grd, lat, lon = p.args
+    x3D = rearrange_into_3Darray(x, grd)
+    y3D = rearrange_into_3Darray(y, grd)
+    depths = ustrip.(grd.depth)
+    knots = (ustrip.(grd.lat), ustrip.(grd.lon), 1:length(depths))
+    itpx = interpolate(knots, x3D, (Gridded(Linear()), Gridded(Linear()), NoInterp()))
+    itpy = interpolate(knots, y3D, (Gridded(Linear()), Gridded(Linear()), NoInterp()))
+    iz = findall(zlims[1] .≤ depths .≤ zlims[2])
+    ibot = findfirst(depths .> zlims[2])
+    x1D = itpx(ustrip(lat), mod(ustrip(lon), 360), iz)
+    y1D = itpy(ustrip(lat), mod(ustrip(lon), 360), iz)
+    @series begin
+        seriestype := :scatter
+        x1D, y1D
+    end
+end
+
+
+
+
+
+"""
+    PlotParameter(p::AbstractParameters, s)
+
+Plots the PDF of parameter `p` with symbol `s`
+"""
+@userplot PlotParameter
+@recipe function f(plt::PlotParameter)
+    d, v, initv, s, u = extract_dvisu(plt.args...)
+    xs = default_range(d)
+    ys = [pdf(d, x) for x in xs] # the PDF
+    xu = xs * upreferred(u) .|> u .|> ustrip
+    vu = v * upreferred(u) |> u |> ustrip
+    @series begin
+        label --> "prior"
+        xu, ys
+    end
+    @series begin
+        label --> "initial value"
+        initv * [1,1], [0, pdf(d, v)]
+    end
+    @series begin
+        xlabel --> "$s ($(string(u)))"
+        ylabel --> "PDF"
+        label --> "value"
+        marker := :o
+        [vu], [pdf(d, v)]
+    end
+end
+
+"""
+    PlotParameters(p::AbstractParameters)
+
+Plots the PDF of all the flattenable parameters in `p`.
+"""
+@userplot PlotParameters
+@recipe function f(plt::PlotParameters)
+    p, = plt.args
+    layout := (length(p),1)
+    for (i,s) in enumerate(flattenable_symbols(p))
+        d, v, initvu, s, u = extract_dvisu(p,s)
+        xs = default_range(d)
+        ys = [pdf(d, x) for x in xs] # the PDF
+        xu = xs * upreferred(u) .|> u .|> ustrip
+        vu = v * upreferred(u) |> u |> ustrip
+        initv = ustrip(upreferred(initvu * units(p,s)))
+        @series begin
+            label --> "prior"
+            subplot := i
+            xu, ys
+        end
+        @series begin
+            label --> "initial value"
+            subplot := i
+            initvu * [1,1], [0, pdf(d, initv)]
+        end
+        @series begin
+            xlabel --> "$s ($(string(u)))"
+            ylabel --> "PDF"
+            label --> "value"
+            marker := :o
+            subplot := i
+            [vu], [pdf(d, v)]
+        end
+    end
+end
+
+extract_dvisu(d, v, initv, s, u) = d, v, initv, s, u
+extract_dvisu(p::AbstractParameters, s) = prior(p,s), Parameters.unpack(p, Val(s)), initial_value(p,s), s, units(p,s)
+
+
+function default_range(d::Distribution, n = 4)
+    μ, σ = mean(d), std(d)
+    xmin = max(μ - n*σ, minimum(support(d)))
+    xmax = min(μ + n*σ, maximum(support(d)))
+    range(xmin, xmax, length=1001)
+end
+
+
+
+
 #=
 
 

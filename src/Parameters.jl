@@ -342,6 +342,75 @@ function (::Type{T})(;kwargs...) where {T <: AbstractParameters}
     return T([f ∈ keys(kwargs) ? value(f, kwargs[f]) : initial_value(T, f) for f in fieldnames(T)]...)
 end
 
+#=====================
+mismatch of parameters
+=====================#
+"""
+    mismatch(p::AbstractParameters)
+
+Returns the sum of the negative log-likelihood of each flattenable parameter.
+"""
+function mismatch(p::AbstractParameters)
+    return sum(-logpdf(prior(p,k), Parameters.unpack(p,Val(k))) for k in flattenable_symbols(p))
+end
+function ∇mismatch(p::AbstractParameters)
+    return transpose([-gradlogpdf(prior(p,k), Parameters.unpack(p,Val(k))) for k in flattenable_symbols(p)])
+end
+
+# The functions below is just for ForwardDiff to work with vectors instead of p
+# which requires `mismatch` to know about the priors, which are containted in `T`
+function generate_objective(ωs, μx, σ²x, v, ωp, ::Type{T}) where {T<:AbstractParameters}
+    nt, nb = length(ωs), length(v)
+    tracers(x) = state_to_tracers(x, nb, nt)
+    f(x, p) = ωp * mismatch(T, p) +
+        sum([ωⱼ * mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
+    return f
+end
+function mismatch(::Type{T}, v) where {T<:AbstractParameters}
+    return sum(-logpdf(prior(T,k), v[i]) for (i,k) in enumerate(flattenable_symbols(T)))
+end
+
+#==================
+Change of variables
+==================#
+"""
+    subfun
+
+Returns the substitution function for the change of variables of parameters.
+
+If the prior of parameter `pᵢ` is `LogNormal`, then the substitution function is `exp`.
+Otherwise, it's `identity`.
+"""
+function subfun(::Type{T}) where {T<:AbstractParameters}
+    return λ -> reconstruct(T, [subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))])
+end
+function ∇subfun(::Type{T}) where {T<:AbstractParameters}
+    return λ -> reconstruct(T, [∇subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))])
+end
+function ∇²subfun(::Type{T}) where {T<:AbstractParameters}
+    return λ -> reconstruct(T, [∇²subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))])
+end
+function invsubfun(::Type{T}) where {T<:AbstractParameters}
+    return p -> [invsubfun(T, s)(pᵢ) for (pᵢ,s) in zip(vec(p), flattenable_symbols(T))]
+end
+# substitution function (change of variables) is determined from prior distribution
+subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = subfun(prior(T,s))
+∇subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = ∇subfun(prior(T,s))
+∇²subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = ∇²subfun(prior(T,s))
+invsubfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = invsubfun(prior(T,s))
+# Fallback rule for change of variables is identity
+subfun(::Distribution) = identity
+∇subfun(::Distribution) = x -> one(x)
+∇²subfun(::Distribution) = x -> zero(x)
+invsubfun(::Distribution) = identity
+# p = exp(λ) for LogNormal
+subfun(::LogNormal) = exp
+∇subfun(::LogNormal) = exp
+∇²subfun(::LogNormal) = exp
+invsubfun(::LogNormal) = log
+
+export subfun, ∇subfun, ∇²subfun, invsubfun
+
 
 export AbstractParameters, latex
 

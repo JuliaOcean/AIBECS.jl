@@ -8,11 +8,7 @@ WOA = WorldOceanAtlasTools
 μx = (μDIPobs, missing, missing)
 σ²x = (σ²DIPobs, missing, missing)
 # generate mismatch functions
-mean_obs = vec(p)
-variance_obs = 0.01 * vec(p).^2 
-f   =   generate_objective(ωs, μx, σ²x, v, ωp, mean_obs, variance_obs)
-∇ₓf = generate_∇ₓobjective(ωs, μx, σ²x, v, ωp, mean_obs, variance_obs)
-∇ₚf = generate_∇ₚobjective(ωs, μx, σ²x, v, ωp, mean_obs, variance_obs)
+f, ∇ₓf, ∇ₚf = generate_objective_and_derivatives(ωs, μx, σ²x, v, ωp)
 
 #===========================================
 Tests
@@ -35,10 +31,5 @@ Tests
     end
     @testset "Derivative w.r.t the parameters, p" begin
         @test size(∇ₚfval) == (1, m)
-    end
-    @testset "Lognormal <-> Normal" begin
-        mm, vv = rand(10), rand(10)
-        @test AIBECS.LNm(AIBECS.LNμ(mm, vv), AIBECS.LNσ²(mm, vv)) ≈ mm
-        @test AIBECS.LNv(AIBECS.LNμ(mm, vv), AIBECS.LNσ²(mm, vv)) ≈ vv
     end
 end

@@ -5,14 +5,14 @@ using SparseArrays, LinearAlgebra
 using Unitful, UnitfulAstro
 using WorldOceanAtlasTools
 using DiffEqBase
-using ForwardDiff
+using ForwardDiff, DualNumbers
 using DataFrames
-# For CI, make sure the download does not hang
+using Distributions
+# For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 
 Circulation = Archer_etal_2000
 @testset "Archer_etal_2000 3-box model" begin
-    # Run tests with the 6-box toy model
     include("setup.jl")
 end
 

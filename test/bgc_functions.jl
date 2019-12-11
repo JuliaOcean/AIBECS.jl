@@ -56,15 +56,15 @@ In-place sources minus sinks
 
 function G_DIP!(dx, DIP, DOP, POP, p)
     @unpack τgeo, xgeo, τDIP, k, z₀, τDOP = p
-    dx .= @. (xgeo - DIP) / τgeo - (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (z ≤ z₀) + DOP / τDOP
+    @. dx = (xgeo - DIP) / τgeo - (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (z ≤ z₀) + DOP / τDOP
 end
 function G_DOP!(dx, DIP, DOP, POP, p)
     @unpack τgeo, xgeo, τDIP, k, z₀, τDOP, τPOP, σ = p
-    dx = @. σ * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (z ≤ z₀) - DOP / τDOP + POP / τPOP
+    @. dx = σ * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (z ≤ z₀) - DOP / τDOP + POP / τPOP
 end
 function G_POP!(dx, DIP, DOP, POP, p)
     @unpack τgeo, xgeo, τDIP, k, z₀, τDOP, τPOP, σ = p
-    dx = @. (1 - σ) * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (z ≤ z₀) - POP / τPOP
+    @. dx = (1 - σ) * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (z ≤ z₀) - POP / τPOP
 end
 Gs = (G_DIP!, G_DOP!, G_POP!)
 

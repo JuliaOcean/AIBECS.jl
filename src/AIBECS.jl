@@ -3,7 +3,7 @@ module AIBECS
 using Reexport
 @reexport using SparseArrays
 using SuiteSparse, LinearAlgebra, Printf
-using DualNumbers
+using ForwardDiff
 @reexport using Parameters
 using FieldMetadata, Flatten, DataFrames, Distributions
 using BSON

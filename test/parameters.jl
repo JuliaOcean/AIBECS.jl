@@ -15,6 +15,20 @@ import AIBECS: description, @description
     τDIP::T | 30.0 | u"d"        | "Uptake maximum timescale (DIP to POP)"       | true
 end
 
+# Assign a lognormal prior to each based on initial value
+import AIBECS: @prior, prior
+function prior(::Type{T}, s::Symbol) where {T<:TestParameters}
+    if flattenable(T, s)
+        μ = log(ustrip(upreferred(initial_value(T, s) * units(T, s))))
+        return LogNormal(μ ,1.0)
+    else
+        return nothing
+    end
+end
+prior(::T, s::Symbol) where {T<:AbstractParameters} = prior(T,s)
+prior(::Type{T}) where {T<:AbstractParameters} = Tuple(prior(T,s) for s in AIBECS.symbols(T))
+prior(::T) where {T<:AbstractParameters} = prior(T)
+
 p = TestParameters(initial_value(TestParameters)...)
 
 @testset "Parameters" begin

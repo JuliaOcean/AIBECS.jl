@@ -200,6 +200,9 @@ end
 tracer_indices(nb, nt, i) = (i-1)*nb+1 : i*nb
 tracers_to_state(xs) = reduce(vcat, xs)
 export state_to_tracers, state_to_tracer, tracers_to_state, tracer_indices
+# Alias for better name
+unpack_tracers = state_to_tracers
+export unpack_tracers
 
 end
 
