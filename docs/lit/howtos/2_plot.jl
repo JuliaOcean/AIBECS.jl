@@ -92,11 +92,11 @@ zonalaverage(dummy, grd)
 
 # ### Zonal transect
 
-# (Not available yet... Thanks to GEOTRACES DMC)
+# (Not available yet...)
 
 # ### Meridional transect
 
-# (Not available yet... Thanks to GEOTRACES DMC)
+# (Not available yet...)
 
 # ### Depth profiles
 
