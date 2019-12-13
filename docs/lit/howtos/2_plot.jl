@@ -12,10 +12,9 @@
 # - [horizontal plts](@ref horizontal-plots)
 # - [vertical plots](@ref vertical-plots)
 # - [Non-geographic plots](@ref non-geographic-plots)
-# - 
 
 # In this guide we will focus on how-to plot things using AIBECS' built-in recipes for [Plots.jl](https://github.com/JuliaPlots/Plots.jl).
-# These recipes are implemented using [RecipesBase.jl]https://github.com/JuliaPlots/RecipesBase.jl(), which are explained in [Plots.jl's documentation](https://docs.juliaplots.org/latest/recipes/).
+# These recipes are implemented using [RecipesBase.jl](https://github.com/JuliaPlots/RecipesBase.jl), which are explained in [Plots.jl's documentation](https://docs.juliaplots.org/latest/recipes/).
 
 # Throughout we will use the OCIM1 grid.
 
