@@ -29,11 +29,12 @@ If you want to try AIBECS for the first time, this is where you should start.
 
 Here you will find goal-oriented walk-through's.
 
-- How to create and use parameters in AIBECS
-- [Plotting things](@ref plots)
-- How to simulate, i.e., solve or timestep your model
-- How to optimize parameters
-- How to simulate sinking particles
+- [Parameters guide](@ref parameters)
+- [Plotting basic things](@ref plots)
+- [Plotting cruise/transects data](@ref cruiseplots)
+- How to simulate, i.e., solve or timestep your model (coming soon!)
+- How to optimize parameters (coming soon!)
+- How to simulate sinking particles (coming soon!)
 
 #### 3. Explanation/discussion
 

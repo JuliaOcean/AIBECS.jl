@@ -46,13 +46,13 @@ dualpart.(G(x .+ ε, p))
 but using ForwardDiff's Jacobian instead.
 """
 function localderivative(G, x, p) # for single tracer
-    return vec(ForwardDiff.jacobian(λ -> G(x .+ λ, p), [0.0]))
+    return ForwardDiff.derivative(λ -> G(x .+ λ, p), 0.0)
 end
 function localderivative(Gᵢ, xs, j, p) # for multiple tracers
-    return vec(ForwardDiff.jacobian(λ -> Gᵢ(perturb_tracer(xs,j,λ)..., p), [0.0]))
+    return ForwardDiff.derivative(λ -> Gᵢ(perturb_tracer(xs,j,λ)..., p), 0.0)
 end
 function localderivative(Gᵢ!, dx, xs, j, p) # if Gᵢ are in-place
-    return vec(ForwardDiff.jacobian((dx,λ) -> Gᵢ!(dx, perturb_tracer(xs,j,λ)..., p), dx, [0.0]))
+    return ForwardDiff.derivative((dx,λ) -> Gᵢ!(dx, perturb_tracer(xs,j,λ)..., p), dx, 0.0)
 end
 perturb_tracer(xs, j, λ) = (xs[1:j-1]..., xs[j] .+ λ, xs[j+1:end]...)
 

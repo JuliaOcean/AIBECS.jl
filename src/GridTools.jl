@@ -66,13 +66,6 @@ Returns the 3D array of volumes of grid boxes.
 array_of_volumes(grid) = grid.volume_3D
 export array_of_volumes
 
-"""
-    iswet(grid)
-
-Returns the 3D BitArray of wet boxes of the grid.
-"""
-iswet(grid) = grid.wet3D
-export iswet
 
 """
     indices_of_wet_boxes(wet3D::BitArray)

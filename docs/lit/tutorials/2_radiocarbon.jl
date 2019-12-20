@@ -49,10 +49,9 @@ function G(R,p)
 end
 
 
-# We must define `z` via
+# We can define `z` via
 
-iwet = findall(vec(iswet(grd)))
-z = ustrip.(grd.depth_3D[iwet])
+z = depthvec(grd)
 
 # In this tutorial we will specify some units for the parameters.
 # Such features **must** be imported to be used

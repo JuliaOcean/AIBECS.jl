@@ -55,11 +55,7 @@ end
 
 # For this to work, we must create a vector of depths, `z`, which is simply done via
 
-iwet = findall(vec(iswet(grd)))
-z = ustrip.(grd.depth_3D[iwet])
-
-# (We strip the units of `z` via `ustrip`.)
-
+z = depthvec(grd)
 
 # ##### Uptake (DIP → POP)
 

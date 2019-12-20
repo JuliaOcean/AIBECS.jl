@@ -1,25 +1,26 @@
 
 #---------------------------------------------------------
-# # [Plot things](@id plots)
+# # [Plot basic things](@id plots)
 #---------------------------------------------------------
 
 #md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/2_plot.ipynb)
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/2_plot.ipynb)
 
-# We will create a `dummy` tracer as a function of location to showcase each plot, just for the sake of the examples herein.
 
 # This guide is organized as follows
-# - [horizontal plts](@ref horizontal-plots)
-# - [vertical plots](@ref vertical-plots)
-# - [Non-geographic plots](@ref non-geographic-plots)
+# - [Horizontal maps](@ref horizontal-plots)
+# - [Vertical slices](@ref vertical-plots)
+# - [Depth profiles](@ref profile-plots)
+# - [Other plots](@ref other-plots)
 
 # In this guide we will focus on how-to plot things using AIBECS' built-in recipes for [Plots.jl](https://github.com/JuliaPlots/Plots.jl).
 # These recipes are implemented using [RecipesBase.jl](https://github.com/JuliaPlots/RecipesBase.jl), which are explained in [Plots.jl's documentation](https://docs.juliaplots.org/latest/recipes/).
 
-# Throughout we will use the OCIM1 grid.
+# Throughout we will use the OCIM1 grid and we will create a `dummy` tracer as a function of location to showcase each plot, just for the sake of the examples herein.
 
 using AIBECS, Plots
 grd, _ = OCIM1.load()
+dummy = cosd.(latvec(grd))
 
 #--------------------------------------------
 # ## [Horizontal plots](@id horizontal-plots)
@@ -30,8 +31,6 @@ grd, _ = OCIM1.load()
 # The most common thing you plot after a simulation of marine tracers is a horizontal slice.
 # In this case, you just need to provide the tracer (`dummy` here), the grid object `grd`, and the depth at which you want to plot.
 
-iwet = findall(vec(iswet(grd)))
-dummy = cos.(ustrip.(upreferred.(grd.lat_3D[iwet])))
 horizontalslice(dummy, grd, 10)
 
 # You can supply units for the depth at which you want to see the horizontal slice.
@@ -48,15 +47,16 @@ horizontalslice(dummy * u"mol/m^3", grd, 10u"m")
 
 # The advantage of Plots.jl recipes like this one is that you can specify other pieces of the plot as you would with built-in functions.
 # The advantage of Plots.jl recipes like this one is that you can specify other pieces of the plot as you would with built-in functions.
-# For example, you can chose the colormap
+# For example, you can chose the colormap with the `color` keyword argument.
 
-dummy .= cos.(ustrip.(upreferred.(grd.lon_3D[iwet]))) .* dummy
-horizontalslice(dummy, grd, 100, color=:magma)
+dummy .*= cosd.(lonvec(grd))
+plt = horizontalslice(dummy, grd, 100, color=:balance)
 
-# Or you can change predefine bits after the fact.
+# And you can finetune attributes after the plot is created.
 
-plt = horizontalslice(dummy, grd, 100, color=:magma)
 plot!(plt, xlabel="Lon", ylabel="Lat", colorbar_title="No units", title="The pacific as a whole")
+
+
 
 #----------------------------------------
 # ## [Vertical plots](@id vertical-plots)
@@ -68,7 +68,8 @@ plot!(plt, xlabel="Lon", ylabel="Lat", colorbar_title="No units", title="The pac
 
 # You must specify the longitude
 
-dummy .+= sqrt.(ustrip.(grd.depth_3D[iwet])) / 30
+dummy .= cosd.(latvec(grd))
+dummy .+= sqrt.(depthvec(grd)) / 30
 zonalslice(dummy, grd, 330)
 
 # ### Zonal averages
@@ -77,9 +78,20 @@ zonalslice(dummy, grd, 330)
 
 zonalaverage(dummy, grd)
 
+# If you want a zonal average over a specific region, you can just mask it out
+
 # #### Basin zonal average
 
-# (not available yet)
+# This is experimental at this stage and relies on an unregistered package OceanBasins.
+
+# You can create basin masks using this package with
+
+# ```
+# using OceanBasins
+# mPAC = ispacific(grd)[iwet]
+# surfacemap(mPAC, grd, seriestype=:heatmap, color=:lightrainbow)
+# zonalaverage(dummy, grd, mask=mPAC)
+# ```
 
 # ### Meridional slices
 
@@ -89,18 +101,13 @@ zonalaverage(dummy, grd)
 
 # (not available yet... at all?)
 
-# ### Zonal transect
 
-# (Not available yet...)
-
-# ### Meridional transect
-
-# (Not available yet...)
-
-# ### Depth profiles
+#----------------------------------------------------
+# ## [Depth profiles](@id profile-plots)
+#----------------------------------------------------
 
 interpolateddepthprofile(dummy, grd, 0, 330)
 
 #----------------------------------------------------
-# ## [Non geographic plots](@id non-geographic-plots)
+# ## [Other plots](@id other-plots)
 #----------------------------------------------------

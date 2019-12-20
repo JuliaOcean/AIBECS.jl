@@ -68,11 +68,9 @@ end
 # The `return` line returns the net sources and sinks.
 # (The `@.` "macro" tells Julia that the operations apply to every element.)
 
-# We need to define the vector `z` of depths.
+# We can to define the vector `z` of depths with `depthvec`.
 
-z = ustrip.(vector_of_depths(grd))
-
-# (We stripped `z` from its units (m) with `ustrip`.)
+z = depthvec(grd)
 
 # Now we must construct a type for `p` the parameters.
 # This type must contain our parameters `τ` and `z₀`.

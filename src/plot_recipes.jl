@@ -32,10 +32,10 @@ Plots a surface map of tracer `x`.
     x3D = rearrange_into_3Darray(ustrip.(x), grd)
     lon, lat = grd.lon .|> ustrip, grd.lat .|> ustrip
     @series begin
-        seriestype := :contourf
-        xlabel := "Longitude"
-        ylabel := "Latitude"
-        colorbar_title := xunit
+        seriestype --> :contourf
+        xlabel --> "Longitude"
+        ylabel --> "Latitude"
+        colorbar_title --> xunit
         lon, lat, view(x3D, :, :, 1)
     end
 end
@@ -110,17 +110,17 @@ Plots a zonal slice of tracer `x` at longitude `lon`.
 end
 
 """
-    ZonalAverage(x, grd)
+    ZonalAverage(x, grd; mask=1)
 
 Plots a zonal average of tracer `x`.
 """
 @userplot ZonalAverage
-@recipe function f(p::ZonalAverage)
+@recipe function f(p::ZonalAverage; mask=1)
     x, grd = p.args
     xunit = string(unit(x[1]))
-    x3D = rearrange_into_3Darray(ustrip.(x), grd)
+    x3D = rearrange_into_3Darray(ustrip.(x) .* mask, grd)
     v = ustrip.(vector_of_volumes(grd))
-    v3D = rearrange_into_3Darray(v, grd)
+    v3D = rearrange_into_3Darray(v .* mask, grd)
     depth, lat = grd.depth .|> ustrip, grd.lat .|> ustrip
     xmean = sum(x -> ismissing(x) ? 0.0 : x, x3D .* v3D, dims=2) ./
                 sum(x -> ismissing(x) ? 0.0 : x, v3D, dims=2)
@@ -135,6 +135,8 @@ Plots a zonal average of tracer `x`.
         lat, depth, permutedims(view(xmean, :, 1, :), [2,1])
     end
 end
+
+
 
 @userplot ZonalAverage2
 @recipe function f(p::ZonalAverage2)
@@ -155,7 +157,7 @@ end
     itp = interpolate(xmean, (BSpline(Linear()), BSpline(Linear()))) # interpolate linearly between the data points
     lats = range(ustrip(grd.lat[1]), ustrip(grd.lat[end]), length=length(grd.lat))
     ndepths = length(depth)
-    stp = scale(itp, lats, 1:ndepths) # re-scale to the actual domain
+    stp = Interpolations.scale(itp, lats, 1:ndepths) # re-scale to the actual domain
     etp = extrapolate(stp, (Line(), Line())) # periodic longitude
     @series begin
         seriestype := :contourf
@@ -212,7 +214,7 @@ end
     itp = interpolate(periodic_longitude(x3D), (BSpline(Linear()), BSpline(Linear()), NoInterp())) # interpolate linearly between the data points
     lats = range(ustrip(grd.lat[1]), ustrip(grd.lat[end]), length=length(grd.lat))
     lons = range(ustrip(grd.lon[1]), ustrip(grd.lon[1])+360, length=length(grd.lon)+1)
-    stp = scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
+    stp = Interpolations.scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
     etp = extrapolate(stp, (Line(), Periodic(), Line())) # periodic longitude
 
     n = length(ct)
@@ -237,6 +239,32 @@ periodic_longitude(x2D::Array{T,2}) where T = view(x2D,:,[1:size(x3D,2); 1])
 
 
 """
+    PlotCruiseTrack(ct; longitude_bounds)
+
+Plots the cruise track `ct`.
+"""
+@userplot PlotCruiseTrack
+@recipe function f(p::PlotCruiseTrack)
+    ct = p.args[1]
+    lons = [st.lon for st in ct.stations]
+    lats = [st.lat for st in ct.stations]
+    @series begin
+        xlabel := "Longitude"
+        ylabel := "Latitude"
+        label := ct.name
+        marker --> :o
+        linewidth --> 0
+        linecolor --> :black
+        markersize --> 3
+        lons, lats
+    end
+end
+
+
+
+
+
+"""
     ZonalTransect(x, grd, ct)
 
 Plots a zonal transect of tracer `x` along cruise track `ct`.
@@ -252,11 +280,13 @@ Plots a zonal transect of tracer `x` along cruise track `ct`.
 
     lats = range(ustrip(grd.lat[1]), ustrip(grd.lat[end]), length=length(grd.lat))
     lons = range(ustrip(grd.lon[1]), ustrip(grd.lon[1])+360, length=length(grd.lon)+1)
-    stp = scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
+    stp = Interpolations.scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
     etp = extrapolate(stp, (Line(), Periodic(), Line())) # periodic longitude
 
-    isort = sortperm(ct.lat)
-    idx = isort[unique(i -> ct.lat[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
+    ctlats = [st.lat for st in ct.stations]
+    ctlons = [st.lon for st in ct.stations]
+    isort = sortperm(ctlats)
+    idx = isort[unique(i -> ctlats[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
     @series begin
         seriestype := :contourf
         yflip := true
@@ -265,9 +295,31 @@ Plots a zonal transect of tracer `x` along cruise track `ct`.
         title := "$(ct.name)"
         ylabel := "Depth (m)"
         xlabel := "Latitude (°)"
-        ct.lat[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ct.lat[idx], ct.lon[idx])]
+        ctlats[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
     end
 end
+
+
+"""
+    ZonalScatterTransect(t)
+
+Plots a scatter of the discrete obs of `t` in (lat,depth) space.
+"""
+@userplot ZonalScatterTransect
+@recipe function f(p::ZonalScatterTransect)
+    t = p.args[1]
+    depths = reduce(vcat, pro.depths for pro in t.data)
+    values = reduce(vcat, pro.data for pro in t.data)
+    lats = reduce(vcat, pro.station.lat * ones(length(pro)) for pro in t.data)
+
+    @series begin
+        seriestype := :scatter
+        zcolor := values
+        label --> ""
+        lats, depths
+    end
+end
+
 
 """
     MeridionalTransect(x, grd, ct)
@@ -285,7 +337,7 @@ Plots a meridional transect of tracer `x` along cruise track `ct`.
 
     lats = range(ustrip(grd.lat[1]), ustrip(grd.lat[end]), length=length(grd.lat))
     lons = range(ustrip(grd.lon[1]), ustrip(grd.lon[1])+360, length=length(grd.lon)+1)
-    stp = scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
+    stp = Interpolations.scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
     etp = extrapolate(stp, (Line(), Periodic(), Line())) # periodic longitude
 
     shiftedlon = 2sum(90 .≤ ct.lon .≤ 270) > length(ct) ? ct.lon : mod.(ct.lon .+ 180, 360) .- 180
