@@ -11,7 +11,6 @@
 # - [Horizontal maps](@ref horizontal-plots)
 # - [Vertical slices](@ref vertical-plots)
 # - [Depth profiles](@ref profile-plots)
-# - [Other plots](@ref other-plots)
 
 # In this guide we will focus on how-to plot things using AIBECS' built-in recipes for [Plots.jl](https://github.com/JuliaPlots/Plots.jl).
 # These recipes are implemented using [RecipesBase.jl](https://github.com/JuliaPlots/RecipesBase.jl), which are explained in [Plots.jl's documentation](https://docs.juliaplots.org/latest/recipes/).
@@ -108,18 +107,6 @@ meridionalslice(dummy, grd, -30)
 
 interpolateddepthprofile(dummy, grd, 0, 330)
 
-#----------------------------------------------------
-# ## [Other plots](@id other-plots)
-#----------------------------------------------------
 
-# Plots the modelled ratio of two modelled tracers at a given station.
-
-dummy1 = cosd.(latvec(grd)) + sqrt.(depthvec(grd)) / 30
-dummy2 = cosd.(2latvec(grd)) + 0.5sqrt.(depthvec(grd)) / 30
-ratioatstation(dummy1, dummy2, grd, ALOHA, xlabel="dummy 1", ylabel="dummy 2")
-
-# This can be useful to compare stoichiometric ratios at different stations.
-
-ratioatstation!(dummy1, dummy2, grd, Sydney, marker=:square)
 
 

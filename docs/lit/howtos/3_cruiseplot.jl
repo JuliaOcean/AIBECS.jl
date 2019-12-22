@@ -11,6 +11,7 @@
 # In this walkthrough, we will
 # [1. Create a ficitious cruise track](@ref fictitiouscruise) with profile data
 # [2. Plot transects](@ref transects)
+# [3. Other plots](@ref other-plots)
 
 # As in the [basic plotting guide](@ref plots), throughout this guide we will use the OCIM1 grid and we will create a `dummy` modelled tracer.
 
@@ -107,4 +108,16 @@ meridionalscattertransect!(t)
 
 
 
+#----------------------------------------------------
+# ## [Other plots](@id other-plots)
+#----------------------------------------------------
 
+# Plots the modelled ratio of two modelled tracers at a given station.
+
+dummy1 = cosd.(latvec(grd)) + sqrt.(depthvec(grd)) / 30
+dummy2 = cosd.(2latvec(grd)) + 0.5sqrt.(depthvec(grd)) / 30
+ratioatstation(dummy1, dummy2, grd, ALOHA, xlabel="dummy 1", ylabel="dummy 2")
+
+# This can be useful to compare stoichiometric ratios at different stations.
+
+ratioatstation!(dummy1, dummy2, grd, Sydney, marker=:square)
