@@ -82,7 +82,8 @@ zonalaverage(dummy, grd)
 
 # #### Basin zonal average
 
-# This is experimental at this stage and relies on an unregistered package OceanBasins.
+# This is experimental at this stage and relies on an unregistered package [OceanBasins](https://github.com/briochemc/OceanBasins.jl).
+# This part of the documentation will be *online* when [OceanBasins](https://github.com/briochemc/OceanBasins.jl) gets registered.
 
 # You can create basin masks using this package with
 
@@ -95,19 +96,30 @@ zonalaverage(dummy, grd)
 
 # ### Meridional slices
 
-# (not available yet)
+# Just as you should expect at this stage, you can plot a meridional slice with
 
-# ### Meridional averages
-
-# (not available yet... at all?)
-
+meridionalslice(dummy, grd, -30)
 
 #----------------------------------------------------
 # ## [Depth profiles](@id profile-plots)
 #----------------------------------------------------
+
+# Sometimes you want a profile at a given station or location
 
 interpolateddepthprofile(dummy, grd, 0, 330)
 
 #----------------------------------------------------
 # ## [Other plots](@id other-plots)
 #----------------------------------------------------
+
+# Plots the modelled ratio of two modelled tracers at a given station.
+
+dummy1 = cosd.(latvec(grd)) + sqrt.(depthvec(grd)) / 30
+dummy2 = cosd.(2latvec(grd)) + 0.5sqrt.(depthvec(grd)) / 30
+ratioatstation(dummy1, dummy2, grd, ALOHA, xlabel="dummy 1", ylabel="dummy 2")
+
+# This can be useful to compare stoichiometric ratios at different stations.
+
+ratioatstation!(dummy1, dummy2, grd, Sydney, marker=:square)
+
+

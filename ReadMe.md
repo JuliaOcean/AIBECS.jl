@@ -17,7 +17,7 @@
     <img src="http://img.shields.io/badge/DOI-10.5281%20%2F%20zenodo.2864051-blue.svg?&style=flat-square">
   </a>
   <a href="https://github.com/briochemc/AIBECS.jl/blob/master/LICENSE">
-    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg?&style=flat-square">
+    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg?&style=flat-square">
   </a>
 </p>
 

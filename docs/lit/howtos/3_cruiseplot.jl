@@ -1,6 +1,6 @@
 
 #---------------------------------------------------------
-# # [Plot things](@id cruiseplots)
+# # [Plot transect/cruise data](@id cruiseplots)
 #---------------------------------------------------------
 
 #md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/3_cruiseplot.ipynb)
@@ -68,9 +68,9 @@ end
 Nobs = rand(1:20, Nstations) # number of obs per station/profile
 depths = [randomdepths(Nobs[i], 4000) for i in 1:Nstations]
 obs = [[fdummy(st.lat, st.lon, d) .+ 0.1randn() for d in depths[i]] for (i,st) in enumerate(stations)]
-profiles = [DepthProfile(station=st, depths=depths[i], data=obs[i]) for (i,st) in enumerate(stations)]
+profiles = [DepthProfile(station=st, depths=depths[i], values=obs[i]) for (i,st) in enumerate(stations)]
 
-t = Transect(tracer="dummy", cruise=ct.name, data=profiles)
+t = Transect(tracer="dummy", cruise=ct.name, profiles=profiles)
 
 #-----------------------------------------------
 # ## [Transects](@id transects)
@@ -78,7 +78,7 @@ t = Transect(tracer="dummy", cruise=ct.name, data=profiles)
 
 # ### Zonal transect
 
-# We can plot the modelled `dummy` data along the `ct` cruise track with
+# We can plot the modelled `dummy` data along the `ct` cruise track in the zonal directiion (along longitudes) with
 
 zonaltransect(dummy, grd, ct)
 
@@ -88,6 +88,23 @@ zonalscattertransect!(t)
 
 # ### Meridional transect
 
-#meridionaltransect(dummy, grd, ct)
+# Same for meridional transects (along latitude)
+
+meridionaltransect(dummy, grd, ct)
+
+# and
+
+meridionalscattertransect!(t)
+
+# If you have the GEOTRACESTools package installed and the GEOTRACES data installed at the right location, you can instead plot real data with something like
+#
+# ```julia
+# using GEOTRACESTools
+# zonalscattertransect(tracertransect("Fe", "GA02"))
+# ```
+#
+# However, this cannot be showcased online because GEOTRACES decided its data should "not be distributed to third parties".
+
+
 
 

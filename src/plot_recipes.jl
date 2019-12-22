@@ -109,6 +109,32 @@ Plots a zonal slice of tracer `x` at longitude `lon`.
     end
 end
 
+
+"""
+    MeridionalSlice(x, grd, lat)
+
+Plots a Meridional slice of tracer `x` at longitude `lat`.
+"""
+@userplot MeridionalSlice
+@recipe function f(p::MeridionalSlice)
+    x, grd, lat = p.args
+    xunit = string(unit(x[1]))
+    x3D = rearrange_into_3Darray(ustrip.(x), grd)
+    depth, lon = grd.depth .|> ustrip, grd.lon .|> ustrip
+    iy = findfirst(ustrip(grd.lat) .≥ ustrip(lat))
+    @series begin
+        seriestype := :contourf
+        yflip := true
+        yticks := Int.(round.(depth))
+        ylims := (0, maximum(depth))
+        xlabel := "Longitude"
+        ylabel := "Depth (m)"
+        colorbar_title := xunit
+        lon, depth, permutedims(view(x3D,iy,:,:), [2,1])
+    end
+end
+
+
 """
     ZonalAverage(x, grd; mask=1)
 
@@ -252,7 +278,7 @@ Plots the cruise track `ct`.
         xlabel := "Longitude"
         ylabel := "Latitude"
         label := ct.name
-        marker --> :o
+        markershape --> :hexagon
         linewidth --> 0
         linecolor --> :black
         markersize --> 3
@@ -265,12 +291,12 @@ end
 
 
 """
-    ZonalTransect(x, grd, ct)
+    MeridionalTransect(x, grd, ct)
 
-Plots a zonal transect of tracer `x` along cruise track `ct`.
+Plots a Meridional transect of tracer `x` along cruise track `ct`.
 """
-@userplot ZonalTransect
-@recipe function f(p::ZonalTransect)
+@userplot MeridionalTransect
+@recipe function f(p::MeridionalTransect)
     x, grd, ct = p.args
     x3D = rearrange_into_3Darray(x, grd)
     depths = ustrip.(grd.depth)
@@ -301,33 +327,42 @@ end
 
 
 """
-    ZonalScatterTransect(t)
+    MeridionalScatterTransect(t)
 
 Plots a scatter of the discrete obs of `t` in (lat,depth) space.
 """
-@userplot ZonalScatterTransect
-@recipe function f(p::ZonalScatterTransect)
-    t = p.args[1]
-    depths = reduce(vcat, pro.depths for pro in t.data)
-    values = reduce(vcat, pro.data for pro in t.data)
-    lats = reduce(vcat, pro.station.lat * ones(length(pro)) for pro in t.data)
-
+@userplot MeridionalScatterTransect
+@recipe function f(p::MeridionalScatterTransect)
+    transect = p.args[1]
+    depths = reduce(vcat, pro.depths for pro in transect.profiles)
+    values = ustrip.(reduce(vcat, pro.values for pro in transect.profiles))
+    lats = reduce(vcat, pro.station.lat * ones(length(pro)) for pro in transect.profiles)
     @series begin
         seriestype := :scatter
+        yflip := true
         zcolor := values
+        markershape --> :circle
         label --> ""
+        xlim --> extrema(lats)
+        clims --> (0, maximum(transect))
+        title --> "$(transect.tracer) along $(transect.cruise)"
+        ylabel --> "Depth (m)"
+        xlabel --> "Latitude (°)"
+        colorbar_title --> string(unit(transect))
         lats, depths
     end
 end
 
 
-"""
-    MeridionalTransect(x, grd, ct)
 
-Plots a meridional transect of tracer `x` along cruise track `ct`.
+
 """
-@userplot MeridionalTransect
-@recipe function f(p::MeridionalTransect)
+    ZonalTransect(x, grd, ct)
+
+Plots a Zonal transect of tracer `x` along cruise track `ct`.
+"""
+@userplot ZonalTransect
+@recipe function f(p::ZonalTransect)
     x, grd, ct = p.args
     x3D = rearrange_into_3Darray(x, grd)
     depths = ustrip.(grd.depth)
@@ -340,25 +375,56 @@ Plots a meridional transect of tracer `x` along cruise track `ct`.
     stp = Interpolations.scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
     etp = extrapolate(stp, (Line(), Periodic(), Line())) # periodic longitude
 
-    shiftedlon = 2sum(90 .≤ ct.lon .≤ 270) > length(ct) ? ct.lon : mod.(ct.lon .+ 180, 360) .- 180
-
-    isort = sortperm(shiftedlon)
-    idx = isort[unique(i -> shiftedlon[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
+    ctlats = [st.lat for st in ct.stations]
+    ctlons = [st.lon for st in ct.stations]
+    isort = sortperm(ctlons)
+    idx = isort[unique(i -> ctlons[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks := Int.(round.(depths))
-        ylims := (0, maximum(depths))
-        title := "$(ct.name)"
-        ylabel := "Depth (m)"
-        xlabel := "Longitude (°)"
-        shiftedlon[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ct.lat[idx], shiftedlon[idx])]
+        yticks --> Int.(round.(depths))
+        ylims --> (0, maximum(depths))
+        title --> "$(ct.name)"
+        ylabel --> "Depth (m)"
+        xlabel --> "Longitude (°)"
+        ctlons[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
     end
 end
 
 
 """
-    RatioAtStation(x, y, grd, lat, lon; zlims)
+    ZonalScatterTransect(t)
+
+Plots a scatter of the discrete obs of `t` in (lat,depth) space.
+"""
+@userplot ZonalScatterTransect
+@recipe function f(p::ZonalScatterTransect)
+    transect = p.args[1]
+    depths = reduce(vcat, pro.depths for pro in transect.profiles)
+    values = ustrip.(reduce(vcat, pro.values for pro in transect.profiles))
+    lons = reduce(vcat, pro.station.lon * ones(length(pro)) for pro in transect.profiles)
+    @series begin
+        seriestype := :scatter
+        zcolor := values
+        yflip := true
+        markershape --> :circle
+        label --> ""
+        xlim --> extrema(lons)
+        clims --> (0, maximum(transect))
+        title --> "$(transect.tracer) along $(transect.cruise)"
+        ylabel --> "Depth (m)"
+        xlabel --> "Longitude (°)"
+        colorbar_title --> string(unit(transect))
+        lons, depths
+    end
+end
+
+
+
+
+
+"""
+    RatioAtStation(x, y, grd, station, depthlims=(0,Inf))
 
 Plots a meridional transect of tracer `x` along cruise track `ct`.
 
@@ -367,20 +433,27 @@ if you only want to only plot for depths `z ∈ (ztop, zbottom)`.
 (`z` is positive downwards in this case)
 """
 @userplot RatioAtStation
-@recipe function f(p::RatioAtStation; zlims=(0,Inf))
-    x, y, grd, lat, lon = p.args
+@recipe function f(p::RatioAtStation; depthlims=(0,Inf))
+    x, y, grd, st = p.args
     x3D = rearrange_into_3Darray(x, grd)
     y3D = rearrange_into_3Darray(y, grd)
     depths = ustrip.(grd.depth)
     knots = (ustrip.(grd.lat), ustrip.(grd.lon), 1:length(depths))
     itpx = interpolate(knots, x3D, (Gridded(Linear()), Gridded(Linear()), NoInterp()))
     itpy = interpolate(knots, y3D, (Gridded(Linear()), Gridded(Linear()), NoInterp()))
-    iz = findall(zlims[1] .≤ depths .≤ zlims[2])
-    ibot = findfirst(depths .> zlims[2])
-    x1D = itpx(ustrip(lat), mod(ustrip(lon), 360), iz)
-    y1D = itpy(ustrip(lat), mod(ustrip(lon), 360), iz)
+    iz = findall(depthlims[1] .≤ depths .≤ depthlims[2])
+    ibot = findfirst(depths .> depthlims[2])
+    x1D = itpx(ustrip(st.lat), mod(ustrip(st.lon), 360), iz)
+    y1D = itpy(ustrip(st.lat), mod(ustrip(st.lon), 360), iz)
     @series begin
         seriestype := :scatter
+        label --> st.name
+        markershape --> :circle
+        seriescolor --> :deep
+        marker_z --> -depths
+        colorbar_title --> "depth [m]"
+        markersize --> 4
+        legend --> :topleft
         x1D, y1D
     end
 end
@@ -413,7 +486,7 @@ Plots the PDF of parameter `p` with symbol `s`
         xlabel --> "$s ($(string(u)))"
         ylabel --> "PDF"
         label --> "value"
-        marker := :o
+        markershape := :o
         [vu], [pdf(d, v)]
     end
 end
@@ -448,7 +521,7 @@ Plots the PDF of all the flattenable parameters in `p`.
             xlabel --> "$s ($(string(u)))"
             ylabel --> "PDF"
             label --> "value"
-            marker := :o
+            markershape := :o
             subplot := i
             [vu], [pdf(d, v)]
         end
