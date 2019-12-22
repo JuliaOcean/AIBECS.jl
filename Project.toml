@@ -1,6 +1,7 @@
 [deps]
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 AIBECS = "ace601d6-714c-11e9-04e5-89b7fad23838"
+OceanographyCruises = "32ce50af-5875-4c4d-b676-f166988c519c"
 
 [compat]
 julia = "1"
