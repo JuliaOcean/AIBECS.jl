@@ -55,7 +55,7 @@ function build_T(grid)
     nb = length(v3D)
 
     # Mixing terms
-    # between top boxes (1 and 2) (10 Sv = 10e6 cubic meters)
+    # between top boxes (1 and 2) (1 Sv = 10⁶ m³/s)
     T  = CG.flux_divergence_operator_from_advection(10e6u"m^3/s", [1, 2], v3D, nb)
     # between high-lat and deep (1 and 3)
     T += CG.flux_divergence_operator_from_advection(53e6u"m^3/s", [2, 5], v3D, nb)

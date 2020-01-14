@@ -75,7 +75,8 @@ $$(\mathcal{T} x)(\boldsymbol{r}) = \nabla \cdot \left[ \boldsymbol{u}(\boldsymb
 In AIBECS, there are currently a few available circulations that you can directly load with the AIBECS:
 
 - `Primeau_2x2x2`, the circulation described in this documentation page
-- `Archer_etal_2000`, reproducing the famous 3-box model
+- `TwoBoxModel`, the 2-box model of the *Sarmiento and Gruber* (2006) book
+- `Archer_etal_2000`, the 3-box model of *Archer et al*. (2000) (also used in the *Sarmiento and Gruber* (2006) book)
 - `OCIM0`, the precursor of the OCIM1
 - `OCIM1`
 

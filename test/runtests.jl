@@ -8,37 +8,36 @@ using DiffEqBase
 using ForwardDiff, DualNumbers
 using DataFrames
 using Distributions
+
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 
-Circulation = Archer_etal_2000
-@testset "Archer_etal_2000 3-box model" begin
-    include("setup.jl")
+test_setup_only = [:TwoBoxModel, :Archer_etal_2000, :OCIM1, :OCIM0]
+# Using `include` evaluates at global scope,
+# so `Circulation` must be changed at the global scope too.
+# This is why there is an `eval` in the for loop(s) below
+@testset "test setup.jl only" for C in test_setup_only
+    @testset "$C" begin
+        eval(:(Circulation = $C))
+        include("setup.jl") #TODO change back to just setup.jl
+    end
 end
 
-Circulation = Primeau_2x2x2
-@testset "Primeau's 6-box model" begin
-    # Run tests with the 6-box toy model
-    include("setup.jl")
-    include("particles.jl")
-    include("parameters.jl")
-    include("bgc_functions.jl")
-    include("gridtools.jl")
-    include("cost_functions.jl")
-    include("solvers.jl")
-    include("time_steps.jl")
-    include("derivatives.jl")
-end
 
-Circulation = OCIM1
-@testset "OCIM1" begin
-    include("setup.jl")
+test_everything = [:Primeau_2x2x2]
+@testset "test everything" for C in test_everything
+    @testset "$C" begin
+        eval(:(Circulation = $C))
+        include("setup.jl")
+        include("particles.jl")
+        include("parameters.jl")
+        include("bgc_functions.jl")
+        include("gridtools.jl")
+        include("cost_functions.jl")
+        include("solvers.jl")
+        include("time_steps.jl")
+        include("derivatives.jl")
+    end
 end
-
-Circulation = OCIM0
-@testset "OCIM0.1" begin
-    include("setup.jl")
-end
-
 
 

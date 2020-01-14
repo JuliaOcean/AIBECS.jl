@@ -1,7 +1,7 @@
 name = "AIBECS"
 uuid = "ace601d6-714c-11e9-04e5-89b7fad23838"
 authors = ["Benoit Pasquier <pasquieb@uci.edu>"]
-version = "0.4.2"
+version = "0.4.3"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
@@ -41,7 +41,7 @@ Parameters = "0.12"
 RecipesBase = "0.7"
 Reexport = "0.2"
 Unitful = "0.18"
-UnitfulAstro = "0.4"
+UnitfulAstro = "1"
 julia = "1"
 
 [extras]

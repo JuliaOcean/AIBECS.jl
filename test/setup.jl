@@ -59,3 +59,4 @@ end
     @test DIV isa SparseMatrixCSC
     @test Iabove isa SparseMatrixCSC
 end
+
