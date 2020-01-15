@@ -6,6 +6,10 @@
 #md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/1_ideal_age.ipynb)
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/1_ideal_age.ipynb)
 
+#md # !!! note
+#md #     You can launch this tutorial as Jupyter notebook or through nbviewer with the buttons above!
+
+
 # The tracer equation for the ideal age is
 #
 # $$\left(\partial_t + \mathbf{T}\right) \boldsymbol{a} = 1 - \frac{\boldsymbol{a}}{τ} \, (\boldsymbol{z} < z_0),$$
@@ -22,10 +26,10 @@
 #
 # $$\partial_t \boldsymbol{x} = \boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = \boldsymbol{G}(\boldsymbol{x}, \boldsymbol{p}) - \mathbf{T}(\boldsymbol{p}) \, \boldsymbol{x} = 0.$$
 
-# In this tutorial, we will simulate the ideal age using the AIBECS by
+# In this tutorial, we will simulate the ideal age by
 # 1. defining functions for `T(p)` and `G(x,p)`,
 # 1. defining the parameters `p`,
-# 1. then generating the state function `F(x,p)` and solving the associated steady-state problem,
+# 1. generating the state function `F(x,p)` and solving the associated steady-state problem,
 # 1. and finally making a plot of our simulated ideal age.
 
 # We start by telling Julia that we want to use the AIBECS package and the OCIM1 circulation
@@ -42,19 +46,19 @@ using AIBECS
 grd, TOCIM1 = OCIM1.load()
 
 #md # !!! note
-#md #     If it's the first time, Julia may ask you to download the OCIM1, in which case you should accept (i.e., type `y` and "return").
+#md #     If it's your first time, Julia will ask you to download the OCIM1, in which case you should accept (i.e., type `y` and "return").
 #md #     Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
 #nb # > **Note**
-#nb # > If it's the first time, Julia may ask you to download the OCIM1, in which case you should accept (i.e., type `y` and "return").
+#nb # > If it's your first time, Julia will ask you to download the OCIM1, in which case you should accept (i.e., type `y` and "return").
 #nb # > Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
 
-# `grd` is an `OceanGrid` object containing information about the 3D grid of the OCIM1 circulation and `TOCIM` is the transport matrix representing advection and diffusion.
+# `grd` is an `OceanGrid` object containing information about the 3D grid of the OCIM1 circulation and `TOCIM1` is the transport matrix representing advection and diffusion.
 
 # We define the function `T(p)` as
 
 T(p) = TOCIM1
 
-# which turns out to not effectively depend on `p`, but that's how we must define `T(p)` anyway.
+# (It turns out the circulation `T(p)` does not effectively depend on `p` but that's how we must define it anyway, i.e., as a function of `p`.)
 
 # The local sources and sinks for the age take the form
 
@@ -68,7 +72,7 @@ end
 # The `return` line returns the net sources and sinks.
 # (The `@.` "macro" tells Julia that the operations apply to every element.)
 
-# We can to define the vector `z` of depths with `depthvec`.
+# We can define the vector `z` of depths with `depthvec`.
 
 z = depthvec(grd)
 
