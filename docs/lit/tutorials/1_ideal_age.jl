@@ -7,8 +7,8 @@
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/1_ideal_age.ipynb)
 
 #md # !!! note
-#md #     You can launch this tutorial as Jupyter notebook or through nbviewer with the buttons above!
-
+#md #     All the AIBECS tutorials and how-to guides are available as Jupyter notebooks.
+#md #     You can execute them online with [binder](https://mybinder.org/) or just view them with [nbviewer](https://nbviewer.jupyter.org/) by clicking on the badges above!
 
 # The tracer equation for the ideal age is
 #
