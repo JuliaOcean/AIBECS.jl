@@ -83,7 +83,7 @@ That's pretty much the whole concept!
 ## References
 
 If you use this package, please cite it.
-And if you use data with these package (like the ocean circulation from the OCIM, please also cite it.
+And if you use data with these package (like the ocean circulation from the OCIM) please also cite them.
 The references under bibtex format are available in the [CITATION.bib](./CITATION.bib) file.
 
 Also, if you want to do research using the AIBECS, and you think I could help, do not hesitate to contact me directly (contacts on my [website](www.bpasquier.com)), I would be happy to contribute and collaborate!
