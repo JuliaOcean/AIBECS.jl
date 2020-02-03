@@ -206,16 +206,16 @@ end
 
 
 ## new functions for more generic obs packages
-function mismatch(x, grd::OceanGrid, obs; W=I, M=interpolationmatrix(grd, obs.metadata))
-    obs = ustrip(upreferred(obs))
-    δx = M * x - obs
-    return 0.5 * transpose(δx) * W * δx / (transpose(obs) * W * obs)
+function mismatch(x, grd::OceanGrid, obs; W=I, M=interpolationmatrix(grd, obs.metadata), iwet=iswet(grd, obs))
+    o = view(obs, iwet)
+    δx = M * x - o
+    return 0.5 * transpose(δx) * W * δx / (transpose(o) * W * o)
 end
 mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = 0
-function ∇mismatch(x, grd::OceanGrid, obs; W=I, M=interpolationmatrix(grd, obs.metadata))
-    obs = ustrip(upreferred(obs))
-    δx = M * x - obs
-    return transpose(W * δx) * M / (transpose(obs) * W * obs)
+function ∇mismatch(x, grd::OceanGrid, obs; W=I, M=interpolationmatrix(grd, obs.metadata), iwet=iswet(grd, obs))
+    o = view(obs, iwet)
+    δx = M * x - o
+    return transpose(W * δx) * M / (transpose(o) * W * o)
 end
 ∇mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = transpose(zeros(length(x)))
 
