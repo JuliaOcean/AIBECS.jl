@@ -217,15 +217,20 @@ Plots the profile of tracer `x` interpolated at `(lat,lon)` coordinates.
 @userplot InterpolatedDepthProfile
 @recipe function f(p::InterpolatedDepthProfile)
     x, grd, lat, lon = p.args
-    x3D = rearrange_into_3Darray(x, grd)
+    u = unit(eltype(x))
+    x3D = rearrange_into_3Darray(ustrip.(x), grd)
+    udepths = unit(eltype(grd.depth))
     depths = ustrip.(grd.depth)
     knots = (ustrip.(grd.lat), ustrip.(grd.lon), 1:length(depths))
     itp = interpolate(knots, x3D, (Gridded(Linear()), Gridded(Linear()), NoInterp()))
     @series begin
-        yflip := true
-        yticks := Int.(round.(depths))
-        ylims := (0, maximum(depths))
-        itp(ustrip(lat), ustrip(lon), 1:length(depths)), depths
+        yflip --> true
+        yticks --> Int.(round.(depths))
+        ylims --> (0, maximum(depths))
+        yguide --> "depth"
+        xguide --> "tracer"
+        xs, ys = itp(ustrip(lat), ustrip(lon), 1:length(depths)), depths * udepths
+        [ismissing(x) ? NaN : x for x in xs] * u, ys
     end
 end
 

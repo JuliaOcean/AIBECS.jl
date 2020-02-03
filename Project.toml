@@ -1,7 +1,7 @@
 name = "AIBECS"
 uuid = "ace601d6-714c-11e9-04e5-89b7fad23838"
 authors = ["Benoit Pasquier <pasquieb@uci.edu>"]
-version = "0.4.3"
+version = "0.4.4"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
@@ -24,6 +24,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SuiteSparse = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 UnitfulAstro = "6112ee07-acf9-5e0f-b108-d242c714bf9f"
+UnitfulRecipes = "42071c24-d89e-48dd-8a24-8a12d9b8861f"
 
 [compat]
 BSON = "0.2"

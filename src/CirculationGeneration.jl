@@ -1,4 +1,3 @@
-# Reexport GridTools as they are useful outside too
 @reexport module CirculationGeneration
 
 using LinearAlgebra, SparseArrays

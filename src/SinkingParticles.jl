@@ -3,7 +3,7 @@
 
 using Unitful
 using LinearAlgebra, SparseArrays
-using ..GridTools
+using OceanGrids
 
 
 """

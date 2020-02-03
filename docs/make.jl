@@ -40,6 +40,7 @@ makedocs(
 # Deploy
 deploydocs(
     repo = "github.com/briochemc/AIBECS.jl.git",
+    push_preview = true
 )
 
 

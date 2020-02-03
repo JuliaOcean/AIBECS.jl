@@ -133,6 +133,14 @@ function generate_objective(ωs, μx, σ²x, v, ωp)
         sum([ωⱼ * mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
     return f
 end
+function generate_objective(ωs, ωp, grd, obs)
+    nt, nb = length(ωs), count(iswet(grd))
+    tracers(x) = state_to_tracers(x, nb, nt)
+    Ms = [interpolationmatrix(grd, obsⱼ.metadata) for obsⱼ in obs]
+    f(x, p) = ωp * mismatch(p) +
+        sum([ωⱼ * mismatch(xⱼ, grd, obsⱼ, M=Mⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ) in zip(ωs, tracers(x), obs, Ms)])
+    return f
+end
 
 
 function generate_∇ₓobjective(ωs, μx, σ²x, v)
@@ -141,19 +149,32 @@ function generate_∇ₓobjective(ωs, μx, σ²x, v)
     ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
     return ∇ₓf
 end
+function generate_∇ₓobjective(ωs, grd, obs)
+    nt, nb = length(ωs), count(iswet(grd))
+    tracers(x) = state_to_tracers(x, nb, nt)
+    ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, grd, obsⱼ, M=Mⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ) in zip(ωs, tracers(x), obs, Ms)])
+    return ∇ₓf
+end
 
 function generate_∇ₚobjective(ωp)
     ∇ₚf(x, p) = ωp * ∇mismatch(p)
     return ∇ₚf
 end
 
+
 generate_objective_and_derivatives(ωs, μx, σ²x, v, ωp) =
     generate_objective(ωs, μx, σ²x, v, ωp),
     generate_∇ₓobjective(ωs, μx, σ²x, v),
     generate_∇ₚobjective(ωp)
+generate_objective_and_derivatives(ωs, ωp, grd, obs) =
+    generate_objective(ωs, ωp, grd, obs),
+    generate_∇ₓobjective(ωs, grd, obs),
+    generate_∇ₚobjective(ωp)
 
 export generate_objective, generate_∇ₓobjective, generate_∇ₚobjective
 export generate_objective_and_derivatives
+
+
 
 
 """
@@ -181,6 +202,26 @@ end
 ∇mismatch(x, ::Missing, args...) = transpose(zeros(length(x)))
 
 
+
+
+## new functions for more generic obs packages
+function mismatch(x, grd::OceanGrid, obs; W=I, M=interpolationmatrix(grd, obs.metadata))
+    obs = ustrip(upreferred(obs))
+    δx = M * x - obs
+    return 0.5 * transpose(δx) * W * δx / (transpose(obs) * W * obs)
+end
+mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = 0
+function ∇mismatch(x, grd::OceanGrid, obs; W=I, M=interpolationmatrix(grd, obs.metadata))
+    obs = ustrip(upreferred(obs))
+    δx = M * x - obs
+    return transpose(W * δx) * M / (transpose(obs) * W * obs)
+end
+∇mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = transpose(zeros(length(x)))
+
+
+
+
+
 #=============================================
 multi-tracer norm
 =============================================#
@@ -189,6 +230,25 @@ function volumeweighted_norm(nt, v)
     w = repeat(v, nt)
     return nrm(x) = transpose(x) * Diagonal(w) * x
 end
+
+
+#=============================================
+unpacking of multi-tracers
+=============================================#
+
+state_to_tracers(x, nb, nt) = ntuple(i -> state_to_tracer(x, nb, nt, i), nt)
+state_to_tracer(x, nb, nt, i) = x[tracer_indices(nb, nt, i)]
+function state_to_tracers(x, grd)
+    nb = number_of_wet_boxes(grd)
+    nt = Int(round(length(x) / nb))
+    return state_to_tracers(x, nb, nt)
+end
+tracer_indices(nb, nt, i) = (i-1)*nb+1 : i*nb
+tracers_to_state(xs) = reduce(vcat, xs)
+export state_to_tracers, state_to_tracer, tracers_to_state, tracer_indices
+# Alias for better name
+unpack_tracers = state_to_tracers
+export unpack_tracers
 
 
 
