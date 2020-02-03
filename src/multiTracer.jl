@@ -136,7 +136,7 @@ end
 function generate_objective(ωs, ωp, grd, obs)
     nt, nb = length(ωs), count(iswet(grd))
     tracers(x) = state_to_tracers(x, nb, nt)
-    Ms = [interpolationmatrix(grd, obsⱼ.metadata) for obsⱼ in obs]
+    Ms = [interpolationmatrix(grd, obsⱼ) for obsⱼ in obs]
     f(x, p) = ωp * mismatch(p) +
         sum([ωⱼ * mismatch(xⱼ, grd, obsⱼ, M=Mⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ) in zip(ωs, tracers(x), obs, Ms)])
     return f
@@ -152,6 +152,7 @@ end
 function generate_∇ₓobjective(ωs, grd, obs)
     nt, nb = length(ωs), count(iswet(grd))
     tracers(x) = state_to_tracers(x, nb, nt)
+    Ms = [interpolationmatrix(grd, obsⱼ) for obsⱼ in obs]
     ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, grd, obsⱼ, M=Mⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ) in zip(ωs, tracers(x), obs, Ms)])
     return ∇ₓf
 end
