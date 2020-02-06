@@ -10,6 +10,9 @@ using BSON
 @reexport using OceanGrids            # To store the grid
 @reexport using Unitful, UnitfulAstro
 using RecipesBase, Interpolations, Distances, UnitfulRecipes
+@reexport using MetadataArrays
+
+
 
 include("CirculationGeneration.jl")
 include("SinkingParticles.jl")

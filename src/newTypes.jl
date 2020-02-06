@@ -1,4 +1,44 @@
 
+
+"""
+    ustrip(x::MetadataArray)
+
+Strips unit from `x.parent` but stores it in `x.metadata` for safekeeping.
+"""
+Unitful.ustrip(x::MetadataArray) = MetadataArray(ustrip.(x.parent), (x.metadata..., unit=unit(eltype(x))))
+"""
+    upreferred(x::MetadataArray)
+
+Converts `x.parent` to SI unit but keeps `x.metadata` for safekeeping.
+"""
+function Unitful.upreferred(x::MetadataArray)
+    parent = upreferred.(x.parent)
+    processing_str = "converted to preferred $(unit(eltype(parent)))"
+    if haskey(x.metadata, :processing)
+        metadata = x.metadata
+        push!(metadata.processing, processing_str)
+    else
+        metadata = (x.metadata..., processing=[processing_str])
+    end
+    return MetadataArray(parent, metadata)
+end
+"""
+    *(x::MetadataArray, q::Quantity)
+
+    Preserve metadata (and history of unit conversions) when multiplying `x` by a quantity.
+"""
+function Base.:*(x::MetadataArray, q::Quantity)
+    parent = x.parent * q
+    processing_str = "converted to $(unit(eltype(parent))) with $q"
+    if haskey(x.metadata, :processing)
+        metadata = x.metadata
+        push!(metadata.processing, processing_str)
+    else
+        metadata = (x.metadata..., processing=[processing_str])
+    end
+    return MetadataArray(parent, metadata)
+end
+
 """
     AgedJacobianFactors
 

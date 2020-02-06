@@ -40,7 +40,7 @@ end
 Returns the "local" derivative of `G` (or `Gᵢ`), i.e., equivalent to the vector
 
 ```
-dualpart.(G(x .+ ε, p))
+∇ₓG(x,p) * ones(size(x))
 ```
 
 but using ForwardDiff's Jacobian instead.
