@@ -33,14 +33,12 @@
 # 1. and finally making a plot of our simulated ideal age.
 
 # We start by telling Julia that we want to use the AIBECS package and the OCIM2 circulation
-#nb # (the Ocean Circulation Inverse Model, see [1](https://doi.org/10.1002/2013GB004739) and [2](https://doi.org/10.1175/JPO-D-10-05011.1) for details).
-#md # (the Ocean Circulation Inverse Model[^1][^2]).
+#nb # (the Ocean Circulation Inverse Model, see [1](https://doi.org/10.1029/2018JC014716) for details).
+#md # (the Ocean Circulation Inverse Model[^1]).
 
 #md # [^1]:
-#md #     DeVries, T. (2014), The oceanic anthropogenic CO₂ sink: Storage, air–sea fluxes, and transports over the industrial era, Global Biogeochem. Cycles, 28, 631–647, doi:[10.1002/2013GB004739](https://doi.org/10.1002/2013GB004739).
-
-#md # [^2]:
-#md #     DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, doi:[10.1175/JPO-D-10-05011.1](https://doi.org/10.1175/JPO-D-10-05011.1)
+#md #     DeVries, T., & Holzer, M. (2019). Radiocarbon and helium isotope constraints on deep ocean ventilation and mantle‐³He sources. Journal of Geophysical Research: Oceans, 124, 3036–3057. doi:[10.1029/2018JC014716](https://doi.org/10.1029/2018JC014716)
+#
 
 using AIBECS
 grd, TOCIM2 = OCIM2.load()
