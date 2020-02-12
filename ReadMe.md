@@ -23,15 +23,7 @@
 
 <p>
   <a href="https://travis-ci.com/briochemc/AIBECS.jl">
-    <img alt="Build Status" src="https://img.shields.io/travis/com/briochemc/AIBECS.jl/master?label=OSX/Linux&logo=travis&logocolor=white&style=flat-square">
-  </a>
-  <a href="https://ci.appveyor.com/project/briochemc/AIBECS-jl">
-    <img alt="Build Status" src="https://img.shields.io/appveyor/ci/briochemc/AIBECS-jl/master?label=Windows&logo=appveyor&logoColor=white&style=flat-square">
-  </a>
-</p>
-<p>
-  <a href='https://coveralls.io/github/briochemc/AIBECS.jl'>
-    <img src="https://img.shields.io/coveralls/github/briochemc/AIBECS.jl/master?label=Coveralls&style=flat-square">
+    <img alt="Build Status" src="https://img.shields.io/travis/com/briochemc/AIBECS.jl/master?label=OSX/Linux/Windows&logo=travis&logocolor=white&style=flat-square">
   </a>
   <a href="https://codecov.io/gh/briochemc/AIBECS.jl">
     <img src="https://img.shields.io/codecov/c/github/briochemc/AIBECS.jl/master?label=Codecov&logo=codecov&logoColor=white&style=flat-square">

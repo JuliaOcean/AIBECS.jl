@@ -1,5 +1,6 @@
 Manifest.toml
 docs/build/
+*html
 
 docs/src/tutorials/
 docs/src/howtos/
