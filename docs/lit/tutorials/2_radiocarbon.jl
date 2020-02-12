@@ -38,8 +38,8 @@
 # We start by selecting the circulation for Radiocarbon
 
 using AIBECS
-grd, T_OCIM1 = OCIM1.load()
-T(p) = T_OCIM1
+grd, T_OCIM2 = OCIM2.load()
+T(p) = T_OCIM2
 
 # The local sources and sinks are simply given by
 

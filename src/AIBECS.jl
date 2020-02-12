@@ -26,6 +26,7 @@ include("Parameters.jl")
 # Available circulations
 include("OCIM0.jl")
 include("OCIM1.jl")
+include("OCIM2.jl")
 include("Archer_etal_2000.jl")
 include("TwoBoxModel.jl")
 include("Primeau_2x2x2.jl")

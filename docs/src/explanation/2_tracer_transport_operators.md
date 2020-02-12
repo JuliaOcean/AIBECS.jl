@@ -77,8 +77,9 @@ In AIBECS, there are currently a few available circulations that you can directl
 - `Primeau_2x2x2`, the circulation described in this documentation page
 - `TwoBoxModel`, the 2-box model of the *Sarmiento and Gruber* (2006) book
 - `Archer_etal_2000`, the 3-box model of *Archer et al*. (2000) (also used in the *Sarmiento and Gruber* (2006) book)
-- `OCIM0`, the precursor of the OCIM1
+- `OCIM0`, the unnamed precursor of the OCIM1 (and which should actually be named OCIM0.1)
 - `OCIM1`
+- `OCIM2`
 
 To load any of these, you just need to do
 

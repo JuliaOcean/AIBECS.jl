@@ -32,7 +32,7 @@
 # 1. generating the state function `F(x,p)` and solving the associated steady-state problem,
 # 1. and finally making a plot of our simulated ideal age.
 
-# We start by telling Julia that we want to use the AIBECS package and the OCIM1 circulation
+# We start by telling Julia that we want to use the AIBECS package and the OCIM2 circulation
 #nb # (the Ocean Circulation Inverse Model, see [1](https://doi.org/10.1002/2013GB004739) and [2](https://doi.org/10.1175/JPO-D-10-05011.1) for details).
 #md # (the Ocean Circulation Inverse Model[^1][^2]).
 
@@ -43,20 +43,20 @@
 #md #     DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, doi:[10.1175/JPO-D-10-05011.1](https://doi.org/10.1175/JPO-D-10-05011.1)
 
 using AIBECS
-grd, TOCIM1 = OCIM1.load()
+grd, TOCIM2 = OCIM2.load()
 
 #md # !!! note
-#md #     If it's your first time, Julia will ask you to download the OCIM1, in which case you should accept (i.e., type `y` and "return").
+#md #     If it's your first time, Julia will ask you to download the OCIM2, in which case you should accept (i.e., type `y` and "return").
 #md #     Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
 #nb # > **Note**
-#nb # > If it's your first time, Julia will ask you to download the OCIM1, in which case you should accept (i.e., type `y` and "return").
+#nb # > If it's your first time, Julia will ask you to download the OCIM2, in which case you should accept (i.e., type `y` and "return").
 #nb # > Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
 
-# `grd` is an `OceanGrid` object containing information about the 3D grid of the OCIM1 circulation and `TOCIM1` is the transport matrix representing advection and diffusion.
+# `grd` is an `OceanGrid` object containing information about the 3D grid of the OCIM2 circulation and `TOCIM2` is the transport matrix representing advection and diffusion.
 
 # We define the function `T(p)` as
 
-T(p) = TOCIM1
+T(p) = TOCIM2
 
 # (It turns out the circulation `T(p)` does not effectively depend on `p` but that's how we must define it anyway, i.e., as a function of `p`.)
 

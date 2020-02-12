@@ -13,9 +13,9 @@ Plots a horizontal slice of tracer `x` at depth `depth`.
     isnothing(iz) && (iz = length(grd.depth))
     @series begin
         seriestype := :contourf
-        xlabel := "Longitude"
-        ylabel := "Latitude"
-        colorbar_title := xunit
+        xlabel --> "Longitude"
+        ylabel --> "Latitude"
+        colorbar_title --> xunit
         lon, lat, view(x3D, :, :, iz)
     end
 end
@@ -55,9 +55,9 @@ Plots the vertical integral of tracer `x`.
     xvint = sum(x -> ismissing(x) ? 0.0 : x, x3D .* δz_3D, dims=3) ./ grd.wet3D[:,:,1]
     @series begin
         seriestype := :contourf
-        xlabel := "Longitude"
-        ylabel := "Latitude"
-        colorbar_title := intunit
+        xlabel --> "Longitude"
+        ylabel --> "Latitude"
+        colorbar_title --> intunit
         lon, lat, view(xvint, :, :, 1)
     end
 end
@@ -100,11 +100,11 @@ Plots a zonal slice of tracer `x` at longitude `lon`.
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks := Int.(round.(depth))
-        ylims := (0, maximum(depth))
-        xlabel := "Latitude"
-        ylabel := "Depth (m)"
-        colorbar_title := xunit
+        yticks --> Int.(round.(depth))
+        ylims --> (0, maximum(depth))
+        xlabel --> "Latitude"
+        ylabel --> "Depth (m)"
+        colorbar_title --> xunit
         lat, depth, permutedims(view(x3D,:,ix,:), [2,1])
     end
 end
@@ -125,11 +125,11 @@ Plots a Meridional slice of tracer `x` at longitude `lat`.
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks := Int.(round.(depth))
-        ylims := (0, maximum(depth))
-        xlabel := "Longitude"
-        ylabel := "Depth (m)"
-        colorbar_title := xunit
+        yticks --> Int.(round.(depth))
+        ylims --> (0, maximum(depth))
+        xlabel --> "Longitude"
+        ylabel --> "Depth (m)"
+        colorbar_title --> xunit
         lon, depth, permutedims(view(x3D,iy,:,:), [2,1])
     end
 end
@@ -153,11 +153,11 @@ Plots a zonal average of tracer `x`.
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks := Int.(round.(depth))
-        ylims := (0, maximum(depth))
-        xlabel := "Latitude"
-        ylabel := "Depth (m)"
-        colorbar_title := xunit
+        yticks --> Int.(round.(depth))
+        ylims --> (0, maximum(depth))
+        xlabel --> "Latitude"
+        ylabel --> "Depth (m)"
+        colorbar_title --> xunit
         lat, depth, permutedims(view(xmean, :, 1, :), [2,1])
     end
 end
@@ -188,8 +188,8 @@ end
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks := Int.(round.(depth))
-        ylims := (0, maximum(depth))
+        yticks --> Int.(round.(depth))
+        ylims --> (0, maximum(depth))
         y, depth, [etp(lat, i) for i in 1:nz, lat in y]
     end
 end
@@ -203,8 +203,8 @@ end
     iy = findfirst(ustrip.(grd.lat) .≥ ustrip(lat))
     @series begin
         yflip := true
-        yticks := Int.(round.(depth))
-        ylims := (0, maximum(depth))
+        yticks --> Int.(round.(depth))
+        ylims --> (0, maximum(depth))
         view(x3D, iy, ix, :), depth
     end
 end
@@ -257,10 +257,10 @@ end
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks := Int.(round.(depths))
-        ylims := (0, maximum(depths))
-        xlabel := "$(ct.name) distance (km)"
-        ylabel := "Depth (m)"
+        yticks --> Int.(round.(depths))
+        ylims --> (0, maximum(depths))
+        xlabel --> "$(ct.name) distance (km)"
+        ylabel --> "Depth (m)"
         distances[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ct.lat[idx], ct.lon[idx])]
     end
 end
@@ -280,9 +280,9 @@ Plots the cruise track `ct`.
     lons = [st.lon for st in ct.stations]
     lats = [st.lat for st in ct.stations]
     @series begin
-        xlabel := "Longitude"
-        ylabel := "Latitude"
-        label := ct.name
+        xlabel --> "Longitude"
+        ylabel --> "Latitude"
+        label --> ct.name
         markershape --> :hexagon
         linewidth --> 0
         linecolor --> :black
@@ -303,6 +303,7 @@ Plots a Meridional transect of tracer `x` along cruise track `ct`.
 @userplot MeridionalTransect
 @recipe function f(p::MeridionalTransect)
     x, grd, ct = p.args
+    x, u = ustrip.(x), unit(eltype(x))
     x3D = rearrange_into_3Darray(x, grd)
     depths = ustrip.(grd.depth)
     ndepths = length(depths)
@@ -321,11 +322,12 @@ Plots a Meridional transect of tracer `x` along cruise track `ct`.
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks := Int.(round.(depths))
-        ylims := (0, maximum(depths))
-        title := "$(ct.name)"
-        ylabel := "Depth (m)"
-        xlabel := "Latitude (°)"
+        yticks --> Int.(round.(depths))
+        ylims --> (0, maximum(depths))
+        title --> "$(ct.name)"
+        ylabel --> "Depth (m)"
+        xlabel --> "Latitude (°)"
+        colorbar_title --> string(u)
         ctlats[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
     end
 end
@@ -345,7 +347,7 @@ Plots a scatter of the discrete obs of `t` in (lat,depth) space.
     @series begin
         seriestype := :scatter
         yflip := true
-        zcolor := values
+        zcolor --> values
         markershape --> :circle
         label --> ""
         xlim --> extrema(lats)
@@ -369,6 +371,7 @@ Plots a Zonal transect of tracer `x` along cruise track `ct`.
 @userplot ZonalTransect
 @recipe function f(p::ZonalTransect)
     x, grd, ct = p.args
+    x, u = ustrip.(x), unit(eltype(x))
     x3D = rearrange_into_3Darray(x, grd)
     depths = ustrip.(grd.depth)
     ndepths = length(depths)
@@ -392,6 +395,7 @@ Plots a Zonal transect of tracer `x` along cruise track `ct`.
         title --> "$(ct.name)"
         ylabel --> "Depth (m)"
         xlabel --> "Longitude (°)"
+        colorbar_title --> string(u)
         ctlons[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
     end
 end
@@ -491,7 +495,7 @@ Plots the PDF of parameter `p` with symbol `s`
         xlabel --> "$s ($(string(u)))"
         ylabel --> "PDF"
         label --> "value"
-        markershape := :o
+        markershape --> :o
         [vu], [pdf(d, v)]
     end
 end
@@ -504,7 +508,7 @@ Plots the PDF of all the flattenable parameters in `p`.
 @userplot PlotParameters
 @recipe function f(plt::PlotParameters)
     p, = plt.args
-    layout := (length(p),1)
+    layout --> (length(p),1)
     for (i,s) in enumerate(flattenable_symbols(p))
         d, v, initvu, s, u = extract_dvisu(p,s)
         xs = default_range(d)
@@ -526,7 +530,7 @@ Plots the PDF of all the flattenable parameters in `p`.
             xlabel --> "$s ($(string(u)))"
             ylabel --> "PDF"
             label --> "value"
-            markershape := :o
+            markershape --> :o
             subplot := i
             [vu], [pdf(d, v)]
         end
