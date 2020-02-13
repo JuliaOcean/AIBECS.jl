@@ -342,6 +342,21 @@ function (::Type{T})(;kwargs...) where {T <: AbstractParameters}
     return T([f ∈ keys(kwargs) ? value(f, kwargs[f]) : initial_value(T, f) for f in fieldnames(T)]...)
 end
 
+#===============================
+Writing to savable formats
+===============================#
+
+function Base.Dict(p::T, s=symbols(p)) where {T<:AbstractParameters}
+    v = [getfield(p,s) for s in s]
+    u = [units(p,s) for s in s]
+    return Dict([(s,v*u) for (s,v,u) in zip(s,v,u)])
+end
+function Base.NamedTuple(p::T, s=symbols(p)) where {T<:AbstractParameters}
+    v = [getfield(p,s) for s in s]
+    u = [units(p,s) for s in s]
+    return (; zip(s, v .* u)...)
+end
+
 #=====================
 mismatch of parameters
 =====================#
