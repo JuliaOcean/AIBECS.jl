@@ -32,7 +32,7 @@ function register_OCIM2()
             """,
             "https://files.figshare.com/21689934/OCIM2.bson",
             # use `sha2_256` (no quotes) to figure out the hash on first try
-            sha2_256,
+            "77b018c75006409ecd0e44a7371033e9b554ba0cd50506014bc8635f12be5042",
             fetch_method = fallback_download
         )
     )
