@@ -15,10 +15,10 @@
 # In this guide we will focus on how-to plot things using AIBECS' built-in recipes for [Plots.jl](https://github.com/JuliaPlots/Plots.jl).
 # These recipes are implemented using [RecipesBase.jl](https://github.com/JuliaPlots/RecipesBase.jl), which are explained in [Plots.jl's documentation](https://docs.juliaplots.org/latest/recipes/).
 
-# Throughout we will use the OCIM1 grid and we will create a `dummy` tracer as a function of location to showcase each plot, just for the sake of the examples herein.
+# Throughout we will use the OCIM2 grid and we will create a `dummy` tracer as a function of location to showcase each plot, just for the sake of the examples herein.
 
 using AIBECS, Plots
-grd, _ = OCIM1.load()
+grd, _ = OCIM2.load()
 dummy = cosd.(latvec(grd))
 
 #--------------------------------------------

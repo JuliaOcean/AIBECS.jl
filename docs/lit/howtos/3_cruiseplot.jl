@@ -1,4 +1,4 @@
-
+x, 
 #---------------------------------------------------------
 # # [Plot transect/cruise data](@id cruiseplots)
 #---------------------------------------------------------
@@ -13,10 +13,10 @@
 # [2. Plot transects](@ref transects)
 # [3. Other plots](@ref other-plots)
 
-# As in the [basic plotting guide](@ref plots), throughout this guide we will use the OCIM1 grid and we will create a `dummy` modelled tracer.
+# As in the [basic plotting guide](@ref plots), throughout this guide we will use the OCIM2 grid and we will create a `dummy` modelled tracer.
 
 using AIBECS, Plots
-grd, _ = OCIM1.load()
+grd, _ = OCIM2.load()
 fdummy(lat, lon, depth) = @. cosd(lat) * sind(lon) + sqrt(depth) / 30
 dummy = fdummy(latlondepthvecs(grd)...)
 
@@ -47,7 +47,7 @@ ALOHA = Station(name="ALOHA", lat=22.75, lon=-158)
 Nstations = 10
 stations = range(Sydney, ALOHA, length=Nstations, westmostlon=0)
 
-# (`westmostlon=0` ensures that the longitudes are in (0,360) to match the OCIM1 grid we use here.)
+# (`westmostlon=0` ensures that the longitudes are in (0,360) to match the OCIM2 grid we use here.)
 
 # We can now construct a fictitious cruise track
 

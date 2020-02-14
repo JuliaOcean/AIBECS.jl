@@ -1,24 +1,35 @@
+
+
+
 """
-    HorizontalSlice(x, grd, depth)
+    HorizontalSlice(x, grd; depth)
 
 Plots a horizontal slice of tracer `x` at depth `depth`.
 """
 @userplot HorizontalSlice
-@recipe function f(p::HorizontalSlice)
-    x, grd, depth = p.args
-    xunit = string(unit(x[1]))
-    x3D = rearrange_into_3Darray(ustrip.(x), grd)
-    lon, lat = grd.lon .|> ustrip, grd.lat .|> ustrip
-    iz = findfirst(ustrip.(grd.depth) .≥ ustrip(upreferred(depth)))
-    isnothing(iz) && (iz = length(grd.depth))
+@recipe function f(p::HorizontalSlice; depth=nothing)
+    x, grd = p.args
+    isnothing(depth) && error("you must specify the depth, e.g., `depth=100`")
+    depth = convertdepth(depth)
+    iz = finddepthindex(depth, grd)
+    x3D = rearrange_into_3Darray(x, grd)
     @series begin
         seriestype := :contourf
         xlabel --> "Longitude"
         ylabel --> "Latitude"
-        colorbar_title --> xunit
-        lon, lat, view(x3D, :, :, iz)
+        grd.lon, grd.lat, view(x3D, :, :, iz)
     end
 end
+
+"""
+    finddepthindex(d, grd)
+
+finds the depth index of `grd` closest to `depth`.
+"""
+finddepthindex(depth::Quantity, grd) = findmin(abs.(grd.depth .- depth))[2]
+convertdepth(depth::Real) = depth * u"m"
+convertdepth(depth::Quantity{U, Unitful.𝐋, V}) where {U,V} = depth
+convertdepth(x) = error("Not a valid depth")
 
 """
     SurfaceMap(x, grd)
@@ -28,86 +39,89 @@ Plots a surface map of tracer `x`.
 @userplot SurfaceMap
 @recipe function f(p::SurfaceMap)
     x, grd = p.args
-    xunit = string(unit(x[1]))
-    x3D = rearrange_into_3Darray(ustrip.(x), grd)
-    lon, lat = grd.lon .|> ustrip, grd.lat .|> ustrip
+    x3D = rearrange_into_3Darray(x, grd)
+    lon, lat = grd.lon, grd.lat
     @series begin
         seriestype --> :contourf
         xlabel --> "Longitude"
         ylabel --> "Latitude"
-        colorbar_title --> xunit
         lon, lat, view(x3D, :, :, 1)
     end
 end
 
 """
-    VerticalIntegral(x, grd)
+    VerticalIntegral(x, grd [; depthlim])
 
 Plots the vertical integral of tracer `x`.
 """
 @userplot VerticalIntegral
-@recipe function f(p::VerticalIntegral)
+@recipe function f(p::VerticalIntegral; depthlim=extrema(p.args[2].depth))
     x, grd = p.args
-    intunit = string(unit(x[1]) * u"m")
-    x3D = rearrange_into_3Darray(ustrip.(x), grd)
-    lon, lat = grd.lon .|> ustrip, grd.lat .|> ustrip
-    δz_3D = ustrip.(grd.δz_3D)
-    xvint = sum(x -> ismissing(x) ? 0.0 : x, x3D .* δz_3D, dims=3) ./ grd.wet3D[:,:,1]
+    depthlim = convertdepth(depthlim)
+    iz1, iz2 = finddepthindex(depthlim, grd)
+    x3D = rearrange_into_3Darray(x, grd)[:,:,iz1:iz2]
+    δz_3D = view(grd.δz_3D, :, :, iz1:iz2)
+    x2D = nansum(x3D .* δz_3D, dims=3) ./ grd.wet3D[:,:,iz1]
     @series begin
         seriestype := :contourf
         xlabel --> "Longitude"
         ylabel --> "Latitude"
-        colorbar_title --> intunit
-        lon, lat, view(xvint, :, :, 1)
+        grd.lon, grd.lat, view(x2D, :, :, 1)
     end
 end
+finddepthindex(depths::Tuple, grd) = ((finddepthindex(d, grd) for d in depths)...,)
+convertdepth(depths::Tuple) = ((convertdepth(d) for d in depths)...,)
 
 """
-    VerticalAverage(x, grd)
+    VerticalAverage(x, grd [; depthlim])
 
 Plots the vertical average of tracer `x`.
 """
 @userplot VerticalAverage
-@recipe function f(p::VerticalAverage)
+@recipe function f(p::VerticalAverage; depthlim=extrema(p.args[2].depth))
     x, grd = p.args
-    xunit = string(unit(x[1]))
-    x3D = rearrange_into_3Darray(ustrip.(x), grd)
-    v = ustrip.(vector_of_volumes(grd))
-    v3D = rearrange_into_3Darray(v, grd)
-    lon, lat = grd.lon .|> ustrip, grd.lat .|> ustrip
-    xmean = sum(x -> ismissing(x) ? 0.0 : x, x3D .* v3D, dims=3) ./
-                sum(x -> ismissing(x) ? 0.0 : x, v3D, dims=3)
+    depthlim = convertdepth(depthlim)
+    iz1, iz2 = finddepthindex(depthlim, grd)
+    x3D = rearrange_into_3Darray(x, grd)[:,:,iz1:iz2]
+    v = vector_of_volumes(grd)
+    v3D = rearrange_into_3Darray(v, grd)[:,:,iz1:iz2]
+    x2D = nansum(x3D .* v3D, dims=3) ./ nansum(v3D, dims=3)
     @series begin
         seriestype := :contourf
-        lon, lat, view(xmean, :, :, 1)
+        xlabel --> "Longitude"
+        ylabel --> "Latitude"
+        grd.lon, grd.lat, view(x2D, :, :, 1)
     end
 end
 
+# sun skipping nans
+nansum(x; kwargs...) = sum(x .* (!isnan).(x); kwargs...)
 
 """
-    ZonalSlice(x, grd, lon)
+    ZonalSlice(x, grd; lon)
 
 Plots a zonal slice of tracer `x` at longitude `lon`.
 """
 @userplot ZonalSlice
-@recipe function f(p::ZonalSlice)
-    x, grd, lon = p.args
-    lon = mod(ustrip(lon), 360)
-    xunit = string(unit(x[1]))
-    x3D = rearrange_into_3Darray(ustrip.(x), grd)
-    depth, lat = grd.depth .|> ustrip, grd.lat .|> ustrip
-    ix = findfirst(ustrip(grd.lon) .≥ mod(ustrip(lon), 360))
+@recipe function f(p::ZonalSlice; lon=nothing)
+    isnothing(lon) && error("you must specify the longitude, e.g., `lon=100`")
+    x, grd = p.args
+    lon = mod(convertlonlat(lon), 360u"°")
+    ix = findlonindex(lon, grd)
+    x3D = rearrange_into_3Darray(x, grd)
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks --> Int.(round.(depth))
-        ylims --> (0, maximum(depth))
+        ylims --> (0u"m", maximum(grd.depth))
         xlabel --> "Latitude"
-        ylabel --> "Depth (m)"
-        colorbar_title --> xunit
-        lat, depth, permutedims(view(x3D,:,ix,:), [2,1])
+        ylabel --> "Depth"
+        grd.lat, grd.depth, permutedims(view(x3D,:,ix,:), [2,1])
     end
 end
+findlonindex(lon::Quantity, grd) = findmin(abs.(grd.lon .- lon))[2]
+findlatindex(lat::Quantity, grd) = findmin(abs.(grd.lat .- lat))[2]
+convertlonlat(x::Real) = x * u"°"
+convertlonlat(x::Quantity) = unit(x) == Unitful.° ? x : error("Not a valid lon/lat")
 
 
 """
@@ -116,21 +130,19 @@ end
 Plots a Meridional slice of tracer `x` at longitude `lat`.
 """
 @userplot MeridionalSlice
-@recipe function f(p::MeridionalSlice)
-    x, grd, lat = p.args
-    xunit = string(unit(x[1]))
-    x3D = rearrange_into_3Darray(ustrip.(x), grd)
-    depth, lon = grd.depth .|> ustrip, grd.lon .|> ustrip
-    iy = findfirst(ustrip(grd.lat) .≥ ustrip(lat))
+@recipe function f(p::MeridionalSlice; lat=nothing)
+    isnothing(lat) && error("you must specify the latitude, e.g., `lat=-30`")
+    x, grd = p.args
+    lat = convertlonlat(lat)
+    iy = findlatindex(lat, grd)
+    x3D = rearrange_into_3Darray(x, grd)
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks --> Int.(round.(depth))
-        ylims --> (0, maximum(depth))
+        ylims --> (0u"m", maximum(grd.depth))
         xlabel --> "Longitude"
-        ylabel --> "Depth (m)"
-        colorbar_title --> xunit
-        lon, depth, permutedims(view(x3D,iy,:,:), [2,1])
+        ylabel --> "Depth"
+        grd.lon, grd.depth, permutedims(view(x3D,iy,:,:), [2,1])
     end
 end
 
@@ -143,22 +155,17 @@ Plots a zonal average of tracer `x`.
 @userplot ZonalAverage
 @recipe function f(p::ZonalAverage; mask=1)
     x, grd = p.args
-    xunit = string(unit(x[1]))
-    x3D = rearrange_into_3Darray(ustrip.(x) .* mask, grd)
-    v = ustrip.(vector_of_volumes(grd))
+    x3D = rearrange_into_3Darray(x .* mask, grd)
+    v = vector_of_volumes(grd)
     v3D = rearrange_into_3Darray(v .* mask, grd)
-    depth, lat = grd.depth .|> ustrip, grd.lat .|> ustrip
-    xmean = sum(x -> ismissing(x) ? 0.0 : x, x3D .* v3D, dims=2) ./
-                sum(x -> ismissing(x) ? 0.0 : x, v3D, dims=2)
+    x2D = nansum(x3D .* v3D, dims=2) ./ nansum(v3D, dims=2)
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks --> Int.(round.(depth))
-        ylims --> (0, maximum(depth))
+        ylims --> (0u"m", maximum(grd.depth))
         xlabel --> "Latitude"
-        ylabel --> "Depth (m)"
-        colorbar_title --> xunit
-        lat, depth, permutedims(view(xmean, :, 1, :), [2,1])
+        ylabel --> "Depth"
+        grd.lat, grd.depth, permutedims(view(x2D, :, 1, :), [2,1])
     end
 end
 
@@ -301,9 +308,9 @@ end
 Plots a Meridional transect of tracer `x` along cruise track `ct`.
 """
 @userplot MeridionalTransect
-@recipe function f(p::MeridionalTransect)
-    x, grd, ct = p.args
-    x, u = ustrip.(x), unit(eltype(x))
+@recipe function f(p::MeridionalTransect, cruisetrack=nothing)
+    isnothing(cruise) && error("you must include the cruise with `cruisetrack=...`")
+    x, grd = p.args
     x3D = rearrange_into_3Darray(x, grd)
     depths = ustrip.(grd.depth)
     ndepths = length(depths)
@@ -315,19 +322,17 @@ Plots a Meridional transect of tracer `x` along cruise track `ct`.
     stp = Interpolations.scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
     etp = extrapolate(stp, (Line(), Periodic(), Line())) # periodic longitude
 
-    ctlats = [st.lat for st in ct.stations]
-    ctlons = [st.lon for st in ct.stations]
+    ctlats = [st.lat for st in cruisetrack.stations]
+    ctlons = [st.lon for st in cruisetrack.stations]
     isort = sortperm(ctlats)
     idx = isort[unique(i -> ctlats[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks --> Int.(round.(depths))
-        ylims --> (0, maximum(depths))
+        ylims --> (0u"m", maximum(depths))
         title --> "$(ct.name)"
-        ylabel --> "Depth (m)"
-        xlabel --> "Latitude (°)"
-        colorbar_title --> string(u)
+        ylabel --> "Depth"
+        xlabel --> "Latitude"
         ctlats[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
     end
 end
