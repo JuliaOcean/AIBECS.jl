@@ -99,7 +99,7 @@ C14age = @. log(R̅atm / R) * τ * u"s" |> u"yr"
 # and plot it at 700 m using the `horizontalslice` Plots recipe
 
 using Plots
-horizontalslice(C14age, grd, 700; color=:viridis)
+horizontalslice(C14age, grd, depth=700u"m", color=:viridis)
 
 # look at a zonal average using the `zonalaverage` plot recipe
 
@@ -107,4 +107,4 @@ zonalaverage(C14age, grd; color=:viridis)
 
 # or look at a zonal slice through the Atlantic at 30°W using the `zonalslice` plot recipe
 
-zonalslice(C14age, grd, -30; color=:viridis)
+zonalslice(C14age, grd, lon=-30, color=:viridis)

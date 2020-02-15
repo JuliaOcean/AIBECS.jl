@@ -123,7 +123,7 @@ age_in_yrs = age * u"s" .|> u"yr"
 
 # And we take a horizontal slice at about 2000m.
 
-horizontalslice(age_in_yrs, grd, 2000; color=:magma)
+horizontalslice(age_in_yrs, grd, depth=2000u"m", color=:magma)
 
 # That's it for this tutorial...
 # Good job!

@@ -139,13 +139,13 @@ DIP, POP = state_to_tracers(s, grd) # unpack tracers
 # We can plot the concentration of DIP at a given depth via, e.g.,
 
 using Plots
-horizontalslice(DIP * u"mol/m^3" .|> u"μM", grd, 1000; color=:viridis)
+horizontalslice(DIP * u"mol/m^3" .|> u"μM", grd, depth=1000u"m", color=:viridis)
 
 # Or have a look at a map of the uptake at the surface
 
-verticalintegral(U(DIP,p) * u"mol/m^3/s" .|> u"mmol/yr/m^3", grd; color=:algae)
+verticalintegral(U(DIP,p) * u"mol/m^3/s" .|> u"mmol/yr/m^3", grd, color=:algae)
 
 # Or look at what is exported below 500 m
 
-horizontalslice(POP .* w(p) * u"mol/m^3*m/s" .|> u"mmol/yr/m^2", grd, 500; color=:inferno_r)
+horizontalslice(POP .* w(p) * u"mol/m^3*m/s" .|> u"mmol/yr/m^2", grd, depth=500u"m", color=:inferno_r)
 
