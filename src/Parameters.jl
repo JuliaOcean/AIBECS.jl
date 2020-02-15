@@ -25,7 +25,7 @@ Parameters in AIBECS use the following convenience packages:
 
 These aim to allow for some nice features, which include
 
-- nice syntax for unpacking parameters in functions via Parameters' `@unpack` macro
+- nice syntax for unpacking parameters in functions via the `@unpack` macro (fron UnPack.jl)
 - additional metadata on parameters
 - easy conversion to and from vectors
 - use of units and automatic conversions if necessary
@@ -213,7 +213,7 @@ Returns a **SI-unit-converted** vector of flattenable values of `p`.
 
 Note that `vec(p) ≠ flattenable_values(p)` if `p` has units.
 """
-Base.vec(p::T) where {T <: AbstractParameters} = [Parameters.unpack(p, Val(s)) for s in flattenable_symbols(T)]
+Base.vec(p::T) where {T <: AbstractParameters} = [UnPack.unpack(p, Val(s)) for s in flattenable_symbols(T)]
 
 
 """
@@ -292,7 +292,7 @@ Unpacks the parameter `s` from `p`.
 
 Note this is specialized and will convert the parameter value to SI units.
 """
-@inline Parameters.unpack(p::T, ::Val{f}) where {T<:AbstractParameters,f} = ustrip(upreferred(getproperty(p, f) * units(T, f)))
+@inline UnPack.unpack(p::T, ::Val{f}) where {T<:AbstractParameters,f} = ustrip(upreferred(getproperty(p, f) * units(T, f)))
 
 """
     +(p::T, v::Vector) where {T <: AbstractParameters}
@@ -366,10 +366,10 @@ mismatch of parameters
 Returns the sum of the negative log-likelihood of each flattenable parameter.
 """
 function mismatch(p::AbstractParameters)
-    return sum(-logpdf(prior(p,k), Parameters.unpack(p,Val(k))) for k in flattenable_symbols(p))
+    return sum(-logpdf(prior(p,k), UnPack.unpack(p,Val(k))) for k in flattenable_symbols(p))
 end
 function ∇mismatch(p::AbstractParameters)
-    return transpose([-gradlogpdf(prior(p,k), Parameters.unpack(p,Val(k))) for k in flattenable_symbols(p)])
+    return transpose([-gradlogpdf(prior(p,k), UnPack.unpack(p,Val(k))) for k in flattenable_symbols(p)])
 end
 
 # The functions below is just for ForwardDiff to work with vectors instead of p

@@ -10,7 +10,7 @@ algs = [CTKAlg]
     @testset "$(string(alg))" for alg in algs
         @test alg <: DiffEqBase.AbstractSteadyStateAlgorithm
         @testset "$(nx)x, $(np)p" for nx in 1:2, np in 1:2
-            testp = reconstruct(typeof(p), np * vec(p))
+            testp = AIBECS.reconstruct(typeof(p), np * vec(p))
             prob = SteadyStateProblem(F, ∇ₓF, nx * x, testp)
             s = solve(prob, alg())
             @test s isa SteadyStateSolution

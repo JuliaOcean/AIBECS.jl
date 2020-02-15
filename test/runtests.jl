@@ -8,11 +8,12 @@ using DiffEqBase
 using ForwardDiff, DualNumbers
 using DataFrames
 using Distributions
+using Plots
 
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 
-test_setup_only = [:TwoBoxModel, :Archer_etal_2000, :OCIM1, :OCIM0, :OCIM2]
+test_setup_only = [:TwoBoxModel, :Archer_etal_2000, :OCIM1, :OCIM0]
 # Using `include` evaluates at global scope,
 # so `Circulation` must be changed at the global scope too.
 # This is why there is an `eval` in the for loop(s) below
@@ -20,6 +21,16 @@ test_setup_only = [:TwoBoxModel, :Archer_etal_2000, :OCIM1, :OCIM0, :OCIM2]
     @testset "$C" begin
         eval(:(Circulation = $C))
         include("setup.jl") #TODO change back to just setup.jl
+    end
+end
+
+
+test_plots = [:OCIM2]
+@testset "Test setup and plots" for C in test_plots
+    @testset "$C" begin
+        eval(:(Circulation = $C))
+        include("setup.jl") #TODO change back to just setup.jl
+        include("plots.jl") #TODO change back to just setup.jl
     end
 end
 
@@ -39,5 +50,7 @@ test_everything = [:Primeau_2x2x2]
         include("derivatives.jl")
     end
 end
+
+
 
 

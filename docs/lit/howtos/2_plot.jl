@@ -30,30 +30,30 @@ dummy = cosd.(latvec(grd))
 # The most common thing you plot after a simulation of marine tracers is a horizontal slice.
 # In this case, you just need to provide the tracer (`dummy` here), the grid object `grd`, and the depth at which you want to plot.
 
-horizontalslice(dummy, grd, 10)
+horizontalslice(dummy, grd, depth=10)
 
 # You can supply units for the depth at which you want to see the horizontal slice.
 
-horizontalslice(dummy, grd, 10u"m")
+horizontalslice(dummy, grd, depth=10u"m")
 
 # And the units should be understood under the hood.
 
-horizontalslice(dummy, grd, 3u"km")
+horizontalslice(dummy, grd, depth=3u"km")
 
 # If your tracer is supplied with units, those will show in the colorbar label
 
-horizontalslice(dummy * u"mol/m^3", grd, 10u"m")
+horizontalslice(dummy * u"mol/m^3", grd, depth=10u"m")
 
 # The advantage of Plots.jl recipes like this one is that you can specify other pieces of the plot as you would with built-in functions.
 # The advantage of Plots.jl recipes like this one is that you can specify other pieces of the plot as you would with built-in functions.
 # For example, you can chose the colormap with the `color` keyword argument.
 
 dummy .*= cosd.(lonvec(grd))
-plt = horizontalslice(dummy, grd, 100, color=:balance)
+plt = horizontalslice(dummy, grd, depth=100, color=:balance)
 
 # And you can finetune attributes after the plot is created.
 
-plot!(plt, xlabel="Lon", ylabel="Lat", colorbar_title="No units", title="The pacific as a whole")
+plot!(plt, xlabel="Lon", ylabel="Lat", colorbar_title="dummy value", title="The pacific as a whole")
 
 
 
@@ -69,7 +69,7 @@ plot!(plt, xlabel="Lon", ylabel="Lat", colorbar_title="No units", title="The pac
 
 dummy .= cosd.(latvec(grd))
 dummy .+= sqrt.(depthvec(grd)) / 30
-zonalslice(dummy, grd, 330)
+zonalslice(dummy, grd, lon=330)
 
 # ### Zonal averages
 
@@ -97,7 +97,7 @@ zonalaverage(dummy, grd)
 
 # Just as you should expect at this stage, you can plot a meridional slice with
 
-meridionalslice(dummy, grd, -30)
+meridionalslice(dummy, grd, lat=-30)
 
 #----------------------------------------------------
 # ## [Depth profiles](@id profile-plots)
@@ -105,7 +105,7 @@ meridionalslice(dummy, grd, -30)
 
 # Sometimes you want a profile at a given station or location
 
-interpolateddepthprofile(dummy, grd, 0, 330)
+interpolateddepthprofile(dummy, grd, lonlat=(0, 330))
 
 
 
