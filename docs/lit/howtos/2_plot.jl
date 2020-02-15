@@ -105,7 +105,7 @@ meridionalslice(dummy, grd, lat=-30)
 
 # Sometimes you want a profile at a given station or location
 
-interpolateddepthprofile(dummy, grd, lonlat=(0, 330))
+depthprofile(dummy, grd, lonlat=(-30,30))
 
 
 

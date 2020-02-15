@@ -269,32 +269,31 @@ end
 Plots a Meridional transect of tracer `x` along cruise track `ct`.
 """
 @userplot MeridionalTransect
-@recipe function f(p::MeridionalTransect, cruisetrack=nothing)
-    isnothing(cruise) && error("you must include the cruise with `cruisetrack=...`")
+@recipe function f(p::MeridionalTransect; ct=nothing)
+    isnothing(ct) && error("you must include the cruise track with `ct=...`")
     x, grd = p.args
     x3D = rearrange_into_3Darray(x, grd)
-    depths = ustrip.(grd.depth)
-    ndepths = length(depths)
+    ndepth = length(grd.depth)
 
     itp = interpolate(periodic_longitude(x3D), (BSpline(Linear()), BSpline(Linear()), NoInterp())) # interpolate linearly between the data points
 
-    lats = range(ustrip(grd.lat[1]), ustrip(grd.lat[end]), length=length(grd.lat))
-    lons = range(ustrip(grd.lon[1]), ustrip(grd.lon[1])+360, length=length(grd.lon)+1)
-    stp = Interpolations.scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
+    lats = range(grd.lat[1], grd.lat[end], length=length(grd.lat))
+    lons = range(grd.lon[1], grd.lon[1]+360u"°", length=length(grd.lon)+1)
+    stp = Interpolations.scale(itp, lats, lons, 1:ndepth) # re-scale to the actual domain
     etp = extrapolate(stp, (Line(), Periodic(), Line())) # periodic longitude
 
-    ctlats = [st.lat for st in cruisetrack.stations]
-    ctlons = [st.lon for st in cruisetrack.stations]
+    ctlats = [convertlat(st.lat) for st in ct.stations]
+    ctlons = [convertlon(st.lon) for st in ct.stations]
     isort = sortperm(ctlats)
     idx = isort[unique(i -> ctlats[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
     @series begin
         seriestype := :contourf
         yflip := true
-        ylims --> (0u"m", maximum(depths))
+        ylims --> (0u"m", maximum(grd.depth))
         title --> "$(ct.name)"
         yguide --> "Depth"
         xguide --> "Latitude"
-        ctlats[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
+        ctlats[idx], grd.depth, [etp(lat, lon, i) for i in 1:ndepth, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
     end
 end
 
@@ -315,14 +314,12 @@ Plots a scatter of the discrete obs of `t` in (lat,depth) space.
         yflip := true
         zcolor --> values
         markershape --> :circle
-        label --> ""
         xlim --> extrema(lats)
         clims --> (0, maximum(transect))
-        title --> "$(transect.tracer) along $(transect.cruise)"
-        yguide --> "Depth (m)"
-        xguide --> "Latitude (°)"
-        colorbar_title --> string(unit(transect))
-        lats, depths
+        label --> "$(transect.tracer) along $(transect.cruise)"
+        yguide --> "Depth"
+        xguide --> "Latitude"
+        convertlat.(lats), convertdepth.(depths)
     end
 end
 
@@ -335,34 +332,31 @@ end
 Plots a Zonal transect of tracer `x` along cruise track `ct`.
 """
 @userplot ZonalTransect
-@recipe function f(p::ZonalTransect)
-    x, grd, ct = p.args
-    x, u = ustrip.(x), unit(eltype(x))
+@recipe function f(p::ZonalTransect; ct=nothing)
+    isnothing(ct) && error("you must include the cruise track with `ct=...`")
+    x, grd = p.args
     x3D = rearrange_into_3Darray(x, grd)
-    depths = ustrip.(grd.depth)
-    ndepths = length(depths)
+    ndepth = length(grd.depth)
 
     itp = interpolate(periodic_longitude(x3D), (BSpline(Linear()), BSpline(Linear()), NoInterp())) # interpolate linearly between the data points
 
-    lats = range(ustrip(grd.lat[1]), ustrip(grd.lat[end]), length=length(grd.lat))
-    lons = range(ustrip(grd.lon[1]), ustrip(grd.lon[1])+360, length=length(grd.lon)+1)
-    stp = Interpolations.scale(itp, lats, lons, 1:ndepths) # re-scale to the actual domain
+    lats = range(grd.lat[1], grd.lat[end], length=length(grd.lat))
+    lons = range(grd.lon[1], grd.lon[1]+360u"°", length=length(grd.lon)+1)
+    stp = Interpolations.scale(itp, lats, lons, 1:ndepth) # re-scale to the actual domain
     etp = extrapolate(stp, (Line(), Periodic(), Line())) # periodic longitude
 
-    ctlats = [st.lat for st in ct.stations]
-    ctlons = [st.lon for st in ct.stations]
+    ctlats = [convertlat(st.lat) for st in ct.stations]
+    ctlons = [convertlon(st.lon) for st in ct.stations]
     isort = sortperm(ctlons)
     idx = isort[unique(i -> ctlons[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
     @series begin
         seriestype := :contourf
         yflip := true
-        yticks --> Int.(round.(depths))
-        ylims --> (0, maximum(depths))
+        ylims --> (0u"m", maximum(grd.depth))
         title --> "$(ct.name)"
-        yguide --> "Depth (m)"
-        xguide --> "Longitude (°)"
-        colorbar_title --> string(u)
-        ctlons[idx], depths, [etp(lat, lon, i) for i in 1:ndepths, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
+        yguide --> "Depth"
+        xguide --> "Longitude"
+        ctlons[idx], grd.depth, [etp(lat, lon, i) for i in 1:ndepth, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
     end
 end
 
@@ -383,14 +377,13 @@ Plots a scatter of the discrete obs of `t` in (lat,depth) space.
         zcolor := values
         yflip := true
         markershape --> :circle
-        label --> ""
         xlim --> extrema(lons)
         clims --> (0, maximum(transect))
-        title --> "$(transect.tracer) along $(transect.cruise)"
-        yguide --> "Depth (m)"
-        xguide --> "Longitude (°)"
+        label --> "$(transect.tracer) along $(transect.cruise)"
+        yguide --> "Depth"
+        xguide --> "Longitude"
         colorbar_title --> string(unit(transect))
-        lons, depths
+        convertlon.(lons), convertdepth.(depths)
     end
 end
 
@@ -409,24 +402,25 @@ if you only want to only plot for depths `z ∈ (ztop, zbottom)`.
 """
 @userplot RatioAtStation
 @recipe function f(p::RatioAtStation; depthlims=(0,Inf))
+    depthlims = convertdepth.(depthlims)
     x, y, grd, st = p.args
     x3D = rearrange_into_3Darray(x, grd)
     y3D = rearrange_into_3Darray(y, grd)
-    depths = ustrip.(grd.depth)
-    knots = (ustrip.(grd.lat), ustrip.(grd.lon), 1:length(depths))
+    ndepth = length(grd.depth)
+    knots = (grd.lat, grd.lon, 1:ndepth)
     itpx = interpolate(knots, x3D, (Gridded(Linear()), Gridded(Linear()), NoInterp()))
     itpy = interpolate(knots, y3D, (Gridded(Linear()), Gridded(Linear()), NoInterp()))
-    iz = findall(depthlims[1] .≤ depths .≤ depthlims[2])
-    ibot = findfirst(depths .> depthlims[2])
-    x1D = itpx(ustrip(st.lat), mod(ustrip(st.lon), 360), iz)
-    y1D = itpy(ustrip(st.lat), mod(ustrip(st.lon), 360), iz)
+    iz = findall(depthlims[1] .≤ grd.depth .≤ depthlims[2])
+    ibot = findfirst(grd.depth .> depthlims[2])
+    x1D = itpx(convertlat(st.lat), mod(convertlon(st.lon), 360u"°"), iz)
+    y1D = itpy(convertlat(st.lat), mod(convertlon(st.lon), 360u"°"), iz)
     @series begin
         seriestype := :scatter
         label --> st.name
         markershape --> :circle
         seriescolor --> :deep
-        marker_z --> -depths
-        colorbar_title --> "depth [m]"
+        marker_z --> -ustrip(grd.depth) # TODO fix in UnitfulRecipes
+        colorbar_title --> "Depth (m)" # TODO fix in UniftulRecipes
         markersize --> 4
         legend --> :topleft
         x1D, y1D

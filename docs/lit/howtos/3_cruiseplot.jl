@@ -81,7 +81,7 @@ t = Transect(tracer="dummy", cruise=ct.name, profiles=profiles)
 
 # We can plot the modelled `dummy` data along the `ct` cruise track in the zonal directiion (along longitudes) with
 
-zonaltransect(dummy, grd, ct)
+zonaltransect(dummy, grd, ct=ct)
 
 # If we want the observations transect on top of it
 
@@ -91,7 +91,7 @@ zonalscattertransect!(t)
 
 # Same for meridional transects (along latitude)
 
-meridionaltransect(dummy, grd, ct)
+meridionaltransect(dummy, grd, ct=ct)
 
 # and
 
