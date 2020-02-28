@@ -10,6 +10,9 @@
   <a href="https://briochemc.github.io/AIBECS.jl/stable/">
     <img src=https://img.shields.io/badge/docs-stable-important.svg?style=flat-square&label=Documentation&logo=Read%20the%20Docs>
   </a>
+  <a href="https://www.bpasquier.com/talk/osm_sandiego_2020/OSM_SanDiego_2020.pdf">
+    <img src=https://img.shields.io/static/v1?label=Poster&message=OSM2020&color=9cf&style=flat-square>
+  </a>
 </p>
 
 <p>
@@ -40,7 +43,6 @@
 AIBECS is a system because it allows you to chose some biogeochemical tracers, define their interactions, select an ocean circulation and *Voilà!* — your model is ready to run.
 
 ## Getting started
-
 
 If you are new to AIBECS, head over to the [documentation](https://briochemc.github.io/AIBECS.jl/stable/) and look for the tutorials.
 (You can also click on the orange "Documentation" badge above.)
