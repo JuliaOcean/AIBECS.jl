@@ -69,7 +69,7 @@ plot!(plt, xlabel="Lon", ylabel="Lat", colorbar_title="dummy value", title="The 
 
 dummy .= cosd.(latvec(grd))
 dummy .+= sqrt.(depthvec(grd)) / 30
-zonalslice(dummy, grd, lon=330)
+meridionalslice(dummy, grd, lon=330)
 
 # ### Zonal averages
 
@@ -97,7 +97,7 @@ zonalaverage(dummy, grd)
 
 # Just as you should expect at this stage, you can plot a meridional slice with
 
-meridionalslice(dummy, grd, lat=-30)
+zonalslice(dummy, grd, lat=-30)
 
 #----------------------------------------------------
 # ## [Depth profiles](@id profile-plots)

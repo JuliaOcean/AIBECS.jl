@@ -105,6 +105,6 @@ horizontalslice(C14age, grd, depth=700u"m", color=:viridis)
 
 zonalaverage(C14age, grd; color=:viridis)
 
-# or look at a zonal slice through the Atlantic at 30°W using the `zonalslice` plot recipe
+# or look at a meridional slice through the Atlantic at 30°W using the `meridionalslice` plot recipe
 
-zonalslice(C14age, grd, lon=-30, color=:viridis)
+meridionalslice(C14age, grd, lon=-30, color=:viridis)

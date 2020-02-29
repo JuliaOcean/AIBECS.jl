@@ -26,11 +26,11 @@ end
     @testset "verticalaverage depthlim=$depthlim" for x in xs, depthlim in depthlims
         @test verticalaverage(x, grid, depthlim=depthlim) isa Plots.Plot
     end
-    @testset "zonalslice lon=$lon" for x in xs, lon in lons
-        @test zonalslice(x, grid, lon=lon) isa Plots.Plot
+    @testset "zonalslice lat=$lat" for x in xs, lon in lons
+        @test zonalslice(x, grid, lat=lat) isa Plots.Plot
     end
-    @testset "meridionalslice lat=$lat" for x in xs, lat in lats
-        @test meridionalslice(x, grid, lat=lat) isa Plots.Plot
+    @testset "meridionalslice lon=$lon" for x in xs, lat in lats
+        @test meridionalslice(x, grid, lon=lon) isa Plots.Plot
     end
     @testset "zonalaverage with mask" for x in xs, mask in masks
         @test zonalaverage(x, grid, mask=mask) isa Plots.Plot
