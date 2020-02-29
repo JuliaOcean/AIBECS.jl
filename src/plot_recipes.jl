@@ -28,6 +28,8 @@ lon0360(lon::Quantity) = mod(lon, 360u"°")
 lon180W180E(lon::Real) = mod(lon + 180, 360) - 180
 lon180W180E(lon::Quantity) = mod(lon + 180u"°", 360u"°") - 180u"°"
 =#
+shiftlon(lon; baselon=0*unit(lon)) = mod(lon - baselon, 360*unit(lon)) + baselon
+shiftlon(grd; baselon=0*unit(grd.lon)) = grd.lon .= shiftlon.(grd.lon, baselon=baselon)
 
 """
     finddepthindex(d, grd)
@@ -106,12 +108,12 @@ end
 nansum(x; kwargs...) = sum(x .* (!isnan).(x); kwargs...)
 
 """
-    ZonalSlice(x, grd; lon)
+    MeridionalSlice(x, grd; lon)
 
 Plots a zonal slice of tracer `x` at longitude `lon`.
 """
-@userplot ZonalSlice
-@recipe function f(p::ZonalSlice; lon=nothing)
+@userplot MeridionalSlice
+@recipe function f(p::MeridionalSlice; lon=nothing)
     isnothing(lon) && error("you must specify the longitude, e.g., `lon=100`")
     x, grd = p.args
     lon = convertlon(lon)
@@ -135,12 +137,12 @@ convertlat(y::Quantity) = unit(y) == Unitful.° ? y : error("Not a valid lat")
 
 
 """
-    MeridionalSlice(x, grd, lat)
+    ZonalSlice(x, grd, lat)
 
 Plots a Meridional slice of tracer `x` at longitude `lat`.
 """
-@userplot MeridionalSlice
-@recipe function f(p::MeridionalSlice; lat=nothing)
+@userplot ZonalSlice
+@recipe function f(p::ZonalSlice; lat=nothing)
     isnothing(lat) && error("you must specify the latitude, e.g., `lat=-30`")
     x, grd = p.args
     lat = convertlat(lat)
@@ -283,7 +285,7 @@ Plots a Meridional transect of tracer `x` along cruise track `ct`.
     etp = extrapolate(stp, (Line(), Periodic(), Line())) # periodic longitude
 
     ctlats = [convertlat(st.lat) for st in ct.stations]
-    ctlons = [convertlon(st.lon) for st in ct.stations]
+    ctlons = [uconvertlon(st.lon) for st in ct.stations]
     isort = sortperm(ctlats)
     idx = isort[unique(i -> ctlats[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
     @series begin
@@ -296,6 +298,8 @@ Plots a Meridional transect of tracer `x` along cruise track `ct`.
         ctlats[idx], grd.depth, [etp(lat, lon, i) for i in 1:ndepth, (lat, lon) in zip(ctlats[idx], ctlons[idx])]
     end
 end
+uconvertlon(lon::T where {T<:Real}) = lon * u"°"
+uconvertlon(lon::T where {T<:Quantity}) = unit(lon) == Unitful.° ? lon : error("Not a valid lon")
 
 
 """
@@ -346,7 +350,7 @@ Plots a Zonal transect of tracer `x` along cruise track `ct`.
     etp = extrapolate(stp, (Line(), Periodic(), Line())) # periodic longitude
 
     ctlats = [convertlat(st.lat) for st in ct.stations]
-    ctlons = [convertlon(st.lon) for st in ct.stations]
+    ctlons = [uconvertlon(st.lon) for st in ct.stations]
     isort = sortperm(ctlons)
     idx = isort[unique(i -> ctlons[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
     @series begin
@@ -383,7 +387,7 @@ Plots a scatter of the discrete obs of `t` in (lat,depth) space.
         yguide --> "Depth"
         xguide --> "Longitude"
         colorbar_title --> string(unit(transect))
-        convertlon.(lons), convertdepth.(depths)
+        uconvertlon.(lons), convertdepth.(depths)
     end
 end
 
