@@ -28,8 +28,6 @@ lon0360(lon::Quantity) = mod(lon, 360u"°")
 lon180W180E(lon::Real) = mod(lon + 180, 360) - 180
 lon180W180E(lon::Quantity) = mod(lon + 180u"°", 360u"°") - 180u"°"
 =#
-shiftlon(lon; baselon=0*unit(lon)) = mod(lon - baselon, 360*unit(lon)) + baselon
-shiftlon(grd; baselon=0*unit(grd.lon)) = grd.lon .= shiftlon.(grd.lon, baselon=baselon)
 
 """
     finddepthindex(d, grd)
@@ -289,7 +287,7 @@ Plots a Meridional transect of tracer `x` along cruise track `ct`.
     isort = sortperm(ctlats)
     idx = isort[unique(i -> ctlats[isort][i], 1:length(ct))] # Remove stations at same (lat,lon)
     @series begin
-        seriestype := :contourf
+        seriestype := :heatmap
         yflip := true
         ylims --> (0u"m", maximum(grd.depth))
         title --> "$(ct.name)"
