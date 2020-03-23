@@ -8,7 +8,7 @@
 
 <p>
   <a href="https://briochemc.github.io/AIBECS.jl/stable/">
-    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Documentation?style=for-the-badge&label=Documentation&logo=Read%20the%20Docs">
+    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Documentation?style=for-the-badge&label=Documentation&logo=Read%20the%20Docs&logoColor=white">
   </a>
   <a href="https://www.bpasquier.com/talk/osm_sandiego_2020/OSM_SanDiego_2020.pdf">
     <img src=https://img.shields.io/static/v1?label=Poster&message=OSM2020&color=9cf&style=flat-square>
