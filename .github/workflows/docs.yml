@@ -1,0 +1,20 @@
+name: Documentation
+on:
+  push:
+    branches: [master]
+jobs:
+  docs:
+    name: Documentation
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: "1.4"
+      - run: julia --project=docs -e '
+          using Pkg;
+          Pkg.develop(PackageSpec(; path=pwd()));
+          Pkg.instantiate();'
+      - run: julia --project=docs docs/make.jl
+        env:
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}

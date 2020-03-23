@@ -8,7 +8,7 @@
 
 <p>
   <a href="https://briochemc.github.io/AIBECS.jl/stable/">
-    <img src=https://img.shields.io/badge/docs-stable-important.svg?style=flat-square&label=Documentation&logo=Read%20the%20Docs>
+    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Documentation?style=for-the-badge&label=Documentation&logo=Read%20the%20Docs">
   </a>
   <a href="https://www.bpasquier.com/talk/osm_sandiego_2020/OSM_SanDiego_2020.pdf">
     <img src=https://img.shields.io/static/v1?label=Poster&message=OSM2020&color=9cf&style=flat-square>
@@ -25,15 +25,19 @@
 </p>
 
 <p>
-  <a href="https://travis-ci.com/briochemc/AIBECS.jl">
-    <img alt="Build Status" src="https://img.shields.io/travis/com/briochemc/AIBECS.jl/master?label=OSX/Linux/Windows&logo=travis&logocolor=white&style=flat-square">
+  <a href="https://github.com/briochemc/AIBECS.jl/actions">
+    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Mac%20OS%20X?label=OSX&logo=Apple&logoColor=white&style=flat-square">
+  </a>
+  <a href="https://github.com/briochemc/AIBECS.jl/actions">
+    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Linux?label=Linux&logo=Linux&logoColor=white&style=flat-square">
+  </a>
+  <a href="https://github.com/briochemc/AIBECS.jl/actions">
+    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Windows?label=Windows&logo=Windows&logoColor=white&style=flat-square">
   </a>
   <a href="https://codecov.io/gh/briochemc/AIBECS.jl">
     <img src="https://img.shields.io/codecov/c/github/briochemc/AIBECS.jl/master?label=Codecov&logo=codecov&logoColor=white&style=flat-square">
   </a>
 </p>
-
-
 
 
 
