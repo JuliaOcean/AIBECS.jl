@@ -365,7 +365,7 @@ Plots a scatter of the discrete obs of `t` in (lat,depth) space.
         yflip := true
         marker_z --> values
         markershape --> :circle
-        xlim --> extrema(lats)
+        xlims --> extrema(lats)
         clims --> (0, 1) .* maximum(transect)
         label --> "$(transect.tracer) along $(transect.cruise)"
         yguide --> "Depth"
@@ -375,7 +375,30 @@ Plots a scatter of the discrete obs of `t` in (lat,depth) space.
 end
 
 
+"""
+    ZonalScatterTransect(t)
 
+Plots a scatter of the discrete obs of `t` in (lat,depth) space.
+"""
+@userplot ZonalScatterTransect
+@recipe function f(p::ZonalScatterTransect)
+    transect = p.args[1]
+    depths = reduce(vcat, pro.depths for pro in transect.profiles)
+    values = reduce(vcat, pro.values for pro in transect.profiles)
+    lons = reduce(vcat, pro.station.lon * ones(length(pro)) for pro in transect.profiles)
+    @series begin
+        seriestype := :scatter
+        yflip := true
+        marker_z --> values
+        markershape --> :circle
+        xlims --> extrema(lons)
+        clims --> (0, 1) .* maximum(transect)
+        label --> "$(transect.tracer) along $(transect.cruise)"
+        yguide --> "Depth"
+        xguide --> "Longitude"
+        uconvertlon.(lons), convertdepth.(depths)
+    end
+end
 
 """
     ZonalTransect(x, grd, ct)
@@ -408,35 +431,6 @@ Plots a Zonal transect of tracer `x` along cruise track `ct`.
         finelons, grd.depth, [itp(ustrip.((itplats(lon), mod(lon, 360u"°"), d))...) for d in grd.depth, lon in finelons]
     end
 end
-
-
-"""
-    ZonalScatterTransect(t)
-
-Plots a scatter of the discrete obs of `t` in (lat,depth) space.
-"""
-@userplot ZonalScatterTransect
-@recipe function f(p::ZonalScatterTransect)
-    transect = p.args[1]
-    depths = reduce(vcat, pro.depths for pro in transect.profiles)
-    values = ustrip.(reduce(vcat, pro.values for pro in transect.profiles))
-    lons = reduce(vcat, pro.station.lon * ones(length(pro)) for pro in transect.profiles)
-    @series begin
-        seriestype := :scatter
-        zcolor := values
-        yflip := true
-        markershape --> :circle
-        xlim --> extrema(lons)
-        clims --> (0, 1) .* maximum(transect)
-        label --> "$(transect.tracer) along $(transect.cruise)"
-        yguide --> "Depth"
-        xguide --> "Longitude"
-        colorbar_title --> string(unit(transect))
-        uconvertlon.(lons), convertdepth.(depths)
-    end
-end
-
-
 
 
 
@@ -475,8 +469,6 @@ if you only want to only plot for depths `z ∈ (ztop, zbottom)`.
         x1D, y1D
     end
 end
-
-
 
 
 
@@ -561,8 +553,4 @@ end
 
 
 #=
-
-
-
-
 =#

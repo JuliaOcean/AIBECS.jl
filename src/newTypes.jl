@@ -13,7 +13,7 @@ Converts `x.parent` to SI unit but keeps `x.metadata` for safekeeping.
 """
 function Unitful.upreferred(x::MetadataArray)
     parent = upreferred.(x.parent)
-    processing_str = "converted to preferred $(unit(eltype(parent)))"
+    processing_str = "converted from $(unit(eltype(x.parent))) to preferred $(unit(eltype(parent)))"
     if haskey(x.metadata, :processing)
         metadata = x.metadata
         push!(metadata.processing, processing_str)
@@ -29,7 +29,7 @@ end
 """
 function Base.:*(x::MetadataArray, q::Quantity)
     parent = x.parent * q
-    processing_str = "converted to $(unit(eltype(parent))) with $q"
+    processing_str = "× $q"
     if haskey(x.metadata, :processing)
         metadata = x.metadata
         push!(metadata.processing, processing_str)
