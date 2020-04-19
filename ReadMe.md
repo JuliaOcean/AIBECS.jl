@@ -49,7 +49,7 @@ AIBECS is a system because it allows you to chose some biogeochemical tracers, d
 ## Getting started
 
 If you are new to AIBECS, head over to the [documentation](https://briochemc.github.io/AIBECS.jl/stable/) and look for the tutorials.
-(You can also click on the orange "Documentation" badge above.)
+(You can also click on the big "Documentation" badge above.)
 
 ## Concept
 
