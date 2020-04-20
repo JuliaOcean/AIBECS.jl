@@ -133,14 +133,18 @@ function generate_objective(ωs, μx, σ²x, v, ωp)
         sum([ωⱼ * mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
     return f
 end
-function generate_objective(ωs, ωp, grd, obs)
+function generate_objective(ωs, ωp, grd, obs; kwargs...)
     nt, nb = length(ωs), count(iswet(grd))
     tracers(x) = state_to_tracers(x, nb, nt)
     Ms = [interpolationmatrix(grd, obsⱼ) for obsⱼ in obs]
+    cs = get(kwargs, :cs, (collect(identity for i in 1:nt)...,))
     f(x, p) = ωp * mismatch(p) +
-        sum([ωⱼ * mismatch(xⱼ, grd, obsⱼ, M=Mⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ) in zip(ωs, tracers(x), obs, Ms)])
+        sum([ωⱼ * mismatch(xⱼ, grd, obsⱼ, M=Mⱼ, c=cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs)])
     return f
 end
+
+
+
 
 
 function generate_∇ₓobjective(ωs, μx, σ²x, v)
@@ -149,11 +153,12 @@ function generate_∇ₓobjective(ωs, μx, σ²x, v)
     ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
     return ∇ₓf
 end
-function generate_∇ₓobjective(ωs, grd, obs)
+function generate_∇ₓobjective(ωs, grd, obs; kwargs...)
     nt, nb = length(ωs), count(iswet(grd))
     tracers(x) = state_to_tracers(x, nb, nt)
     Ms = [interpolationmatrix(grd, obsⱼ) for obsⱼ in obs]
-    ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, grd, obsⱼ, M=Mⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ) in zip(ωs, tracers(x), obs, Ms)])
+    cs = get(kwargs, :cs, (collect(identity for i in 1:nt)...,))
+    ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, grd, obsⱼ, M=Mⱼ, c=cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs)])
     return ∇ₓf
 end
 
@@ -167,14 +172,13 @@ generate_objective_and_derivatives(ωs, μx, σ²x, v, ωp) =
     generate_objective(ωs, μx, σ²x, v, ωp),
     generate_∇ₓobjective(ωs, μx, σ²x, v),
     generate_∇ₚobjective(ωp)
-generate_objective_and_derivatives(ωs, ωp, grd, obs) =
-    generate_objective(ωs, ωp, grd, obs),
-    generate_∇ₓobjective(ωs, grd, obs),
+generate_objective_and_derivatives(ωs, ωp, grd, obs; kwargs...) =
+    generate_objective(ωs, ωp, grd, obs; kwargs...),
+    generate_∇ₓobjective(ωs, grd, obs; kwargs...),
     generate_∇ₚobjective(ωp)
 
 export generate_objective, generate_∇ₓobjective, generate_∇ₚobjective
 export generate_objective_and_derivatives
-
 
 
 
@@ -206,16 +210,19 @@ end
 
 
 ## new functions for more generic obs packages
-function mismatch(x, grd::OceanGrid, obs; W=I, M=interpolationmatrix(grd, obs.metadata), iwet=iswet(grd, obs))
+# TODO Add an optional function argument to transform the data before computingn the mismatch
+# Example if for isotope tracers X where one ususally wants to minimize the mismatch in δ or ϵ.
+function mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmatrix(grd, obs.metadata), iwet=iswet(grd, obs))
     o = view(obs, iwet)
-    δx = M * x - o
+    δx = M * c(x) - o
     return 0.5 * transpose(δx) * W * δx / (transpose(o) * W * o)
 end
 mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = 0
-function ∇mismatch(x, grd::OceanGrid, obs; W=I, M=interpolationmatrix(grd, obs.metadata), iwet=iswet(grd, obs))
+function ∇mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmatrix(grd, obs.metadata), iwet=iswet(grd, obs))
+    ∇c = Diagonal(ForwardDiff.derivative(λ -> c(x .+ λ), 0.0))
     o = view(obs, iwet)
-    δx = M * x - o
-    return transpose(W * δx) * M / (transpose(o) * W * o)
+    δx = M * c(x) - o
+    return transpose(W * δx) * M * ∇c / (transpose(o) * W * o)
 end
 ∇mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = transpose(zeros(length(x)))
 

@@ -40,6 +40,19 @@ function Base.:*(x::MetadataArray, q::Quantity)
 end
 
 """
+    onlykeep(x::MetadataArray, idx)
+
+Returns `x[idx]` but also applies the index to the metadata that is originally of the same length as `x`. 
+"""
+function onlykeep(x::MetadataArray, idx)
+    xout = x.parent[idx]
+    mout = (;((v isa Vector && length(v) == length(x)) ? (k,v[idx]) : (k,v) for (k,v) in pairs(x.metadata))...)
+    return MetadataArray(xout, mout)
+end
+export onlykeep
+
+
+"""
     AgedJacobianFactors
 
 Type containing the Jacobian Factors and the age of the Jacobian.

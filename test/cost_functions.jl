@@ -7,6 +7,8 @@ WOA = WorldOceanAtlasTools
 μDIPobs, σ²DIPobs = μDIPobs3D[iwet], σ²DIPobs3D[iwet]
 μx = (μDIPobs, missing, missing)
 σ²x = (σ²DIPobs, missing, missing)
+δconvert(x) = @. exp(x)
+cs = (δconvert, identity, identity)
 # generate mismatch functions
 f, ∇ₓf, ∇ₚf = generate_objective_and_derivatives(ωs, μx, σ²x, v, ωp)
 
