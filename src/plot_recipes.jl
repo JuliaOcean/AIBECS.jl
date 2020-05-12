@@ -14,7 +14,7 @@ Plots a horizontal slice of tracer `x` at depth `depth`.
     iz = finddepthindex(depth, grd)
     x3D = rearrange_into_3Darray(x, grd)
     @series begin
-        seriestype := :contourf
+        seriestype := :heatmap
         xguide --> "Longitude"
         yguide --> "Latitude"
         grd.lon, grd.lat, view(x3D, :, :, iz)
@@ -70,7 +70,7 @@ Plots the vertical integral of tracer `x`.
     δz_3D = view(grd.δz_3D, :, :, iz1:iz2)
     x2D = nansum(x3D .* δz_3D, dims=3) ./ grd.wet3D[:,:,iz1]
     @series begin
-        seriestype := :contourf
+        seriestype := :heatmap
         xguide --> "Longitude"
         yguide --> "Latitude"
         grd.lon, grd.lat, view(x2D, :, :, 1)
