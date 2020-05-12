@@ -9,7 +9,7 @@ in the GitHub repository https://github.com/briochemc/OceanCirculations.
 using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
 using BSON                  # For saving circulation as BSON format
-using Unitful, UnitfulAstro # for units
+using Unitful               # for units
 using Reexport
 @reexport using OceanGrids            # To store the grid
 

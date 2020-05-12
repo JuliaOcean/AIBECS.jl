@@ -130,7 +130,7 @@ OptParams{Float64}
 Thanks to the FieldMetaData interface, you can chain the following preloaded metadata:
 
 - initial_value
-- units (from Unitful.jl and UnitfulAstro.jl)
+- units (from Unitful.jl)
 - prior (from Distributions.jl)
 - description (`String`)
 - bounds (2-element `Tuple`)

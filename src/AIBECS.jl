@@ -8,7 +8,7 @@ using ForwardDiff
 using FieldMetadata, Flatten, DataFrames, Distributions
 using BSON
 @reexport using OceanGrids            # To store the grid
-@reexport using Unitful, UnitfulAstro
+@reexport using Unitful
 using RecipesBase, Interpolations, Distances, UnitfulRecipes
 @reexport using MetadataArrays
 

@@ -16,7 +16,7 @@ from the Sarmiento and Gruber book (2006) book.
 =#
 
 using LinearAlgebra, SparseArrays
-using Unitful, UnitfulAstro # for units
+using Unitful
 using Reexport
 @reexport using OceanGrids            # To store the grid
 using ..CirculationGeneration

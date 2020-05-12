@@ -23,7 +23,7 @@ The boxes are grouped as indicated:
 =#
 
 using LinearAlgebra, SparseArrays
-using Unitful, UnitfulAstro # for units
+using Unitful
 using Reexport
 @reexport using OceanGrids            # To store the grid
 using ..CirculationGeneration

@@ -101,7 +101,7 @@ Plots the vertical average of tracer `x`.
     end
 end
 
-# sun skipping nans
+# sum skipping nans
 nansum(x; kwargs...) = sum(x .* (!isnan).(x); kwargs...)
 
 """
@@ -169,7 +169,7 @@ Plots a zonal average of tracer `x`.
     v3D = rearrange_into_3Darray(v .* mask, grd)
     x2D = nansum(x3D .* v3D, dims=2) ./ nansum(v3D, dims=2)
     @series begin
-        seriestype := :contourf
+        seriestype := :heatmap
         yflip := true
         ylims --> (0, 1) .* sum(grd.δdepth)
         xguide --> "Latitude"

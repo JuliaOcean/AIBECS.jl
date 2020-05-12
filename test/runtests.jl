@@ -2,7 +2,7 @@
 
 using AIBECS, Test
 using SparseArrays, LinearAlgebra
-using Unitful, UnitfulAstro
+using Unitful
 using WorldOceanAtlasTools
 using DiffEqBase
 using ForwardDiff, DualNumbers

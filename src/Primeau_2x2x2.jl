@@ -11,7 +11,7 @@ https://github.com/fprimeau/BIOGEOCHEM_TEACHING/blob/master/boxmodel.png
 =#
 
 using LinearAlgebra, SparseArrays
-using Unitful, UnitfulAstro # for units
+using Unitful
 using Reexport
 @reexport using OceanGrids            # To store the grid
 using ..CirculationGeneration

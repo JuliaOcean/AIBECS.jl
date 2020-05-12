@@ -1,7 +1,7 @@
 @reexport module CirculationGeneration
 
 using LinearAlgebra, SparseArrays
-using Unitful, UnitfulAstro # for units
+using Unitful
 
 #=============================================
 Tools for making simple circulations
