@@ -10,7 +10,7 @@ v = ustrip.(vector_of_volumes(grid)) # strip units for now
 z = ustrip.(vector_of_depths(grid)) # strip units for now
 ztop = ustrip.(vector_of_top_depths(grid)) # strip units for now
 # And matrices
-DIV = buildDIV(grid)
+DIV = DIVO(grid)
 Iabove = buildIabove(grid)
 
 @testset "Circulation and grid" begin

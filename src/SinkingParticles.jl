@@ -1,5 +1,5 @@
 # Reexport SinkingParticles as they are useful outside too
-@reexport module SinkingParticles
+#@reexport module SinkingParticles
 
 using Unitful
 using LinearAlgebra, SparseArrays
@@ -7,114 +7,146 @@ using OceanGrids
 
 
 """
-    buildPFD(grid; settling_velocity)
+    PFDO(grd; w_top)
 
-Builds the particle flux divergence operator `PFD` for a given particle sinking speed
-(`settling_velocity`).
+Builds the particle-flux-divergence operator `PFDO` for a given particle sinking speed
+(`w_top`).
 
 Schematic of a grid cell:
 ```
      top  ┌─────────────────────────────────┐   ┬
-          │      ↓ w                ↓ Φ     │   │
+          │      ↓ w_top          ↓ Φ_top   │   │
           │ (settling velovity)    (flux)   │   │
           │                                 │   │
-          │            x                    │   dz
+          │            x                    │   δz
           │      (particle conc.)           │   │
           │                                 │   │
           │                                 │   │
   bottom  └─────────────────────────────────┘   ┴
 ```
 
-- dz is the height of grid cell [m]
-- w is the particle sinking speed at the top of the grid cell [m s⁻¹]
-- Φ is the flux at the top of the grid cell [mol m⁻² s⁻¹]
-- x is the particle concentration of the cell [mol m⁻³]
+- `δz` is the height of grid cell [m]
+- `w_top` is the particle sinking speed at the top of the grid cell [m s⁻¹]
+- `Φ_top` is the flux at the top of the grid cell [mol m⁻² s⁻¹]
+- `x` is the particle concentration of the cell [mol m⁻³]
 
-The PFD operator is defined by
+The PFDO is defined by
 
-    PFD * x ≃ dΦ/dz,
+    PFDO * x = δΦ/δz ≈ dΦ/dz,
 
-i.e., so that applied to x it approximates dΦ/dz.
-It is calculated as the matrix product of the DIV and FLUX operators:
+i.e., so that applied to `x` it approximates the flux divergence of `x`, dΦ/δz.
+It is calculated as the matrix product of DIVO and FATO:
 
-    PFD = DIV * FLUX.
+    PFDO = DIVO * FATO.
 
-DIV, the divergence operator (d/dz only here), is defined by
+where the divergence operator `DIVO`, is defined by (`z` increasing downward)
 
-    DIV * Φ = 1/dz * (Φ - Φ[below]) ≃ dΦ/dz.
+    DIVO * ϕ_top = 1/δz * (ϕ_top[below] - ϕ_top) = δϕ/δz ≈ dΦ/δz.
 
-And FLUX, the sinking particle flux operator, is defined by
+and FATO, the flux-at-top operator, is defined by
 
-    FLUX * x = w * x[above] ≃ Φ.
+    FATO * x = w_top * x[above] ≈ ϕ_top.
 
 # Example
 
 ```julia-repl
-julia> buildPFD(grid, settling_velocity=1.0) # 1.0 m/s (SI units assumed)
+julia> PFDO(grd, w_top=1.0) # 1.0 m/s (SI units assumed)
 ```
 """
-function buildPFD(grid; settling_velocity)
-    iwet = findall(vec(grid.wet3D))
-    DIV = buildDIV(grid)
-    Iabove = buildIabove(grid.wet3D, iwet)
-    w = ustrip.(upreferred.(settling_velocity))
-    return DIV * buildFLUX(w, Iabove)
+function PFDO(grd; w_top)
+    iwet = findall(vec(grd.wet3D))
+    DIVO = DIVO(grd)
+    Iabove = buildIabove(grd.wet3D, iwet)
+    w_top = ustrip.(upreferred.(w_top))
+    return DIVO * FATO(w_top, Iabove)
 end
 """
-    buildPFD(w, DIV, Iabove)
+    PFDO(w, DIVO, Iabove)
 
-Returns `DIV * buildFLUX(w, Iabove)` 
+Returns `DIVO * FATO(w, Iabove)`
 
-This function is useful to avoid reconstructing `DIV` and `Iabove` every time.
+This function is useful to avoid reconstructing `DIVO` and `Iabove` every time.
 It should allow for faster runs.
 """
-buildPFD(w, DIV, Iabove) = DIV * buildFLUX(w, Iabove)
+PFDO(w_top, DIVO, Iabove) = DIVO * FATO(w_top, Iabove)
 
 """
-    buildDIV(grid)
+    PFDO(grd, w::Function)
 
-Build the DIV operator such that
+Returns the particle-flux-divergence operator for a given sinking speed as a function of depth.
 
-    DIV * Φ = 1/dz * (Φ - Φ[below]) ≃ dΦ/dz.
+This is a slightly different construction where I allow `w` to be used as a function of depth,
+which further allows particles to sink through (buried into) the sea floor.
 """
-function buildDIV(grid)
-    Ibelow = buildIbelow(grid)
-    iwet = indices_of_wet_boxes(grid)
-    dz = ustrip.(grid.δz_3D[iwet])
-    return sparse(Diagonal(dz.^(-1))) * (Ibelow - I) # divergence with positive downwards
+function PFDO(grd, w::Function;
+              δz = ustrip.(grd.δz_3D[iswet(grd)]), Iabove=buildIabove(grd), sedremin=true,
+              w_top = ustrip.(upreferred.(w.(topdepthvec(grd)))),
+              w_bot = (sedremin ? Iabove' * ones(length(w_bot)) : 1) .* ustrip.(upreferred.(w.(bottomdepthvec(grd)))))
+    return sparse(Diagonal(w_bot ./ δz)) - sparse(Diagonal(w_top ./ δz)) * Iabove
+end
+
+
+"""
+    DIVO(grd)
+
+Build the `DIVO` operator such that
+
+    DIVO * ϕ_top = 1/δz * (ϕ_top - ϕ_top[below]) ≈ dΦ/δz.
+"""
+function DIVO(grd)
+    Ibelow = buildIbelow(grd)
+    iwet = indices_of_wet_boxes(grd)
+    δz = ustrip.(grd.δz_3D[iwet])
+    return sparse(Diagonal(1 ./ δz)) * (Ibelow - I) # divergence with positive downwards
 end
 
 """
-    buildFLUX(w, Iabove)
+    FATO(w_top, Iabove)
 
-Build the `FLUX` operator for a particle sinking speed ``w(r)``
+Build the `FATO` operator for a particle sinking speed `w_top`
 
-Note `w` is the sinking speed at the top of each grid cell.
-(`w` can also be a constant (Float64 type).)
+(`w_top` is the sinking speed at the top of each grid cell.)
 
-The `FLUX` operator is defined by
+The `FATO` operator is defined by
 
-    FLUX * x = w * x(above) ≃ Φ.
+    FATO * x = w_top * x(above) ≈ ϕ_top.
 """
-buildFLUX(w::Vector, Iabove) = sparse(Diagonal(w)) * Iabove
-buildFLUX(w::Number, Iabove) = w * Iabove
+FATO(w_top::Vector, Iabove) = sparse(Diagonal(w_top)) * Iabove
+FATO(w_top::Number, Iabove) = w_top * Iabove
 
-export buildDIV, buildPFD, buildFLUX
-
-end
+export DIVO, PFDO, FATO
+#end # module
 
 """
     transportoperator(grd; kwargs)
 
 Returns the transportoperator corresponding to the arguments.
 
-# Example
+# Examples
 
 Create the particle flux divergence with settling velocity of 100m/s
+
 ```julia-repl
-julia> T = transportoperator(grd; w=100.0)
+julia> T = transportoperator(grd; w = 100.0)
 ```
+
+Or with settling velocity function w(z) = 2z + 1
+
+```julia-repl
+julia> T = transportoperator(grd; w = z -> 2z + 1)
+```
+
+By default, the seafloor flux is set to zero, so that all the particles
+that reach it are remineralized there. You can let particles go through
+by setting `sedremin=false`.
 """
-transportoperator(grd; w, DIV=buildDIV(grd), Iabove=buildIabove(grd.wet3D, findall(vec(iswet(grd))))) = buildPFD(w, DIV, Iabove)
+transportoperator(grd, w_top; DIVop=DIVO(grd), Iabove=buildIabove(grd)) = PFDO(w_top, DIVop, Iabove)
+function transportoperator(grd, w::Function; sedremin=true, z_top=topdepthvec(grd), z_bot=bottomdepthvec(grd), 
+                           Iabove=buildIabove(grd), δz=ustrip.(grd.δz_3D[iswet(grd)]))
+    return PFDO(grd, w; δz=δz, Iabove=Iabove, sedremin=sedremin, 
+                w_top = ustrip.(upreferred.(w.(z_top))),
+                w_bot = (sedremin ? Iabove' * ones(length(z_bot)) : 1) .* ustrip.(upreferred.(w.(z_bot))))
+end
 
 export transportoperator
+

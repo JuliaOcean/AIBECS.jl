@@ -68,7 +68,7 @@ Plots the vertical integral of tracer `x`.
     iz1, iz2 = finddepthindex(depthlim, grd)
     x3D = rearrange_into_3Darray(x, grd)[:,:,iz1:iz2]
     δz_3D = view(grd.δz_3D, :, :, iz1:iz2)
-    x2D = nansum(x3D .* δz_3D, dims=3) ./ grd.wet3D[:,:,iz1]
+    x2D = nansum(x3D .* δz_3D, dims=3) ./ grd.wet3D[:,:,iz1] # 0/0 = NaN, 0/1=0, x/0=Inf, and x/1=x
     @series begin
         seriestype := :heatmap
         xguide --> "Longitude"
@@ -78,6 +78,29 @@ Plots the vertical integral of tracer `x`.
 end
 finddepthindex(depths::Tuple, grd) = ((finddepthindex(d, grd) for d in depths)...,)
 convertdepth(depths::Tuple) = ((convertdepth(d) for d in depths)...,)
+
+"""
+    VerticalSum(x, grd [; depthlim])
+
+Plots the vertical integral of tracer `x`.
+"""
+@userplot VerticalSpecialSum
+@recipe function f(p::VerticalSpecialSum; depthlim=extrema(p.args[2].depth))
+    x, grd = p.args
+    depthlim = convertdepth(depthlim)
+    iz1, iz2 = finddepthindex(depthlim, grd)
+    x3D = rearrange_into_3Darray(x, grd)[:,:,iz1:iz2]
+    v = vector_of_volumes(grd)
+    v3D = rearrange_into_3Darray(v, grd)[:,:,iz1:iz2]
+    δz_3D = view(grd.δz_3D, :, :, iz1:iz2)
+    x2D = nansum(x3D .* δz_3D, dims=3) ./ nansum(δz_3D .* grd.wet3D[:,:,iz1:iz2], dims=3)
+    @series begin
+        seriestype := :heatmap
+        xguide --> "Longitude"
+        yguide --> "Latitude"
+        grd.lon, grd.lat, view(x2D, :, :, 1)
+    end
+end
 
 """
     VerticalAverage(x, grd [; depthlim])
@@ -94,7 +117,7 @@ Plots the vertical average of tracer `x`.
     v3D = rearrange_into_3Darray(v, grd)[:,:,iz1:iz2]
     x2D = nansum(x3D .* v3D, dims=3) ./ nansum(v3D, dims=3)
     @series begin
-        seriestype := :contourf
+        seriestype := :heatmap
         xguide --> "Longitude"
         yguide --> "Latitude"
         grd.lon, grd.lat, view(x2D, :, :, 1)
@@ -117,7 +140,7 @@ Plots a zonal slice of tracer `x` at longitude `lon`.
     ix = findlonindex(lon, grd)
     x3D = rearrange_into_3Darray(x, grd)
     @series begin
-        seriestype := :contourf
+        seriestype := :heatmap
         yflip := true
         ylims --> (0, 1) .* sum(grd.δdepth)
         xguide --> "Latitude"
@@ -146,7 +169,7 @@ Plots a Meridional slice of tracer `x` at longitude `lat`.
     iy = findlatindex(lat, grd)
     x3D = rearrange_into_3Darray(x, grd)
     @series begin
-        seriestype := :contourf
+        seriestype := :heatmap
         yflip := true
         ylims --> (0, 1) .* sum(grd.δdepth)
         xguide --> "Longitude"

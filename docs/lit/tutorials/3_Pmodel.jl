@@ -43,24 +43,21 @@ T_DIP(p) = T_OCIM
 
 # For the sinking of particles, we use the `transportoperator` function
 
-T_POP(p) = transportoperator(grd, w = w(p))
+T_POP(p) = transportoperator(grd, z -> w(z,p))
 
-# for which we need to define the sinking speed `w(p)` as a function of the parameters `p`.
-# Following the assumption that $w = w_0 + w' z$ increases linearly with depth, we write it as
+# for which we need to define the sinking speed `w(z,p)` as a function of depth `z` and of the parameters `p`.
+# Following the assumption that $w(z) = w_0 + w' z$ increases linearly with depth, we write it as
 
-function w(p)
+function w(z,p)
     @unpack w₀, w′ = p
     return @. w₀ + w′ * z
 end
-
-# For this to work, we must create a vector of depths, `z`, which is simply done via
-
-z = depthvec(grd)
 
 # ##### Uptake (DIP → POP)
 
 # For the uptake, $U$, we write
 
+z = depthvec(grd)
 function U(x,p)
     @unpack τDIP, k, z₀ = p
     return @. x/τDIP * x/(x+k) * (z≤z₀) * (x≥0)

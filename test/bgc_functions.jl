@@ -3,8 +3,8 @@ Transport matrices
 ===========================================#
 T_DIP(p) = T_Circulation
 T_DOP = T_DIP
-S₀ = buildPFD(ones(nb), DIV, Iabove)
-S′ = buildPFD(ztop, DIV, Iabove)
+S₀ = PFDO(ones(nb), DIV, Iabove)
+S′ = PFDO(ztop, DIV, Iabove)
 function T_POP(p)
     @unpack w₀, w′ = p
     return w₀ * S₀ + w′ * S′
