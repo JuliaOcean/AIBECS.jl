@@ -144,5 +144,5 @@ verticalintegral(U(DIP,p) * u"mol/m^3/s" .|> u"mmol/yr/m^3", grd, color=:algae)
 
 # Or look at what is exported below 500 m
 
-horizontalslice(POP .* w(p) * u"mol/m^3*m/s" .|> u"mmol/yr/m^2", grd, depth=500u"m", color=:inferno, rev=true)
+horizontalslice(POP .* w(z,p) * u"mol/m^3*m/s" .|> u"mmol/yr/m^2", grd, depth=500u"m", color=:inferno, rev=true)
 
