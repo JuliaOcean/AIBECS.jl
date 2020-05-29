@@ -6,11 +6,10 @@
 
 The **Algebraic Implicit Biogeochemistry Elemental Cycling System**
 
-Whatever you do, if you want to use the AIBECS, you must add it to your Julia environment like every Julia package, by typing `]add AIBECS` at the REPL.
+!!! note
+    If you are using the AIBECS for the first time, you must add it to your Julia environment, by typing `]add AIBECS` at the REPL.
 
-This documentation is organized in 4 parts[^1]:
-
-[^1]: following [this documentation advice](https://www.divio.com/blog/documentation/)
+This documentation is organized in 4 parts:
 
 #### 1. Tutorials
 
@@ -45,16 +44,18 @@ Here you will find more general discussions and explanations surrounding the AIB
 
 #### 4. Reference
 
-This section contains almost all the functions available in AIBECS.
-
+This section contains the docstrings of (almost all) the functions available in AIBECS.
 
 ----
 
-
-
 !!! note
-    The AIBECS is being developed primarily by Benoît Pasquier with the help of François Primeau and J. Keith Moore from the Department of Earth System Science at the University of California, Irvine, and more recently with the help of Seth John from the Department of Earth Sciences at the University of Southern California.
+    The AIBECS is being developed primarily by Benoît Pasquier (postdoc with Seth John at the University of Southern California).
+    If you use the AIBECS in your research, please cite it:
+    <a href="https://doi.org/10.5281/zenodo.2864051">
+        <img src="http://img.shields.io/badge/DOI-10.5281%20%2F%20zenodo.2864051-blue.svg?&style=flat-square">
+    </a>
+    Similarly, if you access data from within AIBECS (like the OCIM or OCCA ocean circulations) please cite them too.
 
-!!! warn
-    This package is in active development, so you should expect some bugs to happen. 
+!!! warning
+    This package is in active development, so nothing is set in stone, and things may be broken sometimes.
     And if you have any suggestions or feature requests, do not hesitate to start an issue directly on the [AIBECS GitHub repository](https://github.com/briochemc/AIBECS.jl), or even better, a submit a pull request!
