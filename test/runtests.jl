@@ -3,6 +3,7 @@
 using AIBECS, Test
 using SparseArrays, LinearAlgebra
 using Unitful
+using Unitful: °, m, km
 using WorldOceanAtlasTools
 using DiffEqBase
 using ForwardDiff, DualNumbers
@@ -13,7 +14,7 @@ using Plots
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 
-test_setup_only = [:TwoBoxModel, :Archer_etal_2000, :OCIM1, :OCIM0]
+test_setup_only = [:TwoBoxModel, :Archer_etal_2000, :OCIM1, :OCIM0, :OCCA]
 # Using `include` evaluates at global scope,
 # so `Circulation` must be changed at the global scope too.
 # This is why there is an `eval` in the for loop(s) below

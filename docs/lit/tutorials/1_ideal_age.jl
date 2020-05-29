@@ -12,9 +12,9 @@
 
 # The tracer equation for the ideal age is
 #
-# $$\left(\partial_t + \mathbf{T}\right) \boldsymbol{a} = 1 - \frac{\boldsymbol{a}}{τ} \, (\boldsymbol{z} < z_0),$$
+# $$\left(\partial_t + \mathbf{T}\right) \boldsymbol{a} = 1 - \frac{\boldsymbol{a}}{τ} \, (\boldsymbol{z} \le z_0),$$
 #
-# where the sink term on the right clamps the age to $0$ at the surface (where $\boldsymbol{z} < z_0$).
+# where the sink term on the right clamps the age to $0$ at the surface (where $\boldsymbol{z} \le z_0$).
 # The smaller the timescale $\tau$, the quicker $\boldsymbol{a}$ is restored to $0$ at the surface.
 
 # AIBECS can interpret tracer equations as long as you arrange them under the generic form:
@@ -62,7 +62,7 @@ T(p) = TOCIM2
 
 function G(x,p)
     @unpack τ, z₀ = p
-    return @. 1 - x / τ * (z < z₀)
+    return @. 1 - x / τ * (z ≤ z₀)
 end
 
 # as per the tracer equation.
@@ -83,9 +83,9 @@ struct IdealAgeParameters{U} <: AbstractParameters{U}
 end
 
 # The type is now ready for us to generate an instance of the parameter `p`.
-# Let's use `τ = 1.0` (s) and `z₀ = 20.0` (m) .
+# Let's use `τ = 1.0` (s) and `z₀` the minimum depth of the model.
 
-p = IdealAgeParameters(1.0, 20.0)
+p = IdealAgeParameters(1.0, 30.0)
 
 # We now use the AIBECS to generate the state function $\boldsymbol{F}$ (and its Jacobian) via
 
@@ -123,7 +123,11 @@ age_in_yrs = age * u"s" .|> u"yr"
 
 # And we take a horizontal slice at about 2000m.
 
-horizontalslice(age_in_yrs, grd, depth=2000u"m", color=:magma)
+plothorizontalslice(age_in_yrs, grd, depth=2000u"m", color=:magma)
+
+# Or look at the horiontal mean
+
+plothorizontalmean(age_in_yrs, grd)
 
 # That's it for this tutorial...
 # Good job!

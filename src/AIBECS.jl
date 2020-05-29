@@ -7,8 +7,9 @@ using ForwardDiff
 @reexport using UnPack
 using FieldMetadata, Flatten, DataFrames, Distributions
 using BSON
-@reexport using OceanGrids            # To store the grid
+@reexport using OceanGrids
 @reexport using Unitful
+using Unitful: °
 using RecipesBase, Interpolations, Distances, UnitfulRecipes
 @reexport using MetadataArrays
 
@@ -27,6 +28,7 @@ include("Parameters.jl")
 include("OCIM0.jl")
 include("OCIM1.jl")
 include("OCIM2.jl")
+include("OCCA.jl")
 include("Archer_etal_2000.jl")
 include("TwoBoxModel.jl")
 include("Primeau_2x2x2.jl")

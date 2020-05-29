@@ -76,25 +76,15 @@ t = Transect(tracer="dummy", cruise=ct.name, profiles=profiles)
 # ## [Transects](@id transects)
 #-----------------------------------------------
 
-# ### Zonal transect
+# ### Transects
 
 # We can plot the modelled `dummy` data along the `ct` cruise track in the zonal directiion (along longitudes) with
 
-zonaltransect(dummy, grd, ct=ct)
+plottransect(dummy, grd, ct=ct)
 
 # If we want the observations transect on top of it
 
-zonalscattertransect!(t)
-
-# ### Meridional transect
-
-# Same for meridional transects (along latitude)
-
-meridionaltransect(dummy, grd, ct=ct)
-
-# and
-
-meridionalscattertransect!(t)
+plotscattertransect!(t)
 
 # If you have the GEOTRACESTools package installed and the GEOTRACES data installed at the right location, you can instead plot real data with something like
 #

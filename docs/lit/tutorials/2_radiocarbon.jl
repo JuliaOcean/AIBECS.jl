@@ -35,11 +35,18 @@
 #nb # > Note:
 #nb # > We need not specify the value of the atmospheric radiocarbon concentration because it is not important for determining the age of a water parcel — only the relative concentration $\boldsymbol{R}/\overline{\boldsymbol{R}}_\mathsf{atm}$ matters.
 
-# We start by selecting the circulation for Radiocarbon
+# We start by selecting the circulation for Radiocarbon.
+# .)
+#nb # (And this time, we are using the OCCA matrix by *Forget* [1](https://doi.org/10.1175/2009JPO4043.1).)
+#md # (And this time, we are using the OCCA matrix by *Forget* [^1].)
+
+#md # [^1]:
+#md #     Forget, G., 2010: Mapping Ocean Observations in a Dynamical Framework: A 2004–06 Ocean Atlas. J. Phys. Oceanogr., 40, 1201–1221, doi:[10.1175/2009JPO4043.1)](https://doi.org/10.1175/2009JPO4043.1)
+
 
 using AIBECS
-grd, T_OCIM2 = OCIM2.load()
-T(p) = T_OCIM2
+grd, T_OCCA = OCCA.load()
+T(p) = T_OCCA
 
 # The local sources and sinks are simply given by
 
@@ -99,12 +106,12 @@ C14age = @. log(R̅atm / R) * τ * u"s" |> u"yr"
 # and plot it at 700 m using the `horizontalslice` Plots recipe
 
 using Plots
-horizontalslice(C14age, grd, depth=700u"m", color=:viridis)
+plothorizontalslice(C14age, grd, depth=700u"m", color=:viridis)
 
 # look at a zonal average using the `zonalaverage` plot recipe
 
-zonalaverage(C14age, grd; color=:viridis)
+plotzonalaverage(C14age, grd; color=:viridis)
 
 # or look at a meridional slice through the Atlantic at 30°W using the `meridionalslice` plot recipe
 
-meridionalslice(C14age, grd, lon=-30, color=:viridis)
+plotmeridionalslice(C14age, grd, lon=-30, color=:viridis)

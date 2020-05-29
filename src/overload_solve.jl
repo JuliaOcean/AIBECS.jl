@@ -15,7 +15,7 @@ Solves `prob` using the modified C.T.Kelley Shamanskii algorithm.
 function DiffEqBase.solve(prob::DiffEqBase.AbstractSteadyStateProblem,
                           alg::CTKAlg;
                           nrm=norm,
-                          τstop=ustrip(1e6u"Myr"|>u"s"),
+                          τstop=ustrip(u"s", 1e6u"Myr"),
                           preprint="",
                           maxItNewton=50)
     # Define the functions according to DiffEqBase.SteadyStateProblem type

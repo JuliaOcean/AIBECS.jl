@@ -30,26 +30,26 @@ dummy = cosd.(latvec(grd))
 # The most common thing you plot after a simulation of marine tracers is a horizontal slice.
 # In this case, you just need to provide the tracer (`dummy` here), the grid object `grd`, and the depth at which you want to plot.
 
-horizontalslice(dummy, grd, depth=10)
+plothorizontalslice(dummy, grd, depth=10)
 
 # You can supply units for the depth at which you want to see the horizontal slice.
 
-horizontalslice(dummy, grd, depth=10u"m")
+plothorizontalslice(dummy, grd, depth=10u"m")
 
 # And the units should be understood under the hood.
 
-horizontalslice(dummy, grd, depth=3u"km")
+plothorizontalslice(dummy, grd, depth=3u"km")
 
 # If your tracer is supplied with units, those will show in the colorbar label
 
-horizontalslice(dummy * u"mol/m^3", grd, depth=10u"m")
+plothorizontalslice(dummy * u"mol/m^3", grd, depth=10u"m")
 
 # The advantage of Plots.jl recipes like this one is that you can specify other pieces of the plot as you would with built-in functions.
 # The advantage of Plots.jl recipes like this one is that you can specify other pieces of the plot as you would with built-in functions.
 # For example, you can chose the colormap with the `color` keyword argument.
 
 dummy .*= cosd.(lonvec(grd))
-plt = horizontalslice(dummy, grd, depth=100, color=:balance)
+plt = plothorizontalslice(dummy, grd, depth=100, color=:balance)
 
 # And you can finetune attributes after the plot is created.
 
@@ -67,9 +67,9 @@ plot!(plt, xlabel="Lon", ylabel="Lat", colorbar_title="dummy value", title="The 
 
 # You must specify the longitude
 
-dummy .= cosd.(latvec(grd))
+dummy = cosd.(latvec(grd))
 dummy .+= sqrt.(depthvec(grd)) / 30
-meridionalslice(dummy, grd, lon=330)
+plotmeridionalslice(dummy, grd, lon=330)
 
 # ### Zonal averages
 
@@ -81,23 +81,24 @@ zonalaverage(dummy, grd)
 
 # #### Basin zonal average
 
-# This is experimental at this stage and relies on an unregistered package [OceanBasins](https://github.com/briochemc/OceanBasins.jl).
-# This part of the documentation will be *online* when [OceanBasins](https://github.com/briochemc/OceanBasins.jl) gets registered.
-
+# This is experimental at this stage and relies on [OceanBasins.jl](https://github.com/briochemc/OceanBasins.jl).
 # You can create basin masks using this package with
 
-# ```
-# using OceanBasins
-# mPAC = ispacific(grd)[iwet]
-# surfacemap(mPAC, grd, seriestype=:heatmap, color=:lightrainbow)
-# zonalaverage(dummy, grd, mask=mPAC)
-# ```
+using OceanBasins
+OCEANS = oceanpolygons()
+basins = sum(i*isbasin(latvec(grd), lonvec(grd), OCEANS) for (i,isbasin) in enumerate([isindian2, ispacific2, isatlantic2, isantarctic]))
+surfacemap(basins, grd, seriestype=:heatmap, color=:lightrainbow)
+
+# and you can mask a specific region with the `mask` keyword argument
+
+mPAC = ispacific(latvec(grd), lonvec(grd), OCEANS)
+plotzonalaverage(dummy, grd, mask=mPAC)
 
 # ### Meridional slices
 
 # Just as you should expect at this stage, you can plot a meridional slice with
 
-zonalslice(dummy, grd, lat=-30)
+plotmeridionalslice(dummy, grd, lon=-30)
 
 #----------------------------------------------------
 # ## [Depth profiles](@id profile-plots)
@@ -105,7 +106,7 @@ zonalslice(dummy, grd, lat=-30)
 
 # Sometimes you want a profile at a given station or location
 
-depthprofile(dummy, grd, lonlat=(-30,30))
+plotdepthprofile(dummy, grd, lonlat=(-30,30))
 
 
 
