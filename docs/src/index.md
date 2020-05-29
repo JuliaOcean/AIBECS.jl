@@ -56,4 +56,4 @@ This section contains the docstrings of (almost all) the functions available in 
 
 !!! warning
     This package is in active development, so nothing is set in stone, and things may be broken sometimes.
-    And if you have any suggestions or feature requests, do not hesitate to start an issue directly on the [AIBECS GitHub repository](https://github.com/briochemc/AIBECS.jl), or even better, a submit a pull request!
+    And if you have any suggestions or feature requests, do not hesitate to start an issue directly on the [AIBECS GitHub repository](https://github.com/briochemc/AIBECS.jl), or better even, submit a pull request!
