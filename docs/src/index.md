@@ -50,10 +50,8 @@ This section contains the docstrings of (almost all) the functions available in 
 
 !!! note
     The AIBECS is being developed primarily by Benoît Pasquier (postdoc with Seth John at the University of Southern California).
-    If you use the AIBECS in your research, please cite it:
-    <a href="https://doi.org/10.5281/zenodo.2864051">
-        <img src="http://img.shields.io/badge/DOI-10.5281%20%2F%20zenodo.2864051-blue.svg?&style=flat-square">
-    </a>
+    If you use the AIBECS in your research, please cite it!
+    [![DOI](http://img.shields.io/badge/DOI-10.5281%20%2F%20zenodo.2864051-blue.svg?&style=flat-square)](https://doi.org/10.5281/zenodo.2864051)
     Similarly, if you access data from within AIBECS (like the OCIM or OCCA ocean circulations) please cite them too.
 
 !!! warning
