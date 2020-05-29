@@ -111,7 +111,7 @@ julia> speed(p) # (1.0 km / 2.0 hr + 3 m/s) in m/s
 Another example for optimizable/flattenable parameters
 
 ```jldoctest
-julia> @flattenable @units @initial_value struct OptParams{T} <: AbstractParameters{T}
+julia> @initial_value @units @flattenable struct OptParams{T} <: AbstractParameters{T}
            α::T | 3.6 | u"km"  | true 
            β::T | 1.0 | u"hr"  | false
            γ::T | 1.0 | u"m/s" | true
@@ -141,7 +141,7 @@ Thanks to the FieldMetaData interface, you can chain the following preloaded met
 Here is an example of parameter with all the possible metadata available in AIBECS:
 
 ```jldoctest
-julia> @reference @flattenable @logscaled @bounds @description @prior @units @initial_value struct FullParams{T} <: AbstractParameters{T}
+julia> @initial_value @units @prior @description @bounds @logscaled @flattenable @reference struct FullParams{T} <: AbstractParameters{T}
            α::T | 1.0 | u"km"  | Normal(0,1)    | "The distance"   | (-Inf, Inf) | false | false | "Jean et al., 2042" 
            β::T | 2.0 | u"hr"  | LogNormal(0,1) | "The time"       | (   0, Inf) | true  | true  | "Claude et al. 1983" 
            γ::T | 3.0 | u"mol" | Normal(1,2)    | "The # of moles" | (  -1,   1) | false | true  | "Dusse et al. 2000"

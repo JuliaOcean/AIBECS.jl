@@ -99,7 +99,7 @@ end
 
 import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
-@units @initial_value struct PmodelParameters{U} <: AbstractParameters{U}
+@initial_value @units struct PmodelParameters{U} <: AbstractParameters{U}
     w₀::U   |  0.64 | u"m/d"
     w′::U   |  0.13 | u"m/d/m"
     τDIP::U | 230.0 | u"d"

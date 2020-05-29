@@ -2,7 +2,7 @@ import AIBECS: units, @units
 import AIBECS: initial_value, @initial_value
 import AIBECS: flattenable, @flattenable
 import AIBECS: description, @description
-@flattenable @description @units @initial_value struct TestParameters{T} <: AbstractParameters{T}
+@initial_value @units @description @flattenable struct TestParameters{T} <: AbstractParameters{T}
     xgeo::T | 2.17 | u"mmol/m^3" | "Geological mean P concentration"             | true
     τgeo::T |  1.0 | u"Myr"      | "Geological restoring timescale"              | false
     k::T    | 10.0 | u"μmol/m^3" | "Half-saturation constant (Michaelis-Menten)" | true

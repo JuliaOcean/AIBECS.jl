@@ -113,7 +113,7 @@ p = ParamsWithInitialValue(β = 10.0)
 
 # You can combine both features in parameters.
 
-@units @initial_value struct UnitfulParamsWithInitialValue{T} <: AbstractParameters{T}
+@initial_value @units struct UnitfulParamsWithInitialValue{T} <: AbstractParameters{T}
     α::T | 1.0 | u"m/s"
     β::T | 2.0 | u"d"
 end
@@ -139,7 +139,7 @@ v = vec(p)
 # The `vec` function uses the `@unpack` function in AIBECS, so that units are converted when vectorizing.
 # Here is an example of that by first combining `units` and `flattenable`.
 
-@flattenable @units @initial_value struct OptimizableParamsWithUnits{T} <: AbstractParameters{T}
+@initial_value @units @flattenable struct OptimizableParamsWithUnits{T} <: AbstractParameters{T}
     α::T | 1.0 | u"m/s" | true
     β::T | 2.0 | u"d"   | false
     γ::T | 3.0 | u"km"  | true
