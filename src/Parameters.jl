@@ -1,6 +1,7 @@
 import Flatten: flattenable
 @metadata initial_value nothing
 import FieldMetadata: @units, units
+import FieldMetadata: @limits, limits
 import FieldMetadata: @prior, prior
 import FieldMetadata: @description, description
 @metadata bounds nothing
@@ -394,6 +395,7 @@ Change of variables
 Returns the substitution function for the change of variables of parameters.
 
 If the prior of parameter `pᵢ` is `LogNormal`, then the substitution function is `exp`.
+If the prior is `Uniform`, then the change of variables is the logit function.
 Otherwise, it's `identity`.
 """
 function subfun(::Type{T}) where {T<:AbstractParameters}
@@ -423,6 +425,11 @@ subfun(::LogNormal) = exp
 ∇subfun(::LogNormal) = exp
 ∇²subfun(::LogNormal) = exp
 invsubfun(::LogNormal) = log
+# p = logistic(λ) for Uniform
+subfun(d::Uniform) = λ -> d.a + d.b / (exp(-λ) + 1)
+∇subfun(d::Uniform) = λ -> d.b * subfun(d)(λ) * subfun(d)(-λ)
+∇²subfun(d::Uniform) = λ -> d.b * subfun(d)(λ) * subfun(d)(-λ) * (subfun(d)(-λ) - subfun(d)(λ))
+invsubfun(d::Uniform) = p -> log((p - d.a) / (d.a + d.b - p))
 
 export subfun, ∇subfun, ∇²subfun, invsubfun
 

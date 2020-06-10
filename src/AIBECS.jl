@@ -6,7 +6,7 @@ using SuiteSparse, LinearAlgebra, Printf
 using ForwardDiff
 @reexport using UnPack
 using FieldMetadata, Flatten, DataFrames, Distributions
-using BSON
+using BSON, NCDatasets
 @reexport using OceanGrids
 @reexport using Unitful
 using Unitful: °
@@ -35,6 +35,9 @@ include("Primeau_2x2x2.jl")
 
 # AWESOME OCIM data
 include("AO.jl") # TODO talk about it to Seth
+
+# Aeolian source data
+include("aeolian_sources.jl")
 
 # Recipes for plotting
 include("plot_recipes.jl")

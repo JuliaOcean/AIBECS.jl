@@ -1,7 +1,7 @@
 name = "AIBECS"
 uuid = "ace601d6-714c-11e9-04e5-89b7fad23838"
 authors = ["Benoit Pasquier <briochemc@gmail.com>"]
-version = "0.5.0"
+version = "0.5.1"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
@@ -16,6 +16,7 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MetadataArrays = "49441bc9-da82-574f-b07c-a0d10dd4ac13"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 OceanGrids = "cfe838f4-859f-11e9-2ea1-df7d4e7c3537"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
@@ -29,7 +30,7 @@ UnitfulRecipes = "42071c24-d89e-48dd-8a24-8a12d9b8861f"
 [compat]
 BSON = "0.2"
 DataDeps = "0.7"
-DataFrames = "0.21"
+DataFrames = "0.20, 0.21"
 DiffEqBase = "6"
 Distances = "0.9"
 Distributions = "0.23"

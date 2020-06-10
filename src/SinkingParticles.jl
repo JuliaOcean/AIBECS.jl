@@ -58,7 +58,7 @@ function PFDO(grd; w_top)
     DIVO = DIVO(grd)
     Iabove = buildIabove(grd.wet3D, iwet)
     w_top = ustrip.(upreferred.(w_top))
-    return DIVO * FATO(w_top, Iabove)
+    return PFDO(w_top, DIVO, Iabove)
 end
 """
     PFDO(w, DIVO, Iabove)
@@ -71,19 +71,19 @@ It should allow for faster runs.
 PFDO(w_top, DIVO, Iabove) = DIVO * FATO(w_top, Iabove)
 
 """
-    PFDO(grd, w::Function)
+    PFDO(grd, δz, w_top, w_bot, is_bot, sedremin, Iabove)
 
 Returns the particle-flux-divergence operator for a given sinking speed as a function of depth.
 
-This is a slightly different construction where I allow `w` to be used as a function of depth,
-which further allows particles to sink through (buried into) the sea floor.
+This is a slightly different construction where I take in top and bottom settling velocities,
+and where the bottom one can be modified to further allow a fraction of particles to sink through
+(buried into) the sea floor.
 """
-function PFDO(grd, w::Function;
-              δz = ustrip.(grd.δz_3D[iswet(grd)]), Iabove=buildIabove(grd), sedremin=true,
-              w_top = ustrip.(upreferred.(w.(topdepthvec(grd)))),
-              w_bot = (sedremin ? Iabove' * ones(length(w_bot)) : 1) .* ustrip.(upreferred.(w.(bottomdepthvec(grd)))))
-    return sparse(Diagonal(w_bot ./ δz)) - sparse(Diagonal(w_top ./ δz)) * Iabove
+function PFDO(grd, δz, w_top, w_bot, is_bot, sedremin, Iabove)
+    fw_bot = @. (sedremin * is_bot + !is_bot) * w_bot
+    return sparse(Diagonal(fw_bot ./ δz)) - sparse(Diagonal(w_top ./ δz)) * Iabove
 end
+
 
 
 """
@@ -141,11 +141,14 @@ that reach it are remineralized there. You can let particles go through
 by setting `sedremin=false`.
 """
 transportoperator(grd, w_top; DIVop=DIVO(grd), Iabove=buildIabove(grd)) = PFDO(w_top, DIVop, Iabove)
-function transportoperator(grd, w::Function; sedremin=true, z_top=topdepthvec(grd), z_bot=bottomdepthvec(grd), 
-                           Iabove=buildIabove(grd), δz=ustrip.(grd.δz_3D[iswet(grd)]))
-    return PFDO(grd, w; δz=δz, Iabove=Iabove, sedremin=sedremin, 
-                w_top = ustrip.(upreferred.(w.(z_top))),
-                w_bot = (sedremin ? Iabove' * ones(length(z_bot)) : 1) .* ustrip.(upreferred.(w.(z_bot))))
+function transportoperator(grd, w::Function;
+              δz = ustrip.(grd.δz_3D[iswet(grd)]),
+              Iabove = buildIabove(grd),
+              sedremin =true,
+              z_top = topdepthvec(grd),
+              z_bot = bottomdepthvec(grd),
+              is_bot = isseafloorvec(grd))
+    return PFDO(grd, δz, ustrip.(upreferred.(w.(z_top))), ustrip.(upreferred.(w.(z_bot))), is_bot, sedremin, Iabove)
 end
 
 export transportoperator
