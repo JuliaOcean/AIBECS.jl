@@ -71,7 +71,7 @@ It should allow for faster runs.
 PFDO(w_top, DIVO, Iabove) = DIVO * FATO(w_top, Iabove)
 
 """
-    PFDO(grd, δz, w_top, w_bot, is_bot, sedremin, Iabove)
+    PFDO(grd, δz, w_top, w_bot, is_seafloor, fsedremin, Iabove)
 
 Returns the particle-flux-divergence operator for a given sinking speed as a function of depth.
 
@@ -79,10 +79,12 @@ This is a slightly different construction where I take in top and bottom settlin
 and where the bottom one can be modified to further allow a fraction of particles to sink through
 (buried into) the sea floor.
 """
-function PFDO(grd, δz, w_top, w_bot, is_bot, sedremin, Iabove)
-    fw_bot = @. (sedremin * is_bot + !is_bot) * w_bot
+function PFDO(grd, δz, w_top, w_bot, is_seafloor, fsedremin, Iabove)
+    fw_bot = @. ((1.0 - fsedremin) * is_seafloor + !is_seafloor) * w_bot
     return sparse(Diagonal(fw_bot ./ δz)) - sparse(Diagonal(w_top ./ δz)) * Iabove
 end
+
+
 
 
 
@@ -138,18 +140,19 @@ julia> T = transportoperator(grd; w = z -> 2z + 1)
 
 By default, the seafloor flux is set to zero, so that all the particles
 that reach it are remineralized there. You can let particles go through
-by setting `sedremin=false`.
+by setting `fsedremin=0.0`.
 """
 transportoperator(grd, w_top; DIVop=DIVO(grd), Iabove=buildIabove(grd)) = PFDO(w_top, DIVop, Iabove)
 function transportoperator(grd, w::Function;
               δz = ustrip.(grd.δz_3D[iswet(grd)]),
               Iabove = buildIabove(grd),
-              sedremin =true,
+              fsedremin = 1.0,
               z_top = topdepthvec(grd),
               z_bot = bottomdepthvec(grd),
-              is_bot = isseafloorvec(grd))
-    return PFDO(grd, δz, ustrip.(upreferred.(w.(z_top))), ustrip.(upreferred.(w.(z_bot))), is_bot, sedremin, Iabove)
+              is_seafloor = isseafloorvec(grd))
+    return PFDO(grd, δz, ustrip.(upreferred.(w.(z_top))), ustrip.(upreferred.(w.(z_bot))), is_seafloor, fsedremin, Iabove)
 end
+
 
 export transportoperator
 

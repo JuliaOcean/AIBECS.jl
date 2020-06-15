@@ -142,7 +142,16 @@ function generate_objective(ωs, ωp, grd, obs; kwargs...)
         sum([ωⱼ * mismatch(xⱼ, grd, obsⱼ, M=Mⱼ, c=cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs)])
     return f
 end
-
+function generate_objective(ωs, ωp, grd, modify::Function, obs)
+    nt, nb = length(ωs), count(iswet(grd))
+    Ms = [interpolationmatrix(grd, obsⱼ) for obsⱼ in obs]
+    iwets = [iswet(grd, obsⱼ) for obsⱼ in obs]
+    function f(x, p)
+        xs = unpack_tracers(x, grd)
+        return ωp * mismatch(p) + sum([ωᵢ * indirectmismatch(xs, grd, modify, obs, i, Mᵢ, iwetᵢ) for (i, (ωᵢ, Mᵢ, iwetᵢ)) in enumerate(zip(ωs, Ms, iwets))])
+    end
+    return f
+end
 
 
 
@@ -161,6 +170,17 @@ function generate_∇ₓobjective(ωs, grd, obs; kwargs...)
     ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, grd, obsⱼ, M=Mⱼ, c=cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs)])
     return ∇ₓf
 end
+function generate_∇ₓobjective(ωs, grd, modify::Function, obs)
+    nt, nb = length(ωs), count(iswet(grd))
+    Ms = [interpolationmatrix(grd, obsⱼ) for obsⱼ in obs]
+    iwets = [iswet(grd, obsⱼ) for obsⱼ in obs]
+    function ∇ₓf(x, p)
+        xs = unpack_tracers(x, grd)
+        return sum([ωᵢ * ∇indirectmismatch(unpack_tracers(x, grd), grd, modify, obs, i, Mᵢ, iwetᵢ) for (i, (ωᵢ, Mᵢ, iwetᵢ)) in enumerate(zip(ωs, Ms, iwets))])
+    end
+    return ∇ₓf
+end
+
 
 function generate_∇ₚobjective(ωp)
     ∇ₚf(x, p) = ωp * ∇mismatch(p)
@@ -176,6 +196,11 @@ generate_objective_and_derivatives(ωs, ωp, grd, obs; kwargs...) =
     generate_objective(ωs, ωp, grd, obs; kwargs...),
     generate_∇ₓobjective(ωs, grd, obs; kwargs...),
     generate_∇ₚobjective(ωp)
+function generate_objective_and_derivatives(ωs, ωp, grd, modify::Function, obs)
+    return generate_objective(ωs, ωp, grd, modify, obs),
+             generate_∇ₓobjective(ωs, grd, modify, obs),
+             generate_∇ₚobjective(ωp)
+end
 
 export generate_objective, generate_∇ₓobjective, generate_∇ₚobjective
 export generate_objective_and_derivatives
@@ -211,7 +236,7 @@ end
 
 ## new functions for more generic obs packages
 # TODO Add an optional function argument to transform the data before computingn the mismatch
-# Example if for isotope tracers X where one ususally wants to minimize the mismatch in δ or ϵ.
+# Example if for isotope tracers X where one ususally wants to minimize the mismatch in δ or ε.
 function mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmatrix(grd, obs.metadata), iwet=iswet(grd, obs))
     o = view(obs, iwet)
     δx = M * c(x) - o
@@ -226,8 +251,29 @@ function ∇mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmat
 end
 ∇mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = transpose(zeros(length(x)))
 
-
-
+# In case the mismatch is not based on the tracer but on some function of it
+function indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M = interpolationmatrix(grd, obs[i].metadata), iwet = iswet(grd, obs[i]))
+    x2 = modify(xs...)
+    out = 0.0
+    M = interpolationmatrix(grd, obs[i].metadata)
+    iwet = iswet(grd, obs[i])
+    o = view(obs[i], iwet)
+    δx = M * x2[i] - o
+    return 0.5 * transpose(δx) * δx / (transpose(o) * o)
+end
+function ∇indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M = interpolationmatrix(grd, obs[i].metadata), iwet = iswet(grd, obs[i]))
+    nt, nb = length(xs), length(iswet(grd))
+    x2 = modify(xs...)
+    o = view(obs[i], iwet)
+    δx = M * x2[i] - o
+    ∇modᵢ = ∇modify(modify, xs, i)
+    return transpose(δx) * M * ∇modᵢ / (transpose(o) * o)
+end
+# TODO think of more efficient way to avoid recomputing ∇modify whole for each i
+function ∇modify(modify, xs, i, j)
+    return sparse(Diagonal(ForwardDiff.derivative(λ -> modify(perturb_tracer(xs,j,λ)...)[i], 0.0)))
+end
+∇modify(modify, xs, i) = reduce(hcat, [∇modify(modify, xs, i, j) for j in 1:length(xs)])
 
 
 #=============================================
