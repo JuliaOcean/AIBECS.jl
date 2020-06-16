@@ -23,7 +23,7 @@
 #
 # $$\left[\frac{\partial}{\partial t} + \mathbf{T}(\boldsymbol{p})\right] \boldsymbol{x} = \boldsymbol{G}(\boldsymbol{x},\boldsymbol{p}).$$
 
-# We start by telling Julia we want to use the AIBECS and the OCIM0.1 circulation for DIP.
+# We start by telling Julia we want to use the AIBECS and the OCIM0.1 transport matrix for the ocean circulation.
 
 using AIBECS
 grd, T_OCIM = OCIM0.load()
