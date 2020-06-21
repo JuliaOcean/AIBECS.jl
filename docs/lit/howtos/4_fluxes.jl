@@ -5,6 +5,7 @@
 #md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/4_fluxes.ipynb)
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/4_fluxes.ipynb)
 
+# This notebook is work in progress.
 
 # This will take you through the process of extracting flux information from a given transport operator.
 # It is split into 3 parts
@@ -53,15 +54,17 @@ plot(plts..., layout=(2,2))
 
 
 # TODO
-for k = 1:size(stencil,1)
-    dck = stencil[k]
-    if all(dck == 0) % no M_k for k=Id so skip the center stncil
-        continue
-    else
-        iM = find(all(abs(dc - dck) == 0, 2)) ;
-        M.(neighbour_name(dck)) = sparse(I(iM), J(iM), V(iM), nocn, nocn) - sparse(I(iM), I(iM), V(iM), nocn, nocn) ;
-    end
-end
+# ```
+# for k = 1:size(stencil,1)
+#     dck = stencil[k]
+#     if all(dck == 0) % no M_k for k=Id so skip the center stncil
+#         continue
+#     else
+#         iM = find(all(abs(dc - dck) == 0, 2)) ;
+#         M.(neighbour_name(dck)) = sparse(I(iM), J(iM), V(iM), nocn, nocn) - sparse(I(iM), I(iM), V(iM), nocn, nocn) ;
+#     end
+# end
+# ```
 
 
 
