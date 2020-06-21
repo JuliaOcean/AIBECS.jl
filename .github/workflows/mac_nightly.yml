@@ -1,4 +1,4 @@
-name: Linux
+name: Mac OS X nightly
 
 on:
   - push
@@ -11,9 +11,9 @@ jobs:
     strategy:
       matrix:
         version:
-          - "1"
+          - "nightly"
         os:
-          - ubuntu-latest
+          - macOS-latest
         arch:
           - x64
     steps:
