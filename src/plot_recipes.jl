@@ -337,3 +337,27 @@ end
 
 
 
+#======================================================
+Diagnostic recipes
+======================================================#
+@userplot PlotStencil
+@recipe function f(p::PlotStencil)
+    st, = p.args
+    @series begin
+        linecolor --> :black
+        label --> ""
+        convert.(Tuple, vcat([[0*x, x, 0*x] for x in st]...))
+    end
+    @series begin
+        marker_z --> [x.I[3] for x in st]
+        label --> ""
+        xguide --> "lat index"
+        yguide --> "lon index"
+        zguide --> "depth index"
+        seriescolor --> :darkrainbow
+        linewidth --> 0
+        markershape --> :circle
+        convert.(Tuple, st)
+    end
+end
+

@@ -42,4 +42,7 @@ include("aeolian_sources.jl")
 # Recipes for plotting
 include("plot_recipes.jl")
 
+# Diagnostics
+include("diagnostics.jl")
+
 end # module

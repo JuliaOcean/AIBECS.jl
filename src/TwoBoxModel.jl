@@ -44,7 +44,7 @@ function build_T(grid)
     v3D = array_of_volumes(grid)
     nb = length(v3D)
     # ν = 38 Sv (Sarmiento and Gruber, 2008) (1 Sv = 10⁶ m³/s)
-    T  = CG.flux_divergence_operator_from_advection(38e6u"m^3/s", [1, 2], v3D, nb)
+    T  = CG.T_diffusion(38e6u"m^3/s", 1, 2, v3D, nb)
     return T
 end
 

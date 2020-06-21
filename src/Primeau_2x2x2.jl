@@ -39,13 +39,13 @@ function build_T(grid)
 
     # Antarctic Circumpoloar Current 1 -> 3 -> 1
     ACC = 100e6u"m^3/s"
-    T  = CG.flux_divergence_operator_from_advection(ACC, [1, 3], v3D, nb)
+    T  = CG.T_advection(ACC, [1, 3, 1], v3D, nb)
     # Meridional Overturning Circulation 1 -> 2 -> 6 -> 5 -> 1
     MOC = 15e6u"m^3/s"
-    T += CG.flux_divergence_operator_from_advection(MOC, [1, 2, 6, 5], v3D, nb)
+    T += CG.T_advection(MOC, [1, 2, 6, 5, 1], v3D, nb)
     # vertical mixing at "high northern latitudes" 2 <-> 6
     MIX = 10e6u"m^3/s"
-    T += CG.flux_divergence_operator_from_advection(MIX, [2, 6], v3D, nb)
+    T += CG.T_diffusion(MIX, 2, 6, v3D, nb)
 
     # Only keep wet points
     iwet = findall(vec(grid.wet3D))

@@ -55,19 +55,19 @@ function build_T(grid)
 
     # Mixing terms
     # between top boxes (1 and 2) (1 Sv = 10⁶ m³/s)
-    T  = CG.flux_divergence_operator_from_advection(10e6u"m^3/s", [1, 2], v3D, nb)
+    T  = CG.T_diffusion(10e6u"m^3/s", 1, 2, v3D, nb)
     # between high-lat and deep (1 and 3)
-    T += CG.flux_divergence_operator_from_advection(53e6u"m^3/s", [2, 5], v3D, nb)
+    T += CG.T_diffusion(53e6u"m^3/s", 2, 5, v3D, nb)
     # between low-lat and deep (2 and 4)
-    T += CG.flux_divergence_operator_from_advection( 1e6u"m^3/s", [2, 4], v3D, nb)
+    T += CG.T_diffusion( 1e6u"m^3/s", 2, 4, v3D, nb)
     # (trick) fast mixing between boxes of the same 3-box-model box
-    T += CG.flux_divergence_operator_from_advection(1e10u"m^3/s", [1, 3], v3D, nb)
-    T += CG.flux_divergence_operator_from_advection(1e10u"m^3/s", [4, 5], v3D, nb)
-    T += CG.flux_divergence_operator_from_advection(1e10u"m^3/s", [5, 6], v3D, nb)
-    T += CG.flux_divergence_operator_from_advection(1e10u"m^3/s", [4, 6], v3D, nb)
+    T += CG.T_diffusion(1e10u"m^3/s", 1, 3, v3D, nb)
+    T += CG.T_diffusion(1e10u"m^3/s", 4, 5, v3D, nb)
+    T += CG.T_diffusion(1e10u"m^3/s", 5, 6, v3D, nb)
+    T += CG.T_diffusion(1e10u"m^3/s", 4, 6, v3D, nb)
 
     # Overturning circulation
-    T += CG.flux_divergence_operator_from_advection(19e6u"m^3/s", [1, 3, 5, 6, 4, 2], v3D, nb)
+    T += CG.T_advection(19e6u"m^3/s", [1, 3, 5, 6, 4, 2, 1], v3D, nb)
 
     return T
 end

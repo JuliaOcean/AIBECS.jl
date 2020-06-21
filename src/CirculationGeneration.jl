@@ -7,15 +7,43 @@ using Unitful
 Tools for making simple circulations
 =============================================#
 
-function flux_divergence_operator_from_advection(c::Vector, i, v3D, nb)
-    unit(c[1] / v3D[1]) ≠ unit(u"1/s") && error("Unit problem")
-    j = circshift(i,-1) # i = origin -> j = destination
-    return sparse(i, i, ustrip(c ./ v3D[i]), nb, nb) - sparse(j, i, ustrip(c ./ v3D[j]), nb, nb)
+"""
+    T_advection(ϕ, orig, dest, v3D, nb)
+
+Returns the sparse matrix transport operator, `T`.
+
+`T` is such that it gives the flux divergence due to
+the volumetric flow rate `ϕ` (in m³ s⁻¹) from box `orig` to box `dest`.
+"""
+function T_advection(ϕ::Tϕ, orig, dest, v3D::Array{Tv,3}, nb) where {Tϕ, Tv}
+    unit(Tϕ) / unit(Tv) ≠ unit(u"1/s") && error("Unit problem")
+    return sparse([orig, dest], [orig, orig], ustrip.([ϕ / v3D[orig], -ϕ / v3D[dest]]), nb, nb)
+end
+"""
+    T_advection(ϕ, sequence, v3D, nb)
+
+Returns the sparse matrix transport operator, `T`.
+
+`T` is such that it gives the flux divergence due to
+the volumetric flow rate `ϕ` (in m³ s⁻¹) going through all the boxes in `sequence`.
+"""
+function T_advection(ϕ, sequence, v3D, nb)
+    origs = sequence[1:end-1]
+    dests = sequence[2:end]
+    sum(T_advection(ϕ, orig, dest, v3D, nb) for (orig,dest) in zip(origs, dests))
+end
+"""
+    T_diffusion(ν, i, j, v3D, nb)
+
+Returns the sparse matrix transport operator, `T`.
+
+`T` is such that it gives the flux divergence due to
+the volumetric mixing rate `ν` (in m³ s⁻¹) between boxes `i` and `j`.
+"""
+function T_diffusion(ν, i, j, v3D, nb)
+    T_advection(ν, i, j, v3D, nb) + T_advection(ν, j, i, v3D, nb)
 end
 
-function flux_divergence_operator_from_advection(c, i, v3D, nb)
-    c = fill(c, length(i))
-    flux_divergence_operator_from_advection(c, i, v3D, nb)
-end
+
 
 end
