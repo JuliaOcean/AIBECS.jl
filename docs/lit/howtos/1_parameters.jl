@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# # [Parameters guide](@ref parameters)
+# # [Parameters guide](@id parameters)
 #---------------------------------------------------------
 
 #md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/1_parameters.ipynb)

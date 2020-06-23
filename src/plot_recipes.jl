@@ -33,7 +33,7 @@ surfacemap!(args...; kwargs...) = plothorizontalslice!(args...; kwargs..., depth
 
 Plots the vertical integral of tracer `x`.
 """
-plot∫dz(x, grd, mask=1; kwargs...) = horizontalplane(grd.lon, grd.lat, ∫dz(x, grd, mask); kwargs...)
+plot∫dz(x, grd; mask=1, kwargs...) = horizontalplane(grd.lon, grd.lat, ∫dz(x, grd, mask); kwargs...)
 plotverticalintegral = plot∫dz
 """
     plotverticalaverage(x, grd, mask=1)
@@ -340,6 +340,11 @@ end
 #======================================================
 Diagnostic recipes
 ======================================================#
+"""
+    PlotStencil(st)
+
+Plots the stencil `st`.
+"""
 @userplot PlotStencil
 @recipe function f(p::PlotStencil)
     st, = p.args
