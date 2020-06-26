@@ -21,19 +21,26 @@ function fallback_download(remotepath, localdir)
     return localpath
 end
 
-# Create registry entry for OCIM in JLD2 format
-function register_OCIM0()
+# OCIM0 URLs
+function url(; version="")
+    url_start = "https://files.figshare.com/"
+    return "$(url_start)18789281/OCIM0.1.bson"
+end
+
+# OCIM0 Hashes
+sha(; version="") = sha2_256
+
+# Create registry entry for OCIM0 in BSON format
+function register_OCIM0(; version="")
     register(
         DataDep(
-            "AIBECS_OCIM0.1",
+            "AIBECS-OCIM0.1",
             """
             References:
-            - Primeau, F. W., Holzer, M., and DeVries, T. (2013), Southern Ocean nutrient trapping and the efficiency of the biological pump, J. Geophys. Res. Oceans, 118, 2547–2564, doi:10.1002/jgrc.20181.
-            - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, https://doi.org/10.1175/JPO-D-10-05011.1
+            - $(citation())
             """,
-            "https://files.figshare.com/18789281/OCIM0.1.bson",
-            # use `sha2_256` (no quotes) to figure out the hash on first try
-            "527f02545ecafb59f78eeaa616c012274608971fba887eea1384aa1d9b0d40a9",
+            url(),
+            sha(),
             fetch_method = fallback_download
         )
     )
@@ -43,19 +50,24 @@ end
 """
     load
 
-Returns `grd` and `T` (in that order) from FigShare repository.
+Returns the grid and the transport matrix (in that order).
+
+### Usage
+
+```
+julia> grd, T = OCIM0.load()
+```
+
+See *DeVries and Primeau* (2011) and *Primeau et al.* (2013) for more details.
 """
-function load()
-    print("Loading OCIM0.1")
+function load(; version="")
     register_OCIM0()
-    bson_file = @datadep_str string("AIBECS_OCIM0.1/", "OCIM0.1.bson")
-    BSON.@load bson_file T grid
-    println(" ✔")
-    @info """You are about to use OCIM0.1 model.
+    bson_file = @datadep_str string("AIBECS-OCIM0.1/", "OCIM0.1.bson")
+    BSON.@load bson_file grid T
+    @info """You are about to use the OCIM0.1 model.
           If you use it for research, please cite:
 
-          - Primeau, F. W., Holzer, M., and DeVries, T. (2013), Southern Ocean nutrient trapping and the efficiency of the biological pump, J. Geophys. Res. Oceans, 118, 2547–2564, doi:10.1002/jgrc.20181.
-          - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, doi:10.1175/JPO-D-10-05011.1
+          - $(citation())
 
           You can find the corresponding BibTeX entries in the CITATION.bib file
           at the root of the AIBECS.jl package repository.
@@ -63,6 +75,13 @@ function load()
           """
     return grid, ustrip.(T)
 end
+
+citation() = """
+             - Primeau, F. W., Holzer, M., and DeVries, T. (2013), Southern Ocean nutrient trapping and the efficiency of the biological pump, J. Geophys. Res. Oceans, 118, 2547–2564, doi:10.1002/jgrc.20181.
+             - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, doi:10.1175/JPO-D-10-05011.1
+             """
+
+versions() = [""]
 
 end # end module
 

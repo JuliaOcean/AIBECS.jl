@@ -30,29 +30,29 @@ function fallback_download(remotepath, localdir)
 end
 
 # OCCA URLs
-function url(; version="OCCA")
+function url(; version="")
     url_start = "https://files.figshare.com/"
-    version == "OCCA"             ? "$(url_start)22823813/OCCA.bson" :
+    version == ""             ? "$(url_start)22823813/OCCA.bson" :
     OCCAversionerror(version)
 end
 
 OCCAversionerror(version) = error("""`$version` is not a valid OCCA circulation name.
 
-                                   Valid versions are `OCCA`.
+                                  Only valid version is the default (`version=""`).
 
-                                   See *Forget* (2010) for more details on OCCA.""")
+                                  See *Forget* (2010) for more details on OCCA.""")
 
 # OCCA Hashes
-function sha(; version="OCCA")
-    version == "OCCA" ? sha2_256 :
+function sha(; version="")
+    version == "" ? sha2_256 :
     OCCAversionerror(version)
 end
 
 # Create registry entry for OCCA in BSON format
-function register_OCCA(; version="OCCA")
+function register_OCCA(; version="")
     register(
         DataDep(
-            "AIBECS-$version",
+            "AIBECS-OCCA",
             """
             References:
             - $(citation())
@@ -77,11 +77,11 @@ Returns the grid and the transport matrix.
     ```
     See *Forget* (2010) for more details
 """
-function load(; version="OCCA")
+function load(; version="")
     register_OCCA(version=version)
-    bson_file = @datadep_str string("AIBECS-$version/", "$version.bson")
+    bson_file = @datadep_str string("AIBECS-OCCA/", "OCCA.bson")
     BSON.@load bson_file grid T
-    @info """You are about to use the $version model.
+    @info """You are about to use the OCCA model.
           If you use it for research, please cite:
 
           - $(citation())
@@ -94,6 +94,8 @@ function load(; version="OCCA")
 end
 
 citation() = "Forget, G., 2010: Mapping Ocean Observations in a Dynamical Framework: A 2004–06 Ocean Atlas. J. Phys. Oceanogr., 40, 1201–1221, https://doi.org/10.1175/2009JPO4043.1"
+
+versions() = [""]
 
 end # end module
 
