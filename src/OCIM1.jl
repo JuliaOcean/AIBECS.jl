@@ -77,7 +77,7 @@ function load(; version="CTL")
     @info """You are about to use the OCIM1_$version model.
           If you use it for research, please cite:
 
-          - $(citation())
+          $(citation())
 
           You can find the corresponding BibTeX entries in the CITATION.bib file
           at the root of the AIBECS.jl package repository.

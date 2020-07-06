@@ -67,7 +67,7 @@ function load(; version="")
     @info """You are about to use the OCIM0.1 model.
           If you use it for research, please cite:
 
-          - $(citation())
+          $(citation())
 
           You can find the corresponding BibTeX entries in the CITATION.bib file
           at the root of the AIBECS.jl package repository.
