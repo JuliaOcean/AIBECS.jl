@@ -1,6 +1,6 @@
 
 #---------------------------------------------------------
-# # [A dust model](@id river-discharge)
+# # [River discharge](@id river-discharge)
 #---------------------------------------------------------
 
 #md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/5_river_discharge.ipynb)
