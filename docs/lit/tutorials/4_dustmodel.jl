@@ -85,7 +85,7 @@ s_dust_3D = ustrip.(upreferred.(s_dust_3D * u"kg/m^2/s" ./ grd.δz_3D))
 
 s_dust = vectorize(s_dust_3D, grd) # which is the same as `s_dust_3D[iswet(grd)]`
 
-# We then write the generic $\boldsymbol{G}$ function, whcih is simply the constant dust source:
+# We then write the generic $\boldsymbol{G}$ function, which is simply the constant dust source:
 
 G_dust(x, p) = s_dust
 

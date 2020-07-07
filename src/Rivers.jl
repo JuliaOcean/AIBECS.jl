@@ -242,7 +242,7 @@ function load(unit=m^3/s)
     @info """You are about to use the Dai and Trenberth river discharge dataset.
           If you use it for research, please cite:
 
-          - $(citation())
+          $(citation())
 
           You can find the corresponding BibTeX entries in the CITATION.bib file
           at the root of the AIBECS.jl package repository.
@@ -264,7 +264,9 @@ function regrid(R::Vector{River{T}}, grd) where T <: Quantity
     nind = knn(tree, points, 1)[1]
     idx = [ind[1] for ind in nind]
     s = zeros(T, nwet)
-    s[idx] .= [r.VFR for r in R]
+    for (i,r) in enumerate(R)
+        s[idx[i]] += r.VFR
+    end
     return s
 end
 export regrid
