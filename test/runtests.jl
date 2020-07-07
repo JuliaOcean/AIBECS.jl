@@ -27,11 +27,12 @@ end
 
 
 test_plots = [:OCIM2]
-@testset "Test setup and plots" for C in test_plots
+@testset "Test setup, plots, and sources" for C in test_plots
     @testset "$C" begin
         eval(:(Circulation = $C))
-        include("setup.jl") #TODO change back to just setup.jl
-        include("plots.jl") #TODO change back to just setup.jl
+        include("setup.jl")    #TODO change back to just setup.jl (can't remember why...)
+        include("plots.jl")    #TODO change back to just setup.jl
+        include("sources.jl")  #TODO change back to just setup.jl
     end
 end
 

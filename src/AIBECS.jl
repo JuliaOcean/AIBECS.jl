@@ -2,15 +2,25 @@ module AIBECS
 
 using Reexport
 @reexport using SparseArrays
-using SuiteSparse, LinearAlgebra, Printf
+using SuiteSparse
+using LinearAlgebra
+using Printf
 using ForwardDiff
 @reexport using UnPack
-using FieldMetadata, Flatten, DataFrames, Distributions
-using BSON, NCDatasets
+using FieldMetadata
+using Flatten
+using DataFrames
+using Distributions
+using BSON
+using NCDatasets
 @reexport using OceanGrids
 @reexport using Unitful
 using Unitful: °
-using RecipesBase, Interpolations, Distances, UnitfulRecipes
+using RecipesBase
+using UnitfulRecipes
+using Interpolations
+using Distances
+using NearestNeighbors
 @reexport using MetadataArrays
 
 
@@ -38,6 +48,9 @@ include("AO.jl") # TODO talk about it to Seth
 
 # Aeolian source data
 include("aeolian_sources.jl")
+
+# River source data
+include("Rivers.jl")
 
 # Recipes for plotting
 include("plot_recipes.jl")

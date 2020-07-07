@@ -1,4 +1,4 @@
-<a href="https://github.com/briochemc/AIBECS.jl">
+<a href="https://github.com/JuliaOcean/AIBECS.jl">
   <img src="https://user-images.githubusercontent.com/4486578/60554111-8fc27400-9d79-11e9-9ca7-6d78ee89ea70.png" alt="logo" title="The AIBECS logo: It represents three global marine biogeochemical cycles, where each element affects the others" align="center" width="50%"/>
 </a>
 
@@ -7,8 +7,8 @@
 *The ideal tool for exploring global marine biogeochemical cycles.*
 
 <p>
-  <a href="https://briochemc.github.io/AIBECS.jl/stable/">
-    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Documentation?style=for-the-badge&label=Documentation&logo=Read%20the%20Docs&logoColor=white">
+  <a href="https://JuliaOcean.github.io/AIBECS.jl/stable/">
+    <img src="https://img.shields.io/github/workflow/status/JuliaOcean/AIBECS.jl/Documentation?style=for-the-badge&label=Documentation&logo=Read%20the%20Docs&logoColor=white">
   </a>
   <a href="https://www.bpasquier.com/talk/osm_sandiego_2020/OSM_SanDiego_2020.pdf">
     <img src=https://img.shields.io/static/v1?label=Poster&message=OSM2020&color=9cf&style=flat-square>
@@ -19,23 +19,23 @@
   <a href="https://doi.org/10.5281/zenodo.2864051">
     <img src="http://img.shields.io/badge/DOI-10.5281%20%2F%20zenodo.2864051-blue.svg?&style=flat-square">
   </a>
-  <a href="https://github.com/briochemc/AIBECS.jl/blob/master/LICENSE">
+  <a href="https://github.com/JuliaOcean/AIBECS.jl/blob/master/LICENSE">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg?&style=flat-square">
   </a>
 </p>
 
 <p>
-  <a href="https://github.com/briochemc/AIBECS.jl/actions">
-    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Mac%20OS%20X?label=OSX&logo=Apple&logoColor=white&style=flat-square">
+  <a href="https://github.com/JuliaOcean/AIBECS.jl/actions">
+    <img src="https://img.shields.io/github/workflow/status/JuliaOcean/AIBECS.jl/Mac%20OS%20X?label=OSX&logo=Apple&logoColor=white&style=flat-square">
   </a>
-  <a href="https://github.com/briochemc/AIBECS.jl/actions">
-    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Linux?label=Linux&logo=Linux&logoColor=white&style=flat-square">
+  <a href="https://github.com/JuliaOcean/AIBECS.jl/actions">
+    <img src="https://img.shields.io/github/workflow/status/JuliaOcean/AIBECS.jl/Linux?label=Linux&logo=Linux&logoColor=white&style=flat-square">
   </a>
-  <a href="https://github.com/briochemc/AIBECS.jl/actions">
-    <img src="https://img.shields.io/github/workflow/status/briochemc/AIBECS.jl/Windows?label=Windows&logo=Windows&logoColor=white&style=flat-square">
+  <a href="https://github.com/JuliaOcean/AIBECS.jl/actions">
+    <img src="https://img.shields.io/github/workflow/status/JuliaOcean/AIBECS.jl/Windows?label=Windows&logo=Windows&logoColor=white&style=flat-square">
   </a>
-  <a href="https://codecov.io/gh/briochemc/AIBECS.jl">
-    <img src="https://img.shields.io/codecov/c/github/briochemc/AIBECS.jl/master?label=Codecov&logo=codecov&logoColor=white&style=flat-square">
+  <a href="https://codecov.io/gh/JuliaOcean/AIBECS.jl">
+    <img src="https://img.shields.io/codecov/c/github/JuliaOcean/AIBECS.jl/master?label=Codecov&logo=codecov&logoColor=white&style=flat-square">
   </a>
 </p>
 
@@ -48,7 +48,7 @@ AIBECS is a system because it allows you to chose some biogeochemical tracers, d
 
 ## Getting started
 
-If you are new to AIBECS, head over to the [documentation](https://briochemc.github.io/AIBECS.jl/stable/) and look for the tutorials.
+If you are new to AIBECS, head over to the [documentation](https://JuliaOcean.github.io/AIBECS.jl/stable/) and look for the tutorials.
 (You can also click on the big "Documentation" badge above.)
 
 ## Concept

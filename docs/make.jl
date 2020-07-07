@@ -39,7 +39,7 @@ makedocs(
 
 # Deploy
 deploydocs(
-    repo = "github.com/briochemc/AIBECS.jl.git",
+    repo = "github.com/JuliaOcean/AIBECS.jl.git",
     push_preview = true
 )
 
