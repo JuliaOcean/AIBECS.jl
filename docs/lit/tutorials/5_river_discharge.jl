@@ -22,14 +22,14 @@
 #
 # $$\left[\frac{\partial}{\partial t} + \mathbf{T}(\boldsymbol{p})\right] \boldsymbol{x} = \boldsymbol{G}(\boldsymbol{x},\boldsymbol{p}).$$
 
-# We start by telling Julia we want to use the AIBECS and the OCIM0.1 transport matrix for the ocean circulation.
+# We start by telling Julia we want to use the AIBECS and the OCIM2 transport matrix for the ocean circulation.
 
 using AIBECS
-grd, T_OCIM = OCIM0.load()
+grd, T_OCIM2 = OCIM2.load()
 
 # The transport is
 
-T_radiorivers(p) = T_OCIM
+T_radiorivers(p) = T_OCIM2
 
 # For the radioactive decay, we simply use
 
@@ -38,29 +38,27 @@ function decay(x, p)
     return x / τ
 end
 
-# To build the river sources, we will load the geographic locations and discharge (in m<sup>3</sup> s<sup>-1</sup>) from the [Dai and Trenberth (2017) dataset](https://rda.ucar.edu/datasets/ds551.0/index.html#!description).
+# To build the river sources, we will load the geographic locations and discharge (in m³ s⁻¹) from the [*Dai and Trenberth* (2017) dataset](https://rda.ucar.edu/datasets/ds551.0/index.html#!description).
 
 RIVERS = Rivers.load()
 
-# This is an array of rivers, for which the type`River{T}` contains the river's name, lat–lon coordinates, an discharge in m<sup>3</sup> s<sup>-1</sup>.
+# This is an array of rivers, for which the type`River{T}` contains the river's name, lat–lon coordinates, and discharge in m³ s⁻¹.
 
-# We can regrid these into the OCIM0.1 grid and return the corresponding vector with
+# We can regrid these into the OCIM2 grid and return the corresponding vector with
 
 rivers = regrid(RIVERS, grd)
 
 # (Note this regridding uses [NearestNeighbors.jl](https://github.com/KristofferC/NearestNeighbors.jl) to assigne a wet box as the mouth of each river, which sometimes is not exactly the real loaction of the mouth.)
-# We then normalize the river discharge globally to control the global magnitude of the riverine sources with a single parameter, $\sigma$ (in mol s<sup>-1</sup>.
-# We want $\int s_\mathsf{rivers} dV = \sigma_\mathsf{rivers}$ (in mol s<sup>-1</sup>).
-# We want to write it as $s_\mathsf{rivers} = \sigma_\mathsf{rivers} s_\mathsf{rivers}'$, so $\int s_\mathsf{rivers}' dV = 1$. In Julia/AIBECS, this is equivalent to `v's_rivers′ == 1` where `v` is the vector of volumes. Thus, we do
+# We then normalize the river discharge globally to control the global magnitude of the riverine sources with a single parameter, $\sigma$ (in mol s⁻¹).
+# That is, we want to write $s_\mathsf{rivers} = \sigma s_0$ such that $\sigma = \int s_\mathsf{rivers} dV$ (in mol s⁻¹).
+# So $\int s_0 dV = 1$.
+# In Julia/AIBECS, this is equivalent to `v's_0 == 1` where `v` is the vector of volumes. Thus, we do
 
 v = vector_of_volumes(grd)
-s_rivers′ = rivers / (v'rivers)
-
-# assuming
-# and scale
+s_0 = rivers / (v'rivers)
 function s_rivers(p)
     @unpack σ = p
-    return σ * ustrip.(s_rivers′) # we must remove the units in AIBECS here :(
+    return σ * ustrip.(s_0) # we must remove the units in AIBECS here :(
 end
 
 # We then write the generic $\boldsymbol{G}$ function, which is
@@ -101,15 +99,15 @@ s = solve(prob, CTKAlg()).u * u"mol/m^3"
 using Plots
 
 # Let's have a look at the distribution layer by layer.
-# At 100m,
+# At 100m:
 
 plothorizontalslice(s, grd, zunit=u"μmol/m^3", depth=100, color=:linear_bmw_5_95_c89_n256)
 
-# and 500m.
+# And at 500m:
 
 plothorizontalslice(s, grd, zunit=u"μmol/m^3", depth=500, color=:linear_bmw_5_95_c89_n256)
 
-# Or we can change the timescale and watch the tracer fill the oceans.
+# Or we can change the timescale and watch the tracer fill the oceans:
 
 p = RadioRiversParameters(τ = 50.0u"yr")
 prob = SteadyStateProblem(F, ∇ₓF, x, p)
