@@ -48,10 +48,15 @@ RIVERS = Rivers.load()
 
 rivers = regrid(RIVERS, grd)
 
-# (Note this regridding uses [NearestNeighbors.jl](https://github.com/KristofferC/NearestNeighbors.jl) to assigne a wet box as the mouth of each river, which sometimes is not exactly the real loaction of the mouth.)
+# (Note this regridding uses [NearestNeighbors.jl](https://github.com/KristofferC/NearestNeighbors.jl) to assign a wet box as the mouth of each river, which sometimes is not exactly the real loaction of the river mouth.)
+
 # We then normalize the river discharge globally to control the global magnitude of the riverine sources with a single parameter, $\sigma$ (in mol s⁻¹).
-# That is, we want to write $s_\mathsf{rivers} = \sigma s_0$ such that $\sigma = \int s_\mathsf{rivers} dV$ (in mol s⁻¹).
-# So $\int s_0 dV = 1$.
+# That is, we want to write
+# $$s_\mathsf{rivers} = \sigma s_0,$$
+# such that
+# $$\sigma = \int s_\mathsf{rivers} \mathrm{d}V.$$
+# Thus, we must have that
+# $$\int s_0 \mathrm{d}V = 1.$$
 # In Julia/AIBECS, this is equivalent to `v's_0 == 1` where `v` is the vector of volumes. Thus, we do
 
 v = vector_of_volumes(grd)
