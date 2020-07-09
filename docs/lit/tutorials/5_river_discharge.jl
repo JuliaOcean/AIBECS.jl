@@ -50,14 +50,16 @@ rivers = regrid(RIVERS, grd)
 
 # (Note this regridding uses [NearestNeighbors.jl](https://github.com/KristofferC/NearestNeighbors.jl) to assign a wet box as the mouth of each river, which sometimes is not exactly the real loaction of the river mouth.)
 
-# We then normalize the river discharge globally to control the global magnitude of the riverine sources with a single parameter, $\sigma$ (in mol s⁻¹).
-# That is, we want to write
-# $$s_\mathsf{rivers} = \sigma s_0,$$
-# such that
-# $$\sigma = \int s_\mathsf{rivers} \mathrm{d}V.$$
-# Thus, we must have that
-# $$\int s_0 \mathrm{d}V = 1.$$
-# In Julia/AIBECS, this is equivalent to `v's_0 == 1` where `v` is the vector of volumes. Thus, we do
+# We control the global magnitude of the river discharge, $\sigma$ (in mol s⁻¹), by making it a parameter of our model.
+# For that, we separate the river source
+#
+# $$s_\mathsf{rivers} = \sigma s_0$$
+#
+# into global magnitude ($\sigma$) and spatial pattern ($s_0$).
+#
+# Since $\int s_0 \mathrm{d}V = 1$, `s_0` can be computed by normalizing `rivers`.
+# In Julia/AIBECS, this can be done by dividing `rivers` by the dot product `v ⋅ rivers` (or `v'rivers` in matrix form).
+# (`v ⋅ rivers` is the discrete equivalent of the volume integral $\int s_0 \mathrm{d}V$.)
 
 v = vector_of_volumes(grd)
 s_0 = rivers / (v'rivers)
