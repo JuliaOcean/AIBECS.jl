@@ -176,19 +176,21 @@ Plots a horizontal integral of tracer `x`.
 plot∫dxdy(x, grd; mask=1, kwargs...) = zplot(∫dxdy(x, grd, mask), grd.depth; kwargs...)
 plothorizontalintegral = plot∫dxdy
 """
-    horizontalaverage(x, grd; mask=1)
+    plothorizontalaverage(x, grd; mask=1)
 
 Plots a horizontal average of tracer `x`.
 """
 plothorizontalmean(x, grd; mask=1, kwargs...) = zplot(horizontalmean(x, grd, mask), grd.depth; kwargs...)
+plothorizontalmean!(plt, x, grd; mask=1, kwargs...) = zplot!(plt, horizontalmean(x, grd, mask), grd.depth; kwargs...)
 plothorizontalaverage = plothorizontalmean
+plothorizontalaverage! = plothorizontalmean!
 """
     plotdepthprofile(x, grd; lonlat)
 
 Plots the profile of tracer `x` interpolated at `lonlat=(x,y)` coordinates.
 """
 plotdepthprofile(x, grd; lonlat=nothing, kwargs...) = zplot(depthprofile(x, grd; lonlat=lonlat), grd.depth; kwargs...)
-export plot∫dxdy, plothorizontalintegral, plothorizontalmean, plothorizontalaverage, plotdepthprofile
+export plot∫dxdy, plothorizontalintegral, plothorizontalmean, plothorizontalmean!, plothorizontalaverage, plothorizontalaverage!, plotdepthprofile
 
 #======================================================
 Vertical / (dist,z) plots (for transect/section slices)

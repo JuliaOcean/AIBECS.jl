@@ -4,6 +4,7 @@ import FieldMetadata: @units, units
 import FieldMetadata: @limits, limits
 import FieldMetadata: @prior, prior
 import FieldMetadata: @description, description
+import FieldMetadata: @label, label
 @metadata bounds nothing
 import FieldMetadata: @logscaled, logscaled
 @metadata reference nothing
