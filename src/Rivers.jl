@@ -25,6 +25,14 @@ struct River{T}
     VFR::T # volumetric flow rate
 end
 
+# Show method for rivers
+function Base.show(io::IO, r::River)
+    lat, lon, name, v = r.lat, r.lon, r.name, r.VFR
+    print(io, name, " ", (lat,lon), " ", round(Int, ustrip(v)) * unit(v))
+end
+Base.show(io::IO, m::MIME"text/plain", r::River) = show(io, r)
+
+
 const RIVERS = [
     River("Amazon",                          -55.5,  -2.0, 6642.0km^3/yr),
     River("Congo",                            15.3,  -4.3, 1308.0km^3/yr),
