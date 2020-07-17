@@ -114,7 +114,7 @@ Another example for optimizable/flattenable parameters
 
 ```jldoctest
 julia> @initial_value @units @flattenable struct OptParams{T} <: AbstractParameters{T}
-           α::T | 3.6 | u"km"  | true 
+           α::T | 3.6 | u"km"  | true
            β::T | 1.0 | u"hr"  | false
            γ::T | 1.0 | u"m/s" | true
        end ;
@@ -143,10 +143,10 @@ Thanks to the FieldMetaData interface, you can chain the following preloaded met
 Here is an example of parameter with all the possible metadata available in AIBECS:
 
 ```jldoctest
-julia> @initial_value @units @prior @description @bounds @logscaled @flattenable @reference struct FullParams{T} <: AbstractParameters{T}
-           α::T | 1.0 | u"km"  | Normal(0,1)    | "The distance"   | (-Inf, Inf) | false | false | "Jean et al., 2042" 
-           β::T | 2.0 | u"hr"  | LogNormal(0,1) | "The time"       | (   0, Inf) | true  | true  | "Claude et al. 1983" 
-           γ::T | 3.0 | u"mol" | Normal(1,2)    | "The # of moles" | (  -1,   1) | false | true  | "Dusse et al. 2000"
+julia> @initial_value @units @prior @label @description @bounds @logscaled @flattenable @reference struct FullParams{T} <: AbstractParameters{T}
+           α::T | 1.0 | u"km"  | Normal(0,1)    | "dist." | "The distance"   | (-Inf, Inf) | false | false | "Jean et al., 2042"
+           β::T | 2.0 | u"hr"  | LogNormal(0,1) | "time"  | "The time"       | (   0, Inf) | true  | true  | "Claude et al. 1983"
+           γ::T | 3.0 | u"mol" | Normal(1,2)    | "moles" | "The # of moles" | (  -1,   1) | false | true  | "Dusse et al. 2000"
        end ;
 
 julia> FullParams(4.0, 5.0, 6.0)
@@ -270,6 +270,7 @@ function table(p::AbstractParameters)
     all(isnothing, initial_value(p)) || (push!(ks, Symbol("Initial value")); push!(vs, initial_value))
     all(isequal(1), units(p)) || (push!(ks, :Unit); push!(vs, units))
     all(isnothing, prior(p)) || (push!(ks, Symbol("Prior")); push!(vs, prior))
+    all(isempty, label(p)) || (push!(ks, Symbol("Label")); push!(vs, label))
     all(isempty, description(p)) || (push!(ks, Symbol("Description")); push!(vs, description))
     all(isnothing, bounds(p)) || (push!(ks, Symbol("Bounds")); push!(vs, bounds))
     any(logscaled(p)) && (push!(ks, Symbol("Logscaled")); push!(vs, logscaled))
@@ -290,7 +291,7 @@ latex(p::AbstractParameters) = show(stdout, MIME("text/latex"), table(p))
 """
     unpack(p <: AbstractParameters, s)
 
-Unpacks the parameter `s` from `p`. 
+Unpacks the parameter `s` from `p`.
 
 Note this is specialized and will convert the parameter value to SI units.
 """
