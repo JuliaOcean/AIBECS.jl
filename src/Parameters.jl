@@ -426,10 +426,10 @@ subfun(::LogNormal) = exp
 ∇²subfun(::LogNormal) = exp
 invsubfun(::LogNormal) = log
 # p = logistic(λ) for Uniform
-subfun(d::Uniform) = λ -> d.a + d.b / (exp(-λ) + 1)
-∇subfun(d::Uniform) = λ -> d.b * subfun(d)(λ) * subfun(d)(-λ)
-∇²subfun(d::Uniform) = λ -> d.b * subfun(d)(λ) * subfun(d)(-λ) * (subfun(d)(-λ) - subfun(d)(λ))
-invsubfun(d::Uniform) = p -> log((p - d.a) / (d.a + d.b - p))
+subfun(d::Uniform) = λ -> d.a + (d.b - d.a) / (exp(-λ) + 1)
+∇subfun(d::Uniform) = λ -> (d.b - d.a) * exp(-λ) / (exp(-λ) + 1)^2
+∇²subfun(d::Uniform) = λ -> (d.a - d.b) * exp(-λ) / (exp(-λ) + 1)^2 + 2(d.b - d.a) * exp(-2λ) / (exp(-λ) + 1)^3
+invsubfun(d::Uniform) = p -> -log((d.b - d.a) / (p - d.a) - 1)
 
 export subfun, ∇subfun, ∇²subfun, invsubfun
 

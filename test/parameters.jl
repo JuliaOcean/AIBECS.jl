@@ -1,35 +1,23 @@
 import AIBECS: units, @units
+import AIBECS: prior, @prior
 import AIBECS: initial_value, @initial_value
 import AIBECS: flattenable, @flattenable
 import AIBECS: description, @description
-@initial_value @units @description @flattenable struct TestParameters{T} <: AbstractParameters{T}
-    xgeo::T | 2.17 | u"mmol/m^3" | "Geological mean P concentration"             | true
-    τgeo::T |  1.0 | u"Myr"      | "Geological restoring timescale"              | false
-    k::T    | 10.0 | u"μmol/m^3" | "Half-saturation constant (Michaelis-Menten)" | true
-    z₀::T   | 80.0 | u"m"        | "Depth of the euphotic layer base"            | false
-    w₀::T   |  1.0 | u"m/d"      | "Sinking velocity at surface"                 | true
-    w′::T   | 0.22 | u"m/d/m"    | "Vertical gradient of sinking velocity"       | true
-    τDOP::T | 0.25 | u"yr"       | "Remineralization timescale (DOP to DIP)"     | true
-    τPOP::T | 5.25 | u"d"        | "Dissolution timescale (POP to DOP)"          | true
-    σ::T    |  1/3 | 1           | "Fraction of quick local uptake recycling"    | false
-    τDIP::T | 30.0 | u"d"        | "Uptake maximum timescale (DIP to POP)"       | true
+@initial_value @units @description @prior @flattenable struct TestParameters{T} <: AbstractParameters{T}
+    xgeo::T | 2.17 | u"mmol/m^3" | "Geological mean P concentration"             | LogNormal(0,1) | true
+    τgeo::T |  1.0 | u"Myr"      | "Geological restoring timescale"              | LogNormal(0,1) | false
+    k::T    | 10.0 | u"μmol/m^3" | "Half-saturation constant (Michaelis-Menten)" | LogNormal(0,1) | true
+    z₀::T   | 80.0 | u"m"        | "Depth of the euphotic layer base"            | LogNormal(0,1) | false
+    w₀::T   |  1.0 | u"m/d"      | "Sinking velocity at surface"                 | LogNormal(0,1) | true
+    w′::T   | 0.22 | u"m/d/m"    | "Vertical gradient of sinking velocity"       |    Normal(0,1) | true
+    τDOP::T | 0.25 | u"yr"       | "Remineralization timescale (DOP to DIP)"     | LogNormal(0,1) | true
+    τPOP::T | 5.25 | u"d"        | "Dissolution timescale (POP to DOP)"          | LogNormal(0,1) | true
+    σ::T    |  1/3 | unit(1)     | "Fraction of quick local uptake recycling"    |   Uniform(0,1) | true
+    τDIP::T | 30.0 | u"d"        | "Uptake maximum timescale (DIP to POP)"       | LogNormal(0,1) | true
 end
+Distributions.gradlogpdf(::Uniform, x::T) where {T<:Real} = zero(T) # Required for these tests because undefined in Distributions...
 
-# Assign a lognormal prior to each based on initial value
-import AIBECS: @prior, prior
-function prior(::Type{T}, s::Symbol) where {T<:TestParameters}
-    if flattenable(T, s)
-        μ = log(ustrip(upreferred(initial_value(T, s) * units(T, s))))
-        return LogNormal(μ ,1.0)
-    else
-        return nothing
-    end
-end
-prior(::T, s::Symbol) where {T<:AbstractParameters} = prior(T,s)
-prior(::Type{T}) where {T<:AbstractParameters} = Tuple(prior(T,s) for s in AIBECS.symbols(T))
-prior(::T) where {T<:AbstractParameters} = prior(T)
-
-p = TestParameters(initial_value(TestParameters)...)
+p = TestParameters()
 
 @testset "Parameters" begin
     println(p)
@@ -58,5 +46,13 @@ p = TestParameters(initial_value(TestParameters)...)
         @unpack xgeo, τDIP = p
         @test xgeo == ustrip(upreferred(p.xgeo * units(p, :xgeo)))
         @test τDIP == ustrip(upreferred(p.τDIP * units(p, :τDIP)))
+    end
+    @testset "Prior for $spᵢ ($Dᵢ)" for (spᵢ, Dᵢ) in zip([:σ, :w′, :xgeo], [Uniform, Normal, LogNormal])
+        D = prior(p, spᵢ)
+        @test D isa Dᵢ
+        λ2p, ∇λ2p, ∇²λ2p, p2λ = subfun(D), ∇subfun(D), ∇²subfun(D), invsubfun(D)
+        @test p2λ(λ2p(0.5)) ≈ 0.5
+        @test ForwardDiff.derivative(λ2p, 0.5) ≈ ∇λ2p(0.5)
+        @test ForwardDiff.derivative(∇λ2p, 0.5) ≈ ∇²λ2p(0.5)
     end
 end
