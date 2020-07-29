@@ -7,9 +7,9 @@
 The **Algebraic Implicit Biogeochemistry Elemental Cycling System**
 
 !!! note
-    If you are using the AIBECS for the first time, you must add it to your Julia environment, by typing
+    If you are using the AIBECS for the first time, you must add it to your Julia environment. Like any other package, you can do this by typing <kbd>]</kbd> (to enter the package mode) and then
     ```
-    ]add AIBECS
+    add AIBECS
     ```
     at the REPL.
 
