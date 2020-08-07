@@ -4,6 +4,7 @@ using Reexport
 @reexport using SparseArrays
 using SuiteSparse
 using LinearAlgebra
+using Dates
 using Printf
 using ForwardDiff
 @reexport using UnPack
