@@ -52,6 +52,9 @@ include("aeolian_sources.jl")
 # River source data
 include("Rivers.jl")
 
+# ETOPO data
+include("ETOPO.jl")
+
 # Recipes for plotting
 include("plot_recipes.jl")
 
