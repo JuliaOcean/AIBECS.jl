@@ -73,7 +73,7 @@ function sha(; version="CTL_He")
     OCIM2versionerror(version)
 end
 
-# Create registry entry for OCIM in JLD2 format
+# Create registry entry for OCIM in BSON format
 function register_OCIM2(; version="CTL_He")
     register(
         DataDep(

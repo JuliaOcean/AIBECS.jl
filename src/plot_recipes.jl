@@ -174,6 +174,7 @@ end
 Plots a horizontal integral of tracer `x`.
 """
 plot∫dxdy(x, grd; mask=1, kwargs...) = zplot(∫dxdy(x, grd, mask), grd.depth; kwargs...)
+plot∫dxdy!(x, grd; mask=1, kwargs...) = zplot!(∫dxdy(x, grd, mask), grd.depth; kwargs...)
 plot∫dxdy!(plt, x, grd; mask=1, kwargs...) = zplot!(plt, ∫dxdy(x, grd, mask), grd.depth; kwargs...)
 plothorizontalintegral = plot∫dxdy
 plothorizontalintegral! = plot∫dxdy!
