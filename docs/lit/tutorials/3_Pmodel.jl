@@ -59,8 +59,8 @@ end
 
 z = depthvec(grd)
 function U(x,p)
-    @unpack τDIP, k, z₀ = p
-    return @. x/τDIP * x/(x+k) * (z≤z₀) * (x≥0)
+    @unpack τ_DIP, k, z₀ = p
+    return @. x/τ_DIP * x/(x+k) * (z≤z₀) * (x≥0)
 end
 
 # where we have "unpacked" the parameters to make the code clearer and as close to the mathematical equation as possible.
@@ -71,8 +71,8 @@ end
 # For the remineralization, $R$, we write
 
 function R(x,p)
-    @unpack τPOP = p
-    return x / τPOP
+    @unpack τ_POP = p
+    return x / τ_POP
 end
 
 
@@ -82,14 +82,15 @@ end
 # We lump the sources and sinks into `G` functions for DIP and POP.
 
 function G_DIP(DIP, POP, p)
-    @unpack D̅I̅P̅, τgeo = p
-    return @. -$U(DIP,p) + $R(POP,p) + (D̅I̅P̅ - DIP) / τgeo
+    @unpack DIP_geo, τ_geo = p
+    return @. -$U(DIP,p) + $R(POP,p) + (DIP_geo - DIP) / τ_geo
 end
 function G_POP(DIP, POP, p)
-    return U(DIP,p) - R(POP,p)
+    @unpack τ_geo = p
+    return @. $U(DIP,p) - $R(POP,p) - POP / τ_geo
 end
 
-# where we have imposed a slow restoring of DIP to the global mean `D̅I̅P̅` to prescribe the global mean concentration.
+# where we have imposed a slow restoring of DIP to the global mean `DIP_geo` to prescribe the global mean concentration.
 # (The `$` signs in front of `U` and `R` protect them from the broadcast macro `@.`)
 
 # We now define and build the parameters.
@@ -99,15 +100,16 @@ end
 
 import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
+using Unitful: m, d, s, yr, Myr, mol, mmol, μmol, μM
 @initial_value @units struct PmodelParameters{U} <: AbstractParameters{U}
-    w₀::U   |  0.64 | u"m/d"
-    w′::U   |  0.13 | u"m/d/m"
-    τDIP::U | 230.0 | u"d"
-    k::U    |  6.62 | u"μmol/m^3"
-    z₀::U   |  80.0 | u"m"
-    τPOP::U |   5.0 | u"d"
-    τgeo::U |   1.0 | u"Myr"
-    D̅I̅P̅::U  |  2.12 | u"mmol/m^3"
+    w₀::U       |  0.64 | m/d
+    w′::U       |  0.13 | m/d/m
+    τ_DIP::U    | 230.0 | d
+    k::U        |  6.62 | μmol/m^3
+    z₀::U       |  80.0 | m
+    τ_POP::U    |   5.0 | d
+    τ_geo::U    |   1.0 | Myr
+    DIP_geo::U  |  2.12 | mmol/m^3
 end
 
 # Finally, thanks to the initial values we provided, we can instantiate the parameter vector succintly as
@@ -121,32 +123,60 @@ F, ∇ₓF = state_function_and_Jacobian((T_DIP, T_POP), (G_DIP, G_POP), nb)
 
 # generate the steady-state problem,
 
-@unpack D̅I̅P̅ = p
-x = D̅I̅P̅ * ones(2nb) # initial guess
+@unpack DIP_geo = p
+x = DIP_geo * ones(2nb) # initial guess
 prob = SteadyStateProblem(F, ∇ₓF, x, p)
 
 # and solve it
 
-s = solve(prob, CTKAlg()).u
+sol = solve(prob, CTKAlg()).u
 
 # We can look at different the DIP and POP fields using the Plots.jl recipes.
 
-DIP, POP = state_to_tracers(s, grd) # unpack tracers
+DIP, POP = state_to_tracers(sol, grd) # unpack tracers
 
 # First, let's look at the mean profile
 
 using Plots
-plothorizontalmean(DIP * u"mol/m^3" .|> u"μM", grd)
+plothorizontalmean(DIP * mol/m^3 .|> μM, grd)
 
 # We can plot the concentration of DIP at a given depth via, e.g.,
 
-plothorizontalslice(DIP * u"mol/m^3" .|> u"μM", grd, depth=1000u"m", color=:viridis)
+plothorizontalslice(DIP * mol/m^3 .|> μM, grd, depth=1000m, color=:viridis)
 
 # Or have a look at a map of the uptake at the surface
 
-plotverticalintegral(U(DIP,p) * u"mol/m^3/s" .|> u"mmol/yr/m^3", grd, color=:algae)
+plotverticalintegral(U(DIP,p) * mol/m^3/s .|> mmol/yr/m^3, grd, color=:algae)
 
 # Or look at what is exported below 500 m
 
-plothorizontalslice(POP .* w(z,p) * u"mol/m^3*m/s" .|> u"mmol/yr/m^2", grd, depth=500u"m", color=:inferno, rev=true)
+plothorizontalslice(POP .* w(z,p) * mol/m^3*m/s .|> mmol/yr/m^2, grd, depth=500m, color=:inferno, rev=true)
 
+# Now let's make our model a little fancier and use a fine topographic map to refine the remineralization profile. 
+# For this, we will use the ETOPO dataset, which can be downloaded by AIBECS via
+
+f_topo = ETOPO.fractiontopo(grd)[iwet]
+
+# We then must redefine the transport operator for sinking particles to take into consideration the subgrod topography. 
+
+T_POP2(p) = transportoperator(grd, z -> w(z,p); is_seafloor=f_topo)
+
+# With this new vertical transport for POP, we can recreate our problem and solve it again
+
+F2, ∇ₓF2 = state_function_and_Jacobian((T_DIP, T_POP2), (G_DIP, G_POP), nb)
+prob2 = SteadyStateProblem(F2, ∇ₓF2, x, p)
+sol2 = solve(prob2, CTKAlg()).u
+DIP2, POP2 = state_to_tracers(sol2, grd) # unpack tracers
+
+# Let's check the difference between the modelled DIP with and without the subgrid topography
+
+plotzonalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-2, 2))
+
+# This zonal average shows how much DIP is prevented from sinking out of the surface layers with the new subgrid parameterization. 
+# Interestingly, there is a also an increase of DIP in the deep waters, too!
+
+# Let's look at the vertical average.
+
+plotverticalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-2, 2))
+
+# It's interesting to see that this change for the sinking particles, which mostly increases the remineralization rate on the continental shelf, also has basin-wide impacts.
