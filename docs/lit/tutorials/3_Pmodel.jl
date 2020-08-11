@@ -155,6 +155,7 @@ plothorizontalslice(POP .* w(z,p) * (mol/m^3*m/s) .|> mmol/yr/m^2, grd, depth=50
 # Now let's make our model a little fancier and use a fine topographic map to refine the remineralization profile.
 # For this, we will use the ETOPO dataset, which can be downloaded by AIBECS via
 
+iwet = findall(vec(iswet(grd))) # the wet-box indices
 f_topo = ETOPO.fractiontopo(grd)[iwet]
 
 # We then must redefine the transport operator for sinking particles to take into consideration the subgrod topography.
