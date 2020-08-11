@@ -138,26 +138,26 @@ DIP, POP = state_to_tracers(sol, grd) # unpack tracers
 # First, let's look at the mean profile
 
 using Plots
-plothorizontalmean(DIP * mol/m^3 .|> μM, grd)
+plothorizontalmean(DIP * (mol/m^3) .|> μM, grd)
 
 # We can plot the concentration of DIP at a given depth via, e.g.,
 
-plothorizontalslice(DIP * mol/m^3 .|> μM, grd, depth=1000m, color=:viridis)
+plothorizontalslice(DIP * (mol/m^3) .|> μM, grd, depth=1000m, color=:viridis)
 
 # Or have a look at a map of the uptake at the surface
 
-plotverticalintegral(U(DIP,p) * mol/m^3/s .|> mmol/yr/m^3, grd, color=:algae)
+plotverticalintegral(U(DIP,p) * (mol/m^3/s) .|> mmol/yr/m^3, grd, color=:algae)
 
 # Or look at what is exported below 500 m
 
-plothorizontalslice(POP .* w(z,p) * mol/m^3*m/s .|> mmol/yr/m^2, grd, depth=500m, color=:inferno, rev=true)
+plothorizontalslice(POP .* w(z,p) * (mol/m^3*m/s) .|> mmol/yr/m^2, grd, depth=500m, color=:inferno, rev=true)
 
-# Now let's make our model a little fancier and use a fine topographic map to refine the remineralization profile. 
+# Now let's make our model a little fancier and use a fine topographic map to refine the remineralization profile.
 # For this, we will use the ETOPO dataset, which can be downloaded by AIBECS via
 
 f_topo = ETOPO.fractiontopo(grd)[iwet]
 
-# We then must redefine the transport operator for sinking particles to take into consideration the subgrod topography. 
+# We then must redefine the transport operator for sinking particles to take into consideration the subgrod topography.
 
 T_POP2(p) = transportoperator(grd, z -> w(z,p); is_seafloor=f_topo)
 
@@ -172,7 +172,7 @@ DIP2, POP2 = state_to_tracers(sol2, grd) # unpack tracers
 
 plotzonalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-2, 2))
 
-# This zonal average shows how much DIP is prevented from sinking out of the surface layers with the new subgrid parameterization. 
+# This zonal average shows how much DIP is prevented from sinking out of the surface layers with the new subgrid parameterization.
 # Interestingly, there is a also an increase of DIP in the deep waters, too!
 
 # Let's look at the vertical average.
