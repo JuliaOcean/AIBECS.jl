@@ -2,9 +2,7 @@ module ETOPO
 
 using OceanGrids
 using Dates
-
-using NearestNeighbors
-
+using Unitful
 using DataDeps              # For storage location of data
 using NCDatasets
 
@@ -78,12 +76,11 @@ function bintopo(Z::AbstractArray{T,2}, lats, lons, grd) where T
     elat = ustrip.(grd.lat .+ 0.5grd.δlat)
     kmax = dropdims(count(iswet(grd), dims=3), dims=3)
     for (j,lat) in enumerate(lats)
-        jgrd = inverse_function_of_index(lat, elat)
+        jgrd = searchsortedfirst(elat, lat)
         for (i,lon) in enumerate(lons)
-            igrd = inverse_function_of_index(mod(lon, 360), elon)
+            igrd = searchsortedfirst(elon, mod(lon, 360))
             kmax[jgrd,igrd] == 0 && continue
-            depth = -Z[i,j]
-            kgrd = inverse_function_of_index(depth, edepth[1:kmax[jgrd, igrd]])
+            kgrd = searchsortedfirst(view(edepth, 1:kmax[jgrd, igrd]-1), -Z[i,j])
             bin3D[jgrd, igrd, kgrd] += 1
         end
     end
@@ -100,8 +97,8 @@ and (ii) points located in a dry box or below are counted in the deepest
 wet box.
 """
 function fractiontopo(bin3D, grd)
-    f3D = bin3D ./ repeat(sum(bin3D, dims=3), outer=(1, 1, size(grd)[3]))
-    return f3D .* iswet(grd) # ensure that 
+    f3D = cumsum(bin3D, dims=3) ./ repeat(sum(bin3D, dims=3), outer=(1, 1, size(grd)[3]))
+    return f3D .* iswet(grd) # enforce wet mask
 end
 function fractiontopo(grd)
     @warn "Binning ETOPO to grd. This may take a few seconds"
@@ -110,9 +107,7 @@ function fractiontopo(grd)
 end
 export fractiontopo
 
-function inverse_function_of_index(x, e)
-    i = findfirst(eᵢ -> eᵢ ≥ x, e)
-    return isnothing(i) ? length(e) : i
-end
 
 end # module
+
+export ETOPO
