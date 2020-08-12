@@ -155,29 +155,30 @@ plothorizontalslice(POP .* w(z,p) * (mol/m^3*m/s) .|> mmol/yr/m^2, grd, depth=50
 # Now let's make our model a little fancier and use a fine topographic map to refine the remineralization profile.
 # For this, we will use the ETOPO dataset, which can be downloaded by AIBECS via
 
-iwet = findall(vec(iswet(grd))) # the wet-box indices
-f_topo = ETOPO.fractiontopo(grd)[iwet]
+f_topo = ETOPO.fractiontopo(grd)
 
-# We then must redefine the transport operator for sinking particles to take into consideration the subgrod topography.
+# `f_topo` is the fraction of sediments located in each wet box of the `grd` grid.
+# We can use it to redefine the transport operator for sinking particles to take into consideration the subgrid topography,
+# such that the fine-resolution sediments intercept settling POP.
 
-T_POP2(p) = transportoperator(grd, z -> w(z,p); is_seafloor=f_topo)
+T_POP2(p) = transportoperator(grd, z -> w(z,p); frac_seafloor=f_topo)
 
-# With this new vertical transport for POP, we can recreate our problem and solve it again
+# With this new vertical transport for POP, we can recreate our problem, solve it again
 
 F2, ∇ₓF2 = state_function_and_Jacobian((T_DIP, T_POP2), (G_DIP, G_POP), nb)
 prob2 = SteadyStateProblem(F2, ∇ₓF2, x, p)
 sol2 = solve(prob2, CTKAlg()).u
 DIP2, POP2 = state_to_tracers(sol2, grd) # unpack tracers
 
-# Let's check the difference between the modelled DIP with and without the subgrid topography
+# and check the difference
 
-plotzonalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-2, 2))
+plotzonalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-0.1, 0.1))
 
 # This zonal average shows how much DIP is prevented from sinking out of the surface layers with the new subgrid parameterization.
-# Interestingly, there is a also an increase of DIP in the deep waters, too!
 
 # Let's look at the vertical average.
 
-plotverticalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-2, 2))
+plotverticalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-0.1,0.1))
 
-# It's interesting to see that this change for the sinking particles, which mostly increases the remineralization rate on the continental shelf, also has basin-wide impacts.
+# This shows minor changes, on the order of 0.1%, on the global scale,
+# which means that the subgrid-topography parameterization mostly affects the vertical distribution of our tracers.

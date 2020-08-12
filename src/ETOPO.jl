@@ -44,7 +44,7 @@ function load()
     Z, lats, lons, dims =
     Dataset(nc_file,"r") do ds
         dims = Tuple(ds["dimension"][:])
-        ds["z"][:], range(ds["y_range"]..., length=dims[2]), 
+        ds["z"][:], range(ds["y_range"]..., length=dims[2]),
         range(ds["x_range"]..., length=dims[1]), dims
     end # ds is closed
     @info """You are about to use the ETOPO data set.
@@ -96,15 +96,12 @@ Note that (i) points located above sea level are counted in the top layer,
 and (ii) points located in a dry box or below are counted in the deepest
 wet box.
 """
-function fractiontopo(bin3D, grd)
-    f3D = cumsum(bin3D, dims=3) ./ repeat(sum(bin3D, dims=3), outer=(1, 1, size(grd)[3]))
-    return f3D .* iswet(grd) # enforce wet mask
-end
 function fractiontopo(grd)
     @warn "Binning ETOPO to grd. This may take a few seconds"
     Z, lats, lons = load()
     return fractiontopo(bintopo(Z, lats, lons, grd), grd)
 end
+fractiontopo(bin3D, grd) = vectorize(bin3D ./ repeat(sum(bin3D, dims=3), outer=(1, 1, size(grd)[3])), grd)
 export fractiontopo
 
 

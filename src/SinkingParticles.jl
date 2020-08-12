@@ -79,9 +79,9 @@ This is a slightly different construction where I take in top and bottom settlin
 and where the bottom one can be modified to further allow a fraction of particles to sink through
 (buried into) the sea floor.
 """
-function PFDO(grd, δz, w_top, w_bot, is_seafloor, fsedremin, Iabove)
-    fw_bot = @. (1.0 - fsedremin * is_seafloor) * w_bot
-    fw_top = (1.0 .- Iabove * is_seafloor) .* w_top
+function PFDO(grd, δz, w_top, w_bot, frac_seafloor, cumfrac_seafloor, fsedremin, Iabove)
+    fw_bot = @. (1.0 - cumfrac_seafloor + (1.0 - frac_seafloor) * fsedremin) * w_bot
+    fw_top = (1.0 .- Iabove * cumfrac_seafloor) .* w_top
     return sparse(Diagonal(fw_bot ./ δz)) - sparse(Diagonal(fw_top ./ δz)) * Iabove
 end
 
@@ -150,8 +150,9 @@ function transportoperator(grd, w::Function;
               fsedremin = 1.0,
               z_top = topdepthvec(grd),
               z_bot = bottomdepthvec(grd),
-              is_seafloor = float.(isseafloorvec(grd)))
-    return PFDO(grd, δz, ustrip.(upreferred.(w.(z_top))), ustrip.(upreferred.(w.(z_bot))), is_seafloor, fsedremin, Iabove)
+              frac_seafloor = float.(isseafloorvec(grd)),
+              cumfrac_seafloor = zcumsum(frac_seafloor, grd))
+    return PFDO(grd, δz, ustrip.(upreferred.(w.(z_top))), ustrip.(upreferred.(w.(z_bot))), frac_seafloor, cumfrac_seafloor, fsedremin, Iabove)
 end
 
 
