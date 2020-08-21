@@ -10,7 +10,7 @@
 #md #     This tutorial is very similar to the [river discharge notebook](@id river-discharge)
 
 # In this tutorial we will simulate a fictitious radioactive tracer that is injected into the ocean by groundwater discharge.
-# The 200 major rivers dataset from [*Luijendijk et al.* (2020)](https://www.nature.com/articles/s41467-020-15064-8) is available from within the AIBECS.
+# The groundwater discharge dataset from [*Luijendijk et al.* (2020)](https://www.nature.com/articles/s41467-020-15064-8) is available from within the AIBECS.
 # Once "born", our ficitious tracer decays with a parameter timescale $\tau$ as it flows through ocean basins.
 #
 # The 3D tracer equation is:
@@ -19,7 +19,7 @@
 #
 # where $\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \nabla \right]$ represents the ocean circulation transport.
 # ([Tracer transport operators are described in the documentation](@ref tracer-transport-operators).)
-# The riverine source of the tracer is $s_\mathsf{gw}$, and $x / \tau$ is the decay rate.
+# The source of the tracer is $s_\mathsf{gw}$, and $x / \tau$ is the decay rate.
 
 # In AIBECS, we must recast this equation in the generic form
 #
@@ -41,7 +41,7 @@ function decay(x, p)
     return x / τ
 end
 
-# To build the river sources, we will load the geographic locations and discharge of groundwater (in m³ yr⁻¹) from the *Luijendijk et al.* (2020)) dataset.
+# To build the groundwater sources, we will load the geographic locations and discharge of groundwater (in m³ yr⁻¹) from the *Luijendijk et al.* (2020)) dataset.
 
 gws = GroundWaters.load()
 
