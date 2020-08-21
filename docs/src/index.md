@@ -25,6 +25,7 @@ If you want to try AIBECS for the first time, this is where you should start.
 - The [coupled PO₄–POP model tutorial](@ref P-model) couples 2 interacting tracers, dissolved phosphate and particulate organic phosphorus (POP).
 - The [dust model tutorial](@ref dust-model) simulates some fictitious metals being injected at the ocean–atmosphere interface and being reversibly scavenged.
 - The [river discharge tutorial](@ref river-discharge) similarly simulates another fictitious radioactive tracer that is injected in the ocean by rivers and that decays away as time passes.
+- The [groundwater discharge tutorial](@ref groundwater-discharge) is almost identical to the river-discharge tutorial, except it uses groundwater discharge data.
 
 #### 2. How-to guides
 

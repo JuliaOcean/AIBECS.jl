@@ -44,7 +44,7 @@ OCCAversionerror(version) = error("""`$version` is not a valid OCCA circulation 
 
 # OCCA Hashes
 function sha(; version="")
-    version == "" ? sha2_256 :
+    version == "" ? "ad02765d92ecdaafac3c9e238bcc28b39908d26746d190958ff64808d050d2c7" :
     OCCAversionerror(version)
 end
 

@@ -28,7 +28,7 @@ function url(; version="")
 end
 
 # OCIM0 Hashes
-sha(; version="") = sha2_256
+sha(; version="") = "527f02545ecafb59f78eeaa616c012274608971fba887eea1384aa1d9b0d40a9"
 
 # Create registry entry for OCIM0 in BSON format
 function register_OCIM0(; version="")
