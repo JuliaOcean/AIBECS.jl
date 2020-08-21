@@ -34,7 +34,9 @@ surfacemap!(args...; kwargs...) = plothorizontalslice!(args...; kwargs..., depth
 Plots the vertical integral of tracer `x`.
 """
 plot∫dz(x, grd; mask=1, kwargs...) = horizontalplane(grd.lon, grd.lat, ∫dz(x, grd, mask); kwargs...)
+plot∫dz!(plt, x, grd; mask=1, kwargs...) = horizontalplane!(plt, grd.lon, grd.lat, ∫dz(x, grd, mask); kwargs...)
 plotverticalintegral = plot∫dz
+plotverticalintegral! = plot∫dz!
 """
     plotverticalaverage(x, grd, mask=1)
 
@@ -42,7 +44,7 @@ Plots the vertical average of tracer `x`.
 """
 plotverticalmean(x, grd; mask=1, kwargs...) = horizontalplane(grd.lon, grd.lat, verticalmean(x, grd, mask); kwargs...)
 plotverticalaverage = plotverticalmean
-export plotverticalaverage, plotverticalmean, plotverticalintegral, plot∫dz, surfacemap, surfacemap!, plothorizontalslice
+export plotverticalaverage, plotverticalmean, plotverticalintegral, plotverticalintegral!, plot∫dz, plot∫dz!, surfacemap, surfacemap!, plothorizontalslice
 
 """
     minimap(grd; central_longitude=200°)
