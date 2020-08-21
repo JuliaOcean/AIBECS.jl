@@ -10,7 +10,7 @@
 #md #     This tutorial is very similar to the [river discharge notebook](@id river-discharge)
 
 # In this tutorial we will simulate a fictitious radioactive tracer that is injected into the ocean by groundwater discharge.
-# The groundwater discharge dataset from [*Luijendijk et al.* (2020)](https://www.nature.com/articles/s41467-020-15064-8) is available from within the AIBECS.
+# The global groundwater discharge dataset for 40,000 coastal watersheds from [*Luijendijk et al.* (2020)](https://www.nature.com/articles/s41467-020-15064-8) is available from within the AIBECS.
 # Once "born", our ficitious tracer decays with a parameter timescale $\tau$ as it flows through ocean basins.
 #
 # The 3D tracer equation is:
