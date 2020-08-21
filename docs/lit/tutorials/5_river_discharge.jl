@@ -52,7 +52,7 @@ r = RIVERS[1]
 using Plots
 scatter([r.lon for r in RIVERS], [r.lat for r in RIVERS],
         zcolor=ustrip.([r.VFR for r in RIVERS] / u"m^3/s"),
-        clim=(0,7), colorbartitle="log₁₀(discharge / (1 m³ s⁻¹))")
+        colorbartitle="log₁₀(discharge / (1 m³ s⁻¹))")
 
 # We can regrid these into the OCIM2 grid and return the corresponding vector with
 

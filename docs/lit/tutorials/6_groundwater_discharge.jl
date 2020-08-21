@@ -55,7 +55,7 @@ gws[1]
 using Plots
 scatter([x.lon for x in gws], [x.lat for x in gws],
         zcolor=log10.(ustrip.([x.VFR for x in gws] / u"m^3/s")),
-        clim=(0,8), colorbartitle="log₁₀(discharge / (1 m³ s⁻¹))",
+        colorbartitle="log₁₀(discharge / (1 m³ s⁻¹))",
         fmt=:png)
 
 # We can regrid these into the OCIM2 grid and return the corresponding vector with
