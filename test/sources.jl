@@ -25,4 +25,11 @@ end
     @test size(v) == size(iwet)
 end
 
+@testset "Groundwater sources" begin
+    gws = GroundWaters.load()
+    s = regrid(gws, grd)
+    @test s isa Vector
+    @test size(v) == size(iwet)
+end
+
 

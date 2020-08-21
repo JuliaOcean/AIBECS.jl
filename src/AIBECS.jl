@@ -23,6 +23,7 @@ using Interpolations
 using Distances
 using NearestNeighbors
 @reexport using MetadataArrays
+using Shapefile
 
 
 
@@ -52,6 +53,9 @@ include("aeolian_sources.jl")
 
 # River source data
 include("Rivers.jl")
+
+# Groundwater source data
+include("GroundWaters.jl")
 
 # ETOPO data
 include("ETOPO.jl")

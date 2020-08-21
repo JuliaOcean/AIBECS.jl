@@ -9,13 +9,13 @@ using OceanGrids
 import OceanGrids: regrid
 
 # These river discharge volumetric flow rates and locations were taken from the Dai and Trenberth dataset
-# located on UCAR's Research Data Archive (RDA) 
+# located on UCAR's Research Data Archive (RDA)
 # (URL: https://rda.ucar.edu/datasets/ds551.0/index.html#!description)
 # and were converted to Julia/AIBECS with permission from Aiguo Dai.
-# 
+#
 # This module only contains the annual mean river discharge of the 200 largest rivers, taken specifically from files `runoff-table-A.txt` and `runoff-table2-top50r.txt` of the original dataset.
 #
-# Then I copied these files here and wrote them up into a Julia format by hand 
+# Then I copied these files here and wrote them up into a Julia format by hand
 # because it was the most straightforward approach for me here...
 
 struct River{T}
@@ -260,22 +260,11 @@ function load(unit=m^3/s)
 end
 
 function regrid(R::Vector{River{T}}, grd) where T <: Quantity
-    nwet = count(iswet(grd))
-    isurf = findall(depthvec(grd) .== ustrip(grd.depth[1]))
-    grdlats = latvec(grd)[isurf]
-    grdlons = lonvec(grd)[isurf]
-    data = [grdlons'; grdlats'] # NearestNeighbors expects this orientation
-    tree = BruteTree(data, Haversine(1.0))
-    lons = [mod(r.lon,360) for r in RIVERS]
-    lats = [r.lat for r in RIVERS]
-    points = [lons';lats']
-    nind = knn(tree, points, 1)[1]
-    idx = [ind[1] for ind in nind]
-    s = zeros(T, nwet)
-    for (i,r) in enumerate(R)
-        s[idx[i]] += r.VFR
-    end
-    return s
+    lats = [r.lat for r in R]
+    lons = [r.lon for r in R]
+    depths = zeros(length(R))
+    vs = [r.VFR for r in R]
+    return regrid(vs, lats, lons, depths, grd)
 end
 export regrid
 

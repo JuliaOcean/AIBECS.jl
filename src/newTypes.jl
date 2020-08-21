@@ -42,7 +42,7 @@ end
 """
     onlykeep(x::MetadataArray, idx)
 
-Returns `x[idx]` but also applies the index to the metadata that is originally of the same length as `x`. 
+Returns `x[idx]` but also applies the index to the metadata that is originally of the same length as `x`.
 """
 function onlykeep(x::MetadataArray, idx)
     xout = x.parent[idx]
