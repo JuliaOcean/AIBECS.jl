@@ -91,24 +91,14 @@ function searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint = "
 end
 
 
-function updateJacobian!(JF, rShamᵢ, rSham₀, ArmijoFail, ∇ₓF, xᵢ; update_factors=true)
-    if update_factors && rShamᵢ ≤ rSham₀ && ~ArmijoFail
+function updateJacobian!(JF, rShamᵢ, rSham₀, ArmijoFail, ∇ₓF, xᵢ)
+    if rShamᵢ ≤ rSham₀ && ~ArmijoFail
         JF.age += 1
-        JF.facage +=1
     else
-        JF.fac = factorize(JF.fac, ∇ₓF(xᵢ), update_factors=update_factors)
+        JF.fac = factorize(∇ₓF(xᵢ))
         JF.age = 0
-        update_factors ? JF.facage = 0 : JF.facage += 1
     end
     return JF
-end
-
-# Added inplace factorize for real-valued case
-# Not usre this is the best way to do all this...
-# Do not re-export this odd inplace factorize
-import LinearAlgebra: factorize
-function factorize(Mf::SuiteSparse.UMFPACK.UmfpackLU{T,<:Int}, M::SparseMatrixCSC{T,<:Int}; update_factors=true) where T<:Union{Float64,Complex{Float64}}
-    update_factors ? factorize(M) : Mf
 end
 
 function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop; preprint="", maxItNewton=50)
@@ -121,22 +111,7 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop; preprint="", maxI
     return NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=preprint, maxItNewton=maxItNewton)
 end
 
-function initialize_AgedJacobianFactor(firstJ, Jfinit, update_factors)
-    if update_factors # varying A
-        JF = AgedJacobianFactors(Jfinit, 0, 0) # construct JF
-    else              # constant A
-        JF = AgedJacobianFactors(udpate_J_nonrealparts(firstJ, Jfinit), 0, 0)
-    end
-end
-
-#function udpate_J_nonrealparts(firstJ::SparseMatrixCSC{<:Dual, <:Int}, Jfinit)
-#    return DualFactors(Jfinit, dualpart.(firstJ))
-#end
-#function udpate_J_nonrealparts(firstJ::SparseMatrixCSC{<:Hyper, <:Int}, Jfinit)
-#    return HyperDualFactors(Jfinit, ε₁part.(firstJ), ε₂part.(firstJ), ε₁ε₂part.(firstJ))
-#end
-
-function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint="", maxItNewton=50, update_factors=true, firstJ=false)
+function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint="", maxItNewton=50)
     if preprint ≠ ""
         println(preprint * "Solving F(x) = 0 (using Shamanskii Method)")
         preprint_end = preprint * "└─> "
@@ -157,11 +132,7 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
     δxᵢ = copy(xᵢ₋₁)
 
     # Initialize the first Jacobian
-    if firstJ
-        JF = AgedJacobianFactors(Jfinit, 10, 10)
-    else
-        JF = initialize_AgedJacobianFactor(∇ₓF(xinit), Jfinit, update_factors)
-    end
+    JF = AgedJacobianFactors(Jfinit, 0)
 
     τᵢ = Nxᵢ / NFᵢ
     rShamᵢ = 0
@@ -169,14 +140,7 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
     i = 0 # counter of quasi-Newton δxⱼs
     if preprint ≠ ""
         print(preprint)
-        @printf "%3s   %8s   %8s   %7s   %7s" "iteration" "|F(x)|" "|δx|/|x|" "Jac age" "fac age"
-        #if solType == Complex{Float64}
-        #    @printf "%12s" "|δix|/|ix|"
-        #elseif solType == Dual{Float64}
-        #    @printf "%12s" "|δεx|/|εx|"
-        #elseif solType == Hyper{Float64} 
-        #    @printf "%12s" "|δhx|/|hx|"
-        #end
+        @printf "%3s   %8s   %8s   %7s" "iteration" "|F(x)|" "|δx|/|x|" "Jac age"
         println("")
         print(preprint)
         @printf "%5d       %8.1e   %8s   %7s   %7s\n" i NFᵢ "" "" ""
@@ -201,7 +165,7 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
 
         # Update Jacobian (or rather its factors, JF)
         # Shamanski: only update J if |F(xᵢ)| / |F(xᵢ₋₁)| > rSham₀
-        JF = updateJacobian!(JF, rShamᵢ, rSham₀, ArmijoFail, ∇ₓF, xᵢ, update_factors=update_factors)
+        JF = updateJacobian!(JF, rShamᵢ, rSham₀, ArmijoFail, ∇ₓF, xᵢ)
 
         # Newton Step
         δxᵢ .= JF.fac \ -Fᵢ
@@ -231,17 +195,6 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
         # Here I chose to only look at the relative step size, |δx|/|x|
         if solType == Float64
             nonrealtolx = false
-        #elseif solType == Complex{Float64}
-        #    RNimδxᵢ = nrm(imag.(δxᵢ)) / nrm(imag.(xᵢ₋₁))
-        #    nonrealtolx = (RNimδxᵢ > 1e-7)
-        #elseif solType == Dual{Float64}
-        #    RNεδxᵢ = nrm(dualpart.(δxᵢ)) / nrm(dualpart.(xᵢ₋₁))
-        #    nonrealtolx = (RNεδxᵢ > 1e-7)
-        #elseif solType == Hyper{Float64}
-        #    RNhδxᵢ = nrm(ε₁part.(δxᵢ)) / nrm(ε₁part.(xᵢ₋₁)) +
-        #             nrm(ε₂part.(δxᵢ)) / nrm(ε₂part.(xᵢ₋₁)) +
-        #             nrm(ε₁ε₂part.(δxᵢ)) / nrm(ε₁ε₂part.(xᵢ₋₁))
-        #    nonrealtolx = (RNhδxᵢ > 1e-7)
         end
 
         if preprint ≠ ""
@@ -256,14 +209,6 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
             nArmijo == 0 ? nothing : print(preprint * "    └─────> ") # alignment thing
             @printf "%8.1e   %8.1e   " NFᵢ RNδxᵢ
             print_marker(JF.age)
-            print_marker(JF.facage)
-            #if solType == Complex{Float64}
-            #    @printf "%8.1e" RNimδxᵢ
-            #elseif solType == Dual{Float64}
-            #    @printf "%8.1e" RNεδxᵢ
-            #elseif solType == Hyper{Float64} 
-            #    @printf "%8.1e" RNhδxᵢ
-            #end
             println("")
         end
     end
