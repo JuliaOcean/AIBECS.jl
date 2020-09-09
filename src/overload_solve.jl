@@ -22,9 +22,9 @@ function DiffEqBase.solve(prob::DiffEqBase.AbstractSteadyStateProblem,
     p = prob.p
     t = 0
     x0 = copy(prob.u0)
-    dx, df = copy(x0), copy(x0)
-    F(x) = prob.f(dx, x, p, t)
-    ∇ₓF(x) = prob.f(df, dx, x, p, t)
+    dx = copy(x0)
+    F(x) = prob.f.f(dx, x, p, t)
+    ∇ₓF(x) = prob.f.jac(x, p, t)
     # Compute `u_steady` and `resid` as per DiffEqBase using my algorithm
     x_steady = NewtonChordShamanskii(F, ∇ₓF, nrm, x0, τstop; preprint=preprint, maxItNewton=maxItNewton)
     resid = F(x_steady)
@@ -37,10 +37,19 @@ end
 
 Returns the `SteadyStateProblem` defined by `F(x,p)=0`.
 """
-function DiffEqBase.SteadyStateProblem(F, ∇ₓF, x, p)
-    f(dx, x, p, t) = F(x, p)
-    f(df, dx, x, p, t) = ∇ₓF(x, p)
-    return DiffEqBase.SteadyStateProblem(f, x, p)
+function DiffEqBase.SteadyStateProblem(F, ∇ₓF, x, p::AbstractParameters)
+    return SteadyStateProblem(ODEFunction(F, ∇ₓF, x, p), x, p)
 end
 
-export solve, SteadyStateProblem, CTKAlg, CTKAlg2
+function DiffEqBase.ODEProblem(F, ∇ₓF, x, p::AbstractParameters; tspan=(0.0, ustrip(u"s", 1000.0u"yr")))
+    return ODEProblem(ODEFunction(F, ∇ₓF, x, p), x, tspan, p)
+end
+
+function DiffEqBase.ODEFunction(F, ∇ₓF, x, p::AbstractParameters)
+    f = (du,u,p,t) -> du .= F(u,p)
+    jac = (u,p,t) -> ∇ₓF(u,p)
+    jp = ∇ₓF(x,p)
+    return ODEFunction(f; jac=jac, jac_prototype=jp)
+end
+
+export solve, SteadyStateProblem, CTKAlg

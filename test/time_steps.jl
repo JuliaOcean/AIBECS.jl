@@ -1,7 +1,7 @@
 
 # List of available algorithms for AIBECS time stepping
 
-@testset "Time-steppers" begin
+@testset "Time steppers" begin
     δt = ustrip(1.0u"yr" |> u"s")
     Nt = 10000 # number of time steps taken
     nt = length(T_all)
@@ -15,7 +15,7 @@
                         AIBECS.euler_backward_step,
                         AIBECS.euler_backward_step!,
                        ]
-    @testset "Implicit time-steps" begin
+    @testset "Implicit time steps" begin
         @testset "$(string(sf))" for sf in Implicit_methods
             x = copy(x₀)
             for i in 1:Nt
@@ -29,7 +29,7 @@
                         AIBECS.euler_forward_step,
                         AIBECS.euler_forward_step!,
                        ]
-    @testset "Explicit time-steps" begin
+    @testset "Explicit time steps" begin
         @testset "$(string(sf))" for sf in Explicit_methods
             x = copy(x₀)
             for i in 1:100Nt              # more smaller steps
@@ -39,7 +39,7 @@
         end
     end
 
-    @testset "Crank Nicolson_leapfrog" begin
+    @testset "Crank-Nicolson leapfrog" begin
         x, xᵢ, xᵢ₋₁ = copy(x₀), copy(x₀), copy(x₀)
         for i in 1:Nt
             x .= AIBECS.crank_nicolson_leapfrog_step(xᵢ, xᵢ₋₁, p, δt, T, ∇ₓL, NL)

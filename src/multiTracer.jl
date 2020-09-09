@@ -99,7 +99,7 @@ end
 function split_state_function_and_Jacobian(T, L, NL, nb)
     F(x,p) = NL(x,p) + L(x,p) - T(p) * x                     # full 𝐹(𝑥)
     ∇ₓNL(x,p) = sparse(Diagonal(localderivative(NL, x, p))) # Jacobian of nonlinear part
-    ∇ₓL(p) = sparse(Diagonal(localderivative(L, x, p)))     # Jacobian of nonlinear part
+    ∇ₓL(p) = sparse(Diagonal(localderivative(L, zeros(nb), p)))     # Jacobian of nonlinear part
     ∇ₓF(x,p) = ∇ₓNL(x,p) + ∇ₓL(p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
     return F, L, NL, ∇ₓF, ∇ₓL, ∇ₓNL, T
 end

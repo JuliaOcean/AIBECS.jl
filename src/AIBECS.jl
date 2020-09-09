@@ -32,9 +32,9 @@ include("SinkingParticles.jl")
 include("newTypes.jl")
 include("CTKsolvers.jl")
 include("time_steppers.jl")
+include("Parameters.jl")
 include("overload_solve.jl")
 include("multiTracer.jl")
-include("Parameters.jl")
 
 # Available circulations
 include("OCIM0.jl")
