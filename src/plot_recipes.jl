@@ -186,6 +186,7 @@ plothorizontalintegral! = plot∫dxdy!
 Plots a horizontal average of tracer `x`.
 """
 plothorizontalmean(x, grd; mask=1, kwargs...) = zplot(horizontalmean(x, grd, mask), grd.depth; kwargs...)
+plothorizontalmean!(x, grd; mask=1, kwargs...) = zplot!(horizontalmean(x, grd, mask), grd.depth; kwargs...)
 plothorizontalmean!(plt, x, grd; mask=1, kwargs...) = zplot!(plt, horizontalmean(x, grd, mask), grd.depth; kwargs...)
 plothorizontalaverage = plothorizontalmean
 plothorizontalaverage! = plothorizontalmean!
