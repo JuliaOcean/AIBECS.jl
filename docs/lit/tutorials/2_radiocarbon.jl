@@ -14,11 +14,11 @@
 
 
 #md # !!! note
-#md #     Although this tutorial is self-contained, it involves non-linearitiess and is slightly more complicated than [the first tutorial for simulating the ideal age](@ref ideal-age).
+#md #     Although this tutorial is self-contained, it is slightly more complicated than [the first tutorial for simulating the ideal age](@ref ideal-age).
 #md #     (So do not hesitate to start with the ideal-age tutorial if you wish.)
 
 #nb # > *Note*
-#nb # > Although this tutorial is self-contained, it involves non-linearitiess and is slightly more complicated than [the first tutorial for simulating the ideal age](@ref ideal-age).
+#nb # > Although this tutorial is self-contained, it is slightly more complicated than [the first tutorial for simulating the ideal age](@ref ideal-age).
 #nb # > (So do not hesitate to start with the ideal-age tutorial if you wish.)
 
 # The tracer equation for radiocarbon is
@@ -78,9 +78,9 @@ end
 # And for the radioactive decay we use a timescale $\tau$ of 5730/log(2) years.
 #
 
-p = RadiocarbonParameters(λ = 50u"m"/10u"yr", 
-                          h = grd.δdepth[1], 
-                          τ = 5730u"yr"/log(2), 
+p = RadiocarbonParameters(λ = 50u"m"/10u"yr",
+                          h = grd.δdepth[1],
+                          τ = 5730u"yr"/log(2),
                           R̅atm = 42.0u"nM")
 
 #md # !!! note
