@@ -1,7 +1,7 @@
 name = "AIBECS"
 uuid = "ace601d6-714c-11e9-04e5-89b7fad23838"
 authors = ["Benoit Pasquier <briochemc@gmail.com>"]
-version = "0.7.9"
+version = "0.7.8"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
@@ -40,7 +40,7 @@ Distributions = "0.23"
 FieldMetadata = "0.3"
 Flatten = "0.3"
 ForwardDiff = "0.10"
-Interpolations = "0.12"
+Interpolations = "0.12, 0.13"
 MetadataArrays = "0.1"
 NCDatasets = "0.10"
 NearestNeighbors = "0.4"

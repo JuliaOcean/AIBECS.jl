@@ -51,8 +51,8 @@ T(p) = T_OCCA
 # The local sources and sinks are simply given by
 
 function G(R,p)
-    @unpack λ, h, R̅atm, τ = p
-    return @. λ / h * (R̅atm - R) * (z ≤ h) - R / τ
+    @unpack λ, h, Ratm, τ = p
+    return @. λ / h * (Ratm - R) * (z ≤ h) - R / τ
 end
 
 
@@ -71,7 +71,7 @@ import AIBECS: @units, units
     λ::U    | u"m/yr"
     h::U    | u"m"
     τ::U    | u"yr"
-    R̅atm::U | u"M"
+    Ratm::U | u"M"
 end
 
 # For the air–sea gas exchange, we use a constant piston velocity $\lambda$ of 50m / 10years.
@@ -81,7 +81,7 @@ end
 p = RadiocarbonParameters(λ = 50u"m"/10u"yr",
                           h = grd.δdepth[1],
                           τ = 5730u"yr"/log(2),
-                          R̅atm = 42.0u"nM")
+                          Ratm = 42.0u"nM")
 
 #md # !!! note
 #md #     The parameters are converted to SI units when unpacked.
@@ -100,8 +100,8 @@ R = solve(prob, CTKAlg()).u
 # This should take a few seconds on a laptop.
 # Once the radiocarbon concentration is computed, we can convert it into the corresponding age in years, via
 
-@unpack τ, R̅atm = p
-C14age = @. log(R̅atm / R) * τ * u"s" |> u"yr"
+@unpack τ, Ratm = p
+C14age = @. log(Ratm / R) * τ * u"s" |> u"yr"
 
 # and plot it at 700 m using the `horizontalslice` Plots recipe
 

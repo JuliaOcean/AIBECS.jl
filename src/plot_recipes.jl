@@ -57,7 +57,7 @@ cruise track when plotting a transect:
 plottransect(dummy, grd; ct=sort(ct))
 plot!(inset_subplots=bbox(0.73,0.73,0.15,0.15), subplot=2)
 minimap!(grd; subplot=2)
-cruisetrackplots!(sort(ct), subplot=2)
+plotcruisetrack!(sort(ct), subplot=2)
 ```
 """
 @userplot MiniMap
@@ -218,7 +218,7 @@ end
 
 Plots the transect of tracer `x` along transect `ct`.
 """
-plottransect(x, grd; ct=nothing, start=:south, show_stations=false, insetmap=false, kwargs...) = verticalplane(verticalsection(x, grd; ct=ct)...; kwargs...)
+plottransect(x, grd; ct=nothing, start=:south, show_stations=false, insetmap=false, kwargs...) = verticalplane(verticalsection2(x, grd; ct=ct)...; kwargs...)
 export plottransect
 
 

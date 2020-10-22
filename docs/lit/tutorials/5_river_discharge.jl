@@ -51,7 +51,7 @@ r = RIVERS[1]
 
 using Plots
 scatter([r.lon for r in RIVERS], [r.lat for r in RIVERS],
-        zcolor=ustrip.([r.VFR for r in RIVERS] / u"m^3/s"),
+        zcolor=log10.(uconvert.(NoUnits, [r.VFR for r in RIVERS] / u"m^3/s")),
         colorbartitle="log₁₀(discharge / (1 m³ s⁻¹))")
 
 # We can regrid these into the OCIM2 grid and return the corresponding vector with
@@ -115,7 +115,7 @@ s = solve(prob, CTKAlg()).u * u"mol/m^3"
 # Taking a horizontal slice of the 3D field at 200m gives
 
 cmap = :viridis
-plothorizontalslice(s, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,0.5))
+plothorizontalslice(s, grd, zunit=u"μmol/m^3", depth=200, color=cmap)
 
 # and at 500m:
 

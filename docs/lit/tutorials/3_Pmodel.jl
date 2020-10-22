@@ -172,13 +172,13 @@ DIP2, POP2 = state_to_tracers(sol2, grd) # unpack tracers
 
 # and check the difference
 
-plotzonalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-0.1, 0.1))
+plotzonalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-5,5))
 
-# This zonal average shows how much DIP is prevented from sinking out of the surface layers with the new subgrid parameterization.
+# This zonal average shows how much DIP is redistributed as it is prevented from sinking out of the surface layers with the new subgrid parameterization.
 
 # Let's look at the vertical average.
 
-plotverticalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-0.1,0.1))
+plotverticalaverage((DIP2 - DIP) ./ DIP .|> u"percent", grd, color=:balance, clim=(-10,10))
 
-# This shows minor changes, on the order of 0.1%, on the global scale,
-# which means that the subgrid-topography parameterization mostly affects the vertical distribution of our tracers.
+# This shows minor changes on the order of 1%, on the global scale,
+# except along the coasts, which retain much more DIP with the subgrid topography.
