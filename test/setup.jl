@@ -6,9 +6,9 @@ T_Circulation = ustrip.(T_Circulation_unit) # strip units for now
 # Define useful constants and arrays
 iwet = indices_of_wet_boxes(grd)
 nb = number_of_wet_boxes(grd)
-v = ustrip.(vector_of_volumes(grd)) # strip units for now
-z = ustrip.(vector_of_depths(grd)) # strip units for now
-ztop = ustrip.(vector_of_top_depths(grd)) # strip units for now
+v = volumevec(grd)
+z = depthvec(grd)
+ztop = topdepthvec(grd) # strip units for now
 # And matrices
 DIV = DIVO(grd)
 Iabove = buildIabove(grd)

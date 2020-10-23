@@ -7,12 +7,11 @@ import AIBECS: description, @description
     xgeo::T | 2.17 | u"mmol/m^3" | "Geological mean P concentration"             | LogNormal(0,1) | true
     τgeo::T |  1.0 | u"Myr"      | "Geological restoring timescale"              | LogNormal(0,1) | false
     k::T    | 10.0 | u"μmol/m^3" | "Half-saturation constant (Michaelis-Menten)" | LogNormal(0,1) | true
-    z₀::T   | 80.0 | u"m"        | "Depth of the euphotic layer base"            | LogNormal(0,1) | false
     w₀::T   |  1.0 | u"m/d"      | "Sinking velocity at surface"                 | LogNormal(0,1) | true
     w′::T   | 0.22 | u"m/d/m"    | "Vertical gradient of sinking velocity"       |    Normal(0,1) | true
     τDOP::T | 0.25 | u"yr"       | "Remineralization timescale (DOP to DIP)"     | LogNormal(0,1) | true
     τPOP::T | 5.25 | u"d"        | "Dissolution timescale (POP to DOP)"          | LogNormal(0,1) | true
-    σ::T    |  1/3 | unit(1)     | "Fraction of quick local uptake recycling"    |   Uniform(0,1) | true
+    σ::T    |  1/3 | NoUnits     | "Fraction of quick local uptake recycling"    |   Uniform(0,1) | true
     τDIP::T | 30.0 | u"d"        | "Uptake maximum timescale (DIP to POP)"       | LogNormal(0,1) | true
 end
 Distributions.gradlogpdf(::Uniform, x::T) where {T<:Real} = zero(T) # Required for these tests because undefined in Distributions...

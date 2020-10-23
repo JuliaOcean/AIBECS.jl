@@ -22,9 +22,9 @@ end
 # Uptake of phosphate (DIP)
 relu(x) = (x .≥ 0) .* x
 function uptake(DIP, p)
-    @unpack τDIP, k, z₀ = p
+    @unpack τDIP, k = p
     DIP⁺ = relu(DIP)
-    return @. 1 / τDIP * DIP⁺^2 / (DIP⁺ + k) * (z ≤ z₀)
+    return @. 1 / τDIP * DIP⁺^2 / (DIP⁺ + k) * (ztop == 0)
 end
 # Remineralization DOP into DIP
 function remineralization(DOP, p)
@@ -55,16 +55,16 @@ In-place sources minus sinks
 ===========================================#
 
 function G_DIP!(dx, DIP, DOP, POP, p)
-    @unpack τgeo, xgeo, τDIP, k, z₀, τDOP = p
-    @. dx = (xgeo - DIP) / τgeo - (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (z ≤ z₀) + DOP / τDOP
+    @unpack τgeo, xgeo, τDIP, k, τDOP = p
+    @. dx = (xgeo - DIP) / τgeo - (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (ztop == 0) + DOP / τDOP
 end
 function G_DOP!(dx, DIP, DOP, POP, p)
-    @unpack τgeo, xgeo, τDIP, k, z₀, τDOP, τPOP, σ = p
-    @. dx = σ * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (z ≤ z₀) - DOP / τDOP + POP / τPOP
+    @unpack τgeo, xgeo, τDIP, k, τDOP, τPOP, σ = p
+    @. dx = σ * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (ztop == 0) - DOP / τDOP + POP / τPOP
 end
 function G_POP!(dx, DIP, DOP, POP, p)
-    @unpack τgeo, xgeo, τDIP, k, z₀, τDOP, τPOP, σ = p
-    @. dx = (1 - σ) * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (z ≤ z₀) - POP / τPOP
+    @unpack τgeo, xgeo, τDIP, k, τDOP, τPOP, σ = p
+    @. dx = (1 - σ) * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (ztop == 0) - POP / τPOP
 end
 Gs = (G_DIP!, G_DOP!, G_POP!)
 
