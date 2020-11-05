@@ -18,11 +18,42 @@ function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
     function G(x,p)
         xs = tracers(x)
-        return reduce(vcat, [Gⱼ(xs..., p) for Gⱼ in Gs]) # nonlinear part
+        return reduce(vcat, Gⱼ(xs..., p) for Gⱼ in Gs) # nonlinear part
     end
-    F(x,p) = G(x,p) - reduce(vcat, [Tⱼ(p) * tracer(x,j) for (j,Tⱼ) in enumerate(Ts)])
+    function F(x,p)
+        xout = G(x,p)
+        for (j, (xoutⱼ, Tⱼ)) in enumerate(zip(tracers(xout), Ts))
+            mul!(xoutⱼ, Tⱼ(p), tracer(x,j), -1.0, 1.0)
+        end
+        xout
+    end
     ∇ₓG(x,p) = local_jacobian(Gs, x, p, nt, nb)     # Jacobian of nonlinear part
     ∇ₓF(x,p) = ∇ₓG(x,p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
+    return F, ∇ₓF
+end
+"""
+    F, ∇ₓF = state_function_and_Jacobian(T, Gs, nb)
+
+Returns the state function `F` and its jacobian, `∇ₓF` (with all tracers transported by single `T`).
+"""
+function state_function_and_Jacobian(T, Gs::Tuple, nb)
+    nt = length(Gs)
+    tracers(x) = state_to_tracers(x, nb, nt)
+    tracer(x,i) = state_to_tracer(x, nb, nt, i)
+    G(x,p) = reduce(vcat, Gⱼ(tracers(x)..., p) for Gⱼ in Gs) # nonlinear part
+    function F(x,p)
+        xout = G(x,p)
+        T_all = T(p)
+        for j in 1:nt
+            mul!(tracer(xout,j), T_all, tracer(x,j), -1.0, 1.0)
+        end
+        xout
+    end
+    ∇ₓG(x,p) = local_jacobian(Gs, x, p, nt, nb)      # Jacobian of nonlinear part
+    function ∇ₓF(x,p)
+        T_all = T(p)
+        ∇ₓG(x,p) - blockdiag([T_all for _ in 1:nt]...) # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
+    end
     return F, ∇ₓF
 end
 function state_function_and_Jacobian(T, G)
@@ -88,8 +119,8 @@ function split_state_function_and_Jacobian(Ts::Tuple, Ls::Tuple, NLs::Tuple, nb)
     nt = length(Ts)
     tracers(x) = state_to_tracers(x, nb, nt)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
-    NL(x,p) = reduce(vcat, [NLⱼ(tracers(x)..., p) for NLⱼ in NLs]) # nonlinear part
-    L(x,p) = reduce(vcat, [Lⱼ(tracers(x)..., p) for Lⱼ in Ls]) # nonlinear part
+    NL(x,p) = reduce(vcat, NLⱼ(tracers(x)..., p) for NLⱼ in NLs) # nonlinear part
+    L(x,p) = reduce(vcat, Lⱼ(tracers(x)..., p) for Lⱼ in Ls) # nonlinear part
     F(x,p) = NL(x,p) + L(x,p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
     ∇ₓNL(x,p) = local_jacobian(NLs, x, p, nt, nb)     # Jacobian of nonlinear part
     ∇ₓL(p) = local_jacobian(Ls, zeros(nt*nb), p, nt, nb)     # Jacobian of nonlinear part
@@ -106,20 +137,20 @@ end
 export split_state_function_and_Jacobian
 
 function local_jacobian(Gs, x, p, nt, nb)
-    return reduce(vcat, [local_jacobian_row(Gⱼ, x, p, nt, nb) for Gⱼ in Gs])
+    return reduce(vcat, local_jacobian_row(Gⱼ, x, p, nt, nb) for Gⱼ in Gs)
 end
 function inplace_local_jacobian(Gs, x, p, nt, nb)
-    return reduce(vcat, [inplace_local_jacobian_row(Gⱼ!, x, p, nt, nb) for Gⱼ! in Gs])
+    return reduce(vcat, inplace_local_jacobian_row(Gⱼ!, x, p, nt, nb) for Gⱼ! in Gs)
 end
 
 function local_jacobian_row(Gᵢ, x, p, nt, nb)
     tracers(x) = state_to_tracers(x, nb, nt)
-    return reduce(hcat, [sparse(Diagonal(localderivative(Gᵢ, tracers(x), j, p))) for j in 1:nt])
+    return reduce(hcat, sparse(Diagonal(localderivative(Gᵢ, tracers(x), j, p))) for j in 1:nt)
 end
 function inplace_local_jacobian_row(Gᵢ!, x, p, nt, nb)
     tracers(x) = state_to_tracers(x, nb, nt)
     dx = Vector{Float64}(undef,nb)
-    return reduce(hcat, [sparse(Diagonal(localderivative(Gᵢ!, dx, tracers(x), j, p))) for j in 1:nt])
+    return reduce(hcat, sparse(Diagonal(localderivative(Gᵢ!, dx, tracers(x), j, p))) for j in 1:nt)
 end
 
 #=============================================
@@ -159,7 +190,7 @@ end
 function generate_∇ₓobjective(ωs, μx, σ²x, v)
     nt, nb = length(ωs), length(v)
     tracers(x) = state_to_tracers(x, nb, nt)
-    ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
+    ∇ₓf(x, p) = reduce(hcat, ωⱼ * ∇mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x))
     return ∇ₓf
 end
 function generate_∇ₓobjective(ωs, grd, obs; kwargs...)
@@ -167,7 +198,7 @@ function generate_∇ₓobjective(ωs, grd, obs; kwargs...)
     tracers(x) = state_to_tracers(x, nb, nt)
     Ms = [interpolationmatrix(grd, obsⱼ) for obsⱼ in obs]
     cs = get(kwargs, :cs, (collect(identity for i in 1:nt)...,))
-    ∇ₓf(x, p) = reduce(hcat, [ωⱼ * ∇mismatch(xⱼ, grd, obsⱼ, M=Mⱼ, c=cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs)])
+    ∇ₓf(x, p) = reduce(hcat, ωⱼ * ∇mismatch(xⱼ, grd, obsⱼ, M=Mⱼ, c=cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs))
     return ∇ₓf
 end
 function generate_∇ₓobjective(ωs, grd, modify::Function, obs)
@@ -273,7 +304,7 @@ end
 function ∇modify(modify, xs, i, j)
     return sparse(Diagonal(ForwardDiff.derivative(λ -> modify(perturb_tracer(xs,j,λ)...)[i], 0.0)))
 end
-∇modify(modify, xs, i) = reduce(hcat, [∇modify(modify, xs, i, j) for j in 1:length(xs)])
+∇modify(modify, xs, i) = reduce(hcat, ∇modify(modify, xs, i, j) for j in 1:length(xs))
 
 
 #=============================================
@@ -291,7 +322,7 @@ unpacking of multi-tracers
 =============================================#
 
 state_to_tracers(x, nb, nt) = ntuple(i -> state_to_tracer(x, nb, nt, i), nt)
-state_to_tracer(x, nb, nt, i) = x[tracer_indices(nb, nt, i)]
+state_to_tracer(x, nb, nt, i) = view(x, tracer_indices(nb, nt, i))
 function state_to_tracers(x, grd)
     nb = number_of_wet_boxes(grd)
     nt = Int(round(length(x) / nb))
