@@ -18,13 +18,12 @@ const ∞ = Inf
 end
 function prior(::Type{T}, s::Symbol) where {T<:AbstractParameters}
     if flattenable(T, s)
-        U = units(T, s)
         if limits(T, s) == (0,∞)
-            μ = log(ustrip(upreferred(initial_value(T, s) * U)))
+            μ = log(initial_value(T, s))
             return LogNormal(μ, 1.0)
         elseif limits(T, s) == (-∞,∞)
-            μ = ustrip(upreferred(initial_value(T, s) * U))
-            σ = ustrip(upreferred(10.0U)) # Assumes that a sensible unit is chosen!
+            μ = initial_value(T, s)
+            σ = 10.0 # Assumes that a sensible unit is chosen (i.e., that within 10.0 * U)
             return Normal(μ, σ)
         elseif limits(T, s) == (0,1)
             return Uniform(0,1)

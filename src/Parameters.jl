@@ -399,37 +399,37 @@ If the prior is `Uniform`, then the change of variables is the logit function.
 Otherwise, it's `identity`.
 """
 function subfun(::Type{T}) where {T<:AbstractParameters}
-    return λ -> reconstruct(T, [subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))])
+    ks = flattenable_symbols(T)
+    λ2p(λ) = (subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, ks))
+    return λ -> T(; zip(ks, λ2p(λ))...)
 end
 function ∇subfun(::Type{T}) where {T<:AbstractParameters}
-    return λ -> reconstruct(T, [∇subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))])
+    ks = flattenable_symbols(T)
+    ∇λ2p(λ) = (∇subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, ks))
+    return λ -> T(; zip(ks, ∇λ2p(λ))...)
 end
 function ∇²subfun(::Type{T}) where {T<:AbstractParameters}
-    return λ -> reconstruct(T, [∇²subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))])
+    ks = flattenable_symbols(T)
+    ∇²λ2p(λ) = (∇²subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, ks))
+    return λ -> T(; zip(ks, ∇²λ2p(λ))...)
 end
 function invsubfun(::Type{T}) where {T<:AbstractParameters}
-    return p -> [invsubfun(T, s)(pᵢ) for (pᵢ,s) in zip(vec(p), flattenable_symbols(T))]
+    return p -> [invsubfun(T, s)(pᵢ) for (pᵢ,s) in zip(flattenable_values(p), flattenable_symbols(T))]
 end
 # substitution function (change of variables) is determined from prior distribution
 subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = subfun(prior(T,s))
 ∇subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = ∇subfun(prior(T,s))
 ∇²subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = ∇²subfun(prior(T,s))
 invsubfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = invsubfun(prior(T,s))
-# Fallback rule for change of variables is identity
-subfun(::Distribution) = identity
-∇subfun(::Distribution) = x -> one(x)
-∇²subfun(::Distribution) = x -> zero(x)
-invsubfun(::Distribution) = identity
-# p = exp(λ) for LogNormal
-subfun(::LogNormal) = exp
-∇subfun(::LogNormal) = exp
-∇²subfun(::LogNormal) = exp
-invsubfun(::LogNormal) = log
-# p = logistic(λ) for Uniform
-subfun(d::Uniform) = λ -> d.a + (d.b - d.a) / (exp(-λ) + 1)
-∇subfun(d::Uniform) = λ -> (d.b - d.a) * exp(-λ) / (exp(-λ) + 1)^2
-∇²subfun(d::Uniform) = λ -> (d.a - d.b) * exp(-λ) / (exp(-λ) + 1)^2 + 2(d.b - d.a) * exp(-2λ) / (exp(-λ) + 1)^3
-invsubfun(d::Uniform) = p -> -log((d.b - d.a) / (p - d.a) - 1)
+# using TransformVariables
+lb_domain(d::ContinuousUnivariateDistribution) = (lb = support(d).lb; lb == -Inf ? TransformVariables.Infinity{false}() : lb)
+ub_domain(d::ContinuousUnivariateDistribution) = (ub = support(d).ub; ub == Inf ? TransformVariables.Infinity{true}() : ub)
+import TransformVariables: transform
+transform(d::ContinuousUnivariateDistribution) = as(Real, lb_domain(d), ub_domain(d))
+subfun(d::ContinuousUnivariateDistribution) = x -> transform(d)(x)
+∇subfun(d::ContinuousUnivariateDistribution) = x -> ForwardDiff.derivative(subfun(d), x)
+∇²subfun(d::ContinuousUnivariateDistribution) = x -> ForwardDiff.derivative(∇subfun(d), x)
+invsubfun(d::ContinuousUnivariateDistribution) = x -> inverse(transform(d))(x)
 
 export subfun, ∇subfun, ∇²subfun, invsubfun
 
