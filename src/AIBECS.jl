@@ -24,6 +24,7 @@ using Distances
 using NearestNeighbors
 @reexport using MetadataArrays
 using Shapefile
+using TransformVariables
 
 
 
