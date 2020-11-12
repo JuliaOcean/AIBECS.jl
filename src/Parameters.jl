@@ -422,10 +422,9 @@ subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = subfun(prior(T,s))
 ∇²subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = ∇²subfun(prior(T,s))
 invsubfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = invsubfun(prior(T,s))
 # using TransformVariables
-lb_domain(d::ContinuousUnivariateDistribution) = (lb = support(d).lb; lb == -Inf ? TransformVariables.Infinity{false}() : lb)
-ub_domain(d::ContinuousUnivariateDistribution) = (ub = support(d).ub; ub == Inf ? TransformVariables.Infinity{true}() : ub)
 import TransformVariables: transform
-transform(d::ContinuousUnivariateDistribution) = as(Real, lb_domain(d), ub_domain(d))
+to∞(x) = isinf(x) ? TransformVariables.Infinity{x>0}() : x # convert Inf to ∞
+transform(d::ContinuousUnivariateDistribution) = as(Real, to∞(minimum(d)), to∞(maximum(d)))
 subfun(d::ContinuousUnivariateDistribution) = x -> transform(d)(x)
 ∇subfun(d::ContinuousUnivariateDistribution) = x -> ForwardDiff.derivative(subfun(d), x)
 ∇²subfun(d::ContinuousUnivariateDistribution) = x -> ForwardDiff.derivative(∇subfun(d), x)
