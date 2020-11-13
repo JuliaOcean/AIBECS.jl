@@ -3,59 +3,59 @@
     α::T
     β::T
 end</code></pre><p>Once the type, which here simply defines the symbols (<code>α</code> and <code>β</code>), is constructed, we can <em>instantiate</em> a parameter variable.</p><pre><code class="language-julia">p = SimpleParams(1.0, 2.0)</code></pre><pre class="documenter-example-output">
-│ Row │ Symbol │ Value   │
-│     │ Symbol │ Float64 │
-├─────┼────────┼─────────┤
-│ 1   │ α      │ 1.0     │
-│ 2   │ β      │ 2.0     │</pre><p>As you can see, the AIBECS will display <code>p</code> as a table. This is because the <code>show</code> method converts <code>p</code> to a table (a <code>DataFrame</code> to be specific) under the hood:</p><pre><code class="language-julia">AIBECS.table(p)</code></pre><table class="data-frame"><thead><tr><th></th><th>Symbol</th><th>Value</th></tr><tr><th></th><th>Symbol</th><th>Float64</th></tr></thead><tbody><p>2 rows × 2 columns</p><tr><th>1</th><td>α</td><td>1.0</td></tr><tr><th>2</th><td>β</td><td>2.0</td></tr></tbody></table><p>If you do not remember the order in which you created the parameters (<code>α</code> is first, <code>β</code> is second), AIBECS has got your back: keyword arguments are supported.</p><pre><code class="language-julia">p = SimpleParams(β = 2.0, α = 1.0)</code></pre><pre class="documenter-example-output">
-│ Row │ Symbol │ Value   │
-│     │ Symbol │ Float64 │
-├─────┼────────┼─────────┤
-│ 1   │ α      │ 1.0     │
-│ 2   │ β      │ 2.0     │</pre><h2 id="Unpacking"><a class="docs-heading-anchor" href="#Unpacking">Unpacking</a><a id="Unpacking-1"></a><a class="docs-heading-anchor-permalink" href="#Unpacking" title="Permalink"></a></h2><p>Probably the most useful feature in AIBECS is the ability to elegantly unpack parameters, thanks to <a href="https://github.com/mauro3/Parameters.jl">Parameters.jl</a>.</p><pre><code class="language-julia">@unpack α, β = p
+│ Row │ Symbol │ Value   │ Limits     │
+│     │ Symbol │ Float64 │ Tuple…     │
+├─────┼────────┼─────────┼────────────┤
+│ 1   │ α      │ 1.0     │ (0.0, 1.0) │
+│ 2   │ β      │ 2.0     │ (0.0, 1.0) │</pre><p>As you can see, the AIBECS will display <code>p</code> as a table. This is because the <code>show</code> method converts <code>p</code> to a table (a <code>DataFrame</code> to be specific) under the hood:</p><pre><code class="language-julia">AIBECS.table(p)</code></pre><table class="data-frame"><thead><tr><th></th><th>Symbol</th><th>Value</th><th>Limits</th></tr><tr><th></th><th>Symbol</th><th>Float64</th><th>Tuple…</th></tr></thead><tbody><p>2 rows × 3 columns</p><tr><th>1</th><td>α</td><td>1.0</td><td>(0.0, 1.0)</td></tr><tr><th>2</th><td>β</td><td>2.0</td><td>(0.0, 1.0)</td></tr></tbody></table><p>If you do not remember the order in which you created the parameters (<code>α</code> is first, <code>β</code> is second), AIBECS has got your back: keyword arguments are supported.</p><pre><code class="language-julia">p = SimpleParams(β = 2.0, α = 1.0)</code></pre><pre class="documenter-example-output">
+│ Row │ Symbol │ Value   │ Limits     │
+│     │ Symbol │ Float64 │ Tuple…     │
+├─────┼────────┼─────────┼────────────┤
+│ 1   │ α      │ 1.0     │ (0.0, 1.0) │
+│ 2   │ β      │ 2.0     │ (0.0, 1.0) │</pre><h2 id="Unpacking"><a class="docs-heading-anchor" href="#Unpacking">Unpacking</a><a id="Unpacking-1"></a><a class="docs-heading-anchor-permalink" href="#Unpacking" title="Permalink"></a></h2><p>Probably the most useful feature in AIBECS is the ability to elegantly unpack parameters, thanks to <a href="https://github.com/mauro3/Parameters.jl">Parameters.jl</a>.</p><pre><code class="language-julia">@unpack α, β = p
 α, β</code></pre><pre class="documenter-example-output">(1.0, 2.0)</pre><p>unpacks the parameters on the left (<code>α</code> and <code>β</code>) from the parameter type <code>p</code>.</p><h2 id="Units"><a class="docs-heading-anchor" href="#Units">Units</a><a id="Units-1"></a><a class="docs-heading-anchor-permalink" href="#Units" title="Permalink"></a></h2><p>One of the main features of parameters in AIBECS is that you can use units and let AIBECS do the conversions for you. Before you use units, though, you <strong>must</strong> import the <code>@units</code> and <code>units</code> functions from AIBECS. Here is an example.</p><pre><code class="language-julia">import AIBECS: @units, units
 @units struct UnitfulParams{T} &lt;: AbstractParameters{T}
     α::T | u&quot;m/s&quot;
     β::T | u&quot;d&quot;
 end</code></pre><pre class="documenter-example-output">units (generic function with 37 methods)</pre><p>Cretaing an instance is just as easy</p><pre><code class="language-julia">p = UnitfulParams(1.0, 2.0)</code></pre><pre class="documenter-example-output">
-│ Row │ Symbol │ Value   │ Unit     │
-│     │ Symbol │ Float64 │ FreeUni… │
-├─────┼────────┼─────────┼──────────┤
-│ 1   │ α      │ 1.0     │ m s⁻¹    │
-│ 2   │ β      │ 2.0     │ d        │</pre><p>And in this case the parameters are shown with units. You can rely on AIBECS to convert units on the fly.</p><pre><code class="language-julia">p = UnitfulParams(3.0u&quot;km/hr&quot;, 24.0u&quot;hr&quot;)</code></pre><pre class="documenter-example-output">
-│ Row │ Symbol │ Value    │ Unit     │
-│     │ Symbol │ Float64  │ FreeUni… │
-├─────┼────────┼──────────┼──────────┤
-│ 1   │ α      │ 0.833333 │ m s⁻¹    │
-│ 2   │ β      │ 1.0      │ d        │</pre><p>And use keyword arguments</p><pre><code class="language-julia">p = UnitfulParams(β = 24.0u&quot;hr&quot;, α = 3.0u&quot;km/hr&quot;)</code></pre><pre class="documenter-example-output">
-│ Row │ Symbol │ Value    │ Unit     │
-│     │ Symbol │ Float64  │ FreeUni… │
-├─────┼────────┼──────────┼──────────┤
-│ 1   │ α      │ 0.833333 │ m s⁻¹    │
-│ 2   │ β      │ 1.0      │ d        │</pre><p>Unpacking parameters that have units first converts them to SI units.</p><pre><code class="language-julia">@unpack β = p
+│ Row │ Symbol │ Value   │ Unit     │ Limits     │
+│     │ Symbol │ Float64 │ FreeUni… │ Tuple…     │
+├─────┼────────┼─────────┼──────────┼────────────┤
+│ 1   │ α      │ 1.0     │ m s⁻¹    │ (0.0, 1.0) │
+│ 2   │ β      │ 2.0     │ d        │ (0.0, 1.0) │</pre><p>And in this case the parameters are shown with units. You can rely on AIBECS to convert units on the fly.</p><pre><code class="language-julia">p = UnitfulParams(3.0u&quot;km/hr&quot;, 24.0u&quot;hr&quot;)</code></pre><pre class="documenter-example-output">
+│ Row │ Symbol │ Value    │ Unit     │ Limits     │
+│     │ Symbol │ Float64  │ FreeUni… │ Tuple…     │
+├─────┼────────┼──────────┼──────────┼────────────┤
+│ 1   │ α      │ 0.833333 │ m s⁻¹    │ (0.0, 1.0) │
+│ 2   │ β      │ 1.0      │ d        │ (0.0, 1.0) │</pre><p>And use keyword arguments</p><pre><code class="language-julia">p = UnitfulParams(β = 24.0u&quot;hr&quot;, α = 3.0u&quot;km/hr&quot;)</code></pre><pre class="documenter-example-output">
+│ Row │ Symbol │ Value    │ Unit     │ Limits     │
+│     │ Symbol │ Float64  │ FreeUni… │ Tuple…     │
+├─────┼────────┼──────────┼──────────┼────────────┤
+│ 1   │ α      │ 0.833333 │ m s⁻¹    │ (0.0, 1.0) │
+│ 2   │ β      │ 1.0      │ d        │ (0.0, 1.0) │</pre><p>Unpacking parameters that have units first converts them to SI units.</p><pre><code class="language-julia">@unpack β = p
 β</code></pre><pre class="documenter-example-output">86400.0</pre><p>and <code>β</code> (which is equal to 1 day) here is expressed in seconds after being unpacked.</p><h2 id="Initial-values"><a class="docs-heading-anchor" href="#Initial-values">Initial values</a><a id="Initial-values-1"></a><a class="docs-heading-anchor-permalink" href="#Initial-values" title="Permalink"></a></h2><p>Another useful feature is to set initial (or default) values. Again, you <strong>must</strong> import the functions for them to work properly</p><pre><code class="language-julia">import AIBECS: @initial_value, initial_value
 @initial_value struct ParamsWithInitialValue{T} &lt;: AbstractParameters{T}
     α::T | 1.0
     β::T | 2.0
 end</code></pre><pre class="documenter-example-output">initial_value (generic function with 33 methods)</pre><p>This is handy in many applications.</p><p>You can instantiate <code>p</code> with the initial values as, well, its values.</p><pre><code class="language-julia">p = ParamsWithInitialValue()</code></pre><pre class="documenter-example-output">
-│ Row │ Symbol │ Value   │ Initial value │
-│     │ Symbol │ Float64 │ Float64       │
-├─────┼────────┼─────────┼───────────────┤
-│ 1   │ α      │ 1.0     │ 1.0           │
-│ 2   │ β      │ 2.0     │ 2.0           │</pre><p>You could also just set one parameter to a different value</p><pre><code class="language-julia">p = ParamsWithInitialValue(β = 10.0)</code></pre><pre class="documenter-example-output">
-│ Row │ Symbol │ Value   │ Initial value │
-│     │ Symbol │ Float64 │ Float64       │
-├─────┼────────┼─────────┼───────────────┤
-│ 1   │ α      │ 1.0     │ 1.0           │
-│ 2   │ β      │ 10.0    │ 2.0           │</pre><h2 id="Combining-initial-values-and-units"><a class="docs-heading-anchor" href="#Combining-initial-values-and-units">Combining initial values and units</a><a id="Combining-initial-values-and-units-1"></a><a class="docs-heading-anchor-permalink" href="#Combining-initial-values-and-units" title="Permalink"></a></h2><p>You can combine both features in parameters.</p><pre><code class="language-julia">@initial_value @units struct UnitfulParamsWithInitialValue{T} &lt;: AbstractParameters{T}
+│ Row │ Symbol │ Value   │ Initial value │ Limits     │
+│     │ Symbol │ Float64 │ Float64       │ Tuple…     │
+├─────┼────────┼─────────┼───────────────┼────────────┤
+│ 1   │ α      │ 1.0     │ 1.0           │ (0.0, 1.0) │
+│ 2   │ β      │ 2.0     │ 2.0           │ (0.0, 1.0) │</pre><p>You could also just set one parameter to a different value</p><pre><code class="language-julia">p = ParamsWithInitialValue(β = 10.0)</code></pre><pre class="documenter-example-output">
+│ Row │ Symbol │ Value   │ Initial value │ Limits     │
+│     │ Symbol │ Float64 │ Float64       │ Tuple…     │
+├─────┼────────┼─────────┼───────────────┼────────────┤
+│ 1   │ α      │ 1.0     │ 1.0           │ (0.0, 1.0) │
+│ 2   │ β      │ 10.0    │ 2.0           │ (0.0, 1.0) │</pre><h2 id="Combining-initial-values-and-units"><a class="docs-heading-anchor" href="#Combining-initial-values-and-units">Combining initial values and units</a><a id="Combining-initial-values-and-units-1"></a><a class="docs-heading-anchor-permalink" href="#Combining-initial-values-and-units" title="Permalink"></a></h2><p>You can combine both features in parameters.</p><pre><code class="language-julia">@initial_value @units struct UnitfulParamsWithInitialValue{T} &lt;: AbstractParameters{T}
     α::T | 1.0 | u&quot;m/s&quot;
     β::T | 2.0 | u&quot;d&quot;
 end</code></pre><pre class="documenter-example-output">initial_value (generic function with 35 methods)</pre><p>And instantiate <code>p</code> from just one parameter with its unit</p><pre><code class="language-julia">p = UnitfulParamsWithInitialValue(β = 1.0u&quot;yr&quot;)</code></pre><pre class="documenter-example-output">
-│ Row │ Symbol │ Value   │ Initial value │ Unit     │
-│     │ Symbol │ Float64 │ Float64       │ FreeUni… │
-├─────┼────────┼─────────┼───────────────┼──────────┤
-│ 1   │ α      │ 1.0     │ 1.0           │ m s⁻¹    │
-│ 2   │ β      │ 365.25  │ 2.0           │ d        │</pre><h2 id="Optimizable-parameters"><a class="docs-heading-anchor" href="#Optimizable-parameters">Optimizable parameters</a><a id="Optimizable-parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Optimizable-parameters" title="Permalink"></a></h2><pre><code class="language-julia">import AIBECS: @flattenable, flattenable
+│ Row │ Symbol │ Value   │ Initial value │ Unit     │ Limits     │
+│     │ Symbol │ Float64 │ Float64       │ FreeUni… │ Tuple…     │
+├─────┼────────┼─────────┼───────────────┼──────────┼────────────┤
+│ 1   │ α      │ 1.0     │ 1.0           │ m s⁻¹    │ (0.0, 1.0) │
+│ 2   │ β      │ 365.25  │ 2.0           │ d        │ (0.0, 1.0) │</pre><h2 id="Optimizable-parameters"><a class="docs-heading-anchor" href="#Optimizable-parameters">Optimizable parameters</a><a id="Optimizable-parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Optimizable-parameters" title="Permalink"></a></h2><pre><code class="language-julia">import AIBECS: @flattenable, flattenable
 @flattenable struct OptimizableParams{T} &lt;: AbstractParameters{T}
     α::T | true
     β::T | false
@@ -69,11 +69,11 @@ v = vec(p)</code></pre><pre class="documenter-example-output">2-element Array{Fl
     γ::T | 3.0 | u&quot;km&quot;  | true
 end
 p = OptimizableParamsWithUnits()</code></pre><pre class="documenter-example-output">
-│ Row │ Symbol │ Value   │ Initial value │ Unit     │ Optimizable │
-│     │ Symbol │ Float64 │ Float64       │ FreeUni… │ Bool        │
-├─────┼────────┼─────────┼───────────────┼──────────┼─────────────┤
-│ 1   │ α      │ 1.0     │ 1.0           │ m s⁻¹    │ 1           │
-│ 2   │ β      │ 2.0     │ 2.0           │ d        │ 0           │
-│ 3   │ γ      │ 3.0     │ 3.0           │ km       │ 1           │</pre><p>And then vectorizing the parameters</p><pre><code class="language-julia">vec(p)</code></pre><pre class="documenter-example-output">2-element Array{Float64,1}:
+│ Row │ Symbol │ Value   │ Initial value │ Unit     │ Limits     │ Optimizable │
+│     │ Symbol │ Float64 │ Float64       │ FreeUni… │ Tuple…     │ Bool        │
+├─────┼────────┼─────────┼───────────────┼──────────┼────────────┼─────────────┤
+│ 1   │ α      │ 1.0     │ 1.0           │ m s⁻¹    │ (0.0, 1.0) │ 1           │
+│ 2   │ β      │ 2.0     │ 2.0           │ d        │ (0.0, 1.0) │ 0           │
+│ 3   │ γ      │ 3.0     │ 3.0           │ km       │ (0.0, 1.0) │ 1           │</pre><p>And then vectorizing the parameters</p><pre><code class="language-julia">vec(p)</code></pre><pre class="documenter-example-output">2-element Array{Float64,1}:
     1.0
- 3000.0</pre><p>Note how <code>γ</code> (the third parameter, but the second flattenable one), is converted to meters.</p><h2 id="Other-features"><a class="docs-heading-anchor" href="#Other-features">Other features</a><a id="Other-features-1"></a><a class="docs-heading-anchor-permalink" href="#Other-features" title="Permalink"></a></h2><p>Coming soon!</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/6_groundwater_discharge/">« Groundwater discharge</a><a class="docs-footer-nextpage" href="../2_plot/">Plot basic things »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 12 November 2020 02:41">Thursday 12 November 2020</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ 3000.0</pre><p>Note how <code>γ</code> (the third parameter, but the second flattenable one), is converted to meters.</p><h2 id="Other-features"><a class="docs-heading-anchor" href="#Other-features">Other features</a><a id="Other-features-1"></a><a class="docs-heading-anchor-permalink" href="#Other-features" title="Permalink"></a></h2><p>Coming soon!</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../tutorials/6_groundwater_discharge/">« Groundwater discharge</a><a class="docs-footer-nextpage" href="../2_plot/">Plot basic things »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 13 November 2020 14:59">Friday 13 November 2020</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
