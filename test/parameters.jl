@@ -18,15 +18,16 @@ const ∞ = Inf
 end
 function prior(::Type{T}, s::Symbol) where {T<:AbstractParameters}
     if flattenable(T, s)
-        if limits(T, s) == (0,∞)
+        lb, ub = limits(T, s)
+        if (lb, ub) == (0,∞)
             μ = log(initial_value(T, s))
             return LogNormal(μ, 1.0)
-        elseif limits(T, s) == (-∞,∞)
+        elseif (lb, ub) == (-∞,∞)
             μ = initial_value(T, s)
             σ = 10.0 # Assumes that a sensible unit is chosen (i.e., that within 10.0 * U)
             return Normal(μ, σ)
-        elseif limits(T, s) == (0,1)
-            return Uniform(0,1)
+        else
+            return LocationScale(lb, ub-lb, LogitNormal()) # <- The LogitNormal works well for Optim?
         end
     else
         return nothing
@@ -67,7 +68,7 @@ p = TestParameters()
         @test xgeo == ustrip(upreferred(p.xgeo * units(p, :xgeo)))
         @test τDIP == ustrip(upreferred(p.τDIP * units(p, :τDIP)))
     end
-    @testset "Prior for $spᵢ ($Dᵢ)" for (spᵢ, Dᵢ) in zip([:σ, :w′, :xgeo], [Uniform, Normal, LogNormal])
+    @testset "Prior for $spᵢ ($Dᵢ)" for (spᵢ, Dᵢ) in zip([:σ, :w′, :xgeo], [LocationScale, Normal, LogNormal])
         D = prior(p, spᵢ)
         @test D isa Dᵢ
         λ2p, ∇λ2p, ∇²λ2p, p2λ = subfun(D), ∇subfun(D), ∇²subfun(D), invsubfun(D)

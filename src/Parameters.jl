@@ -269,6 +269,7 @@ function table(p::AbstractParameters)
     all(isnothing, initial_value(p)) || (push!(ks, Symbol("Initial value")); push!(vs, initial_value))
     all(isequal(1), units(p)) || (push!(ks, :Unit); push!(vs, units))
     all(isnothing, prior(p)) || (push!(ks, Symbol("Prior")); push!(vs, prior))
+    all(isnothing, limits(p)) || (push!(ks, Symbol("Limits")); push!(vs, limits))
     all(isempty, description(p)) || (push!(ks, Symbol("Description")); push!(vs, description))
     all(isnothing, bounds(p)) || (push!(ks, Symbol("Bounds")); push!(vs, bounds))
     any(logscaled(p)) && (push!(ks, Symbol("Logscaled")); push!(vs, logscaled))
@@ -305,20 +306,18 @@ using dual and hyperdual numbers.
 If you want to change the values of `p`, you should do so explicitly
 rather than use this `+` method.
 """
-Base.:+(p::T, v::Vector) where {T <: AbstractParameters} = reconstruct(T, vec(p) + v)
+Base.:+(p::T, v::Vector) where {T <: AbstractParameters} = reconstruct(T, flattenable_values(p) + v)
 
 """
     reconstruct(T, v)
 
 Reconstructs the parameter of type `T` from flattenable vector `v`.
 """
-function reconstruct(::Type{T}, v::Tv) where {T <: AbstractParameters, Tv <: Vector}
+function reconstruct(::Type{T}, v::Vector{V}) where {T <: AbstractParameters, V}
     all(isnothing, initial_value(T)) && error("Can't reconstruct without initial values")
-    vunits = units(T)[[flattenable(T)...]]
-    v = @. v * upreferred(vunits) |> vunits |> ustrip
-    reconstructed_v = convert(Tv, collect(initial_value(T)))
-    reconstructed_v[collect(flattenable(T))] .= v
-    return T.name.wrapper(reconstructed_v...)
+    reconstructed_v = convert(Vector{V}, collect(initial_value(T))) # fill in initial values
+    reconstructed_v[collect(flattenable(T))] .= v            # fill in v
+    return T.name.wrapper{V}(reconstructed_v...)  # wrapper allows to change type
 end
 
 """
@@ -328,7 +327,7 @@ Returns the i-th element of vec(p).
 
 This is not efficient and only used for testing the derivatives with ForwardDiff.
 """
-Base.getindex(p::T, i) where {T <: AbstractParameters} = getindex(vec(p), i)
+Base.getindex(p::T, i) where {T <: AbstractParameters} = flattenable_values(p)[i]
 
 
 function (::Type{T})(args::Quantity...) where {T <: AbstractParameters}
@@ -366,12 +365,10 @@ mismatch of parameters
 
 Returns the sum of the negative log-likelihood of each flattenable parameter.
 """
-function mismatch(p::AbstractParameters)
-    return sum(-logpdf(prior(p,k), UnPack.unpack(p,Val(k))) for k in flattenable_symbols(p))
-end
-function ∇mismatch(p::AbstractParameters)
-    return transpose([-gradlogpdf(prior(p,k), UnPack.unpack(p,Val(k))) for k in flattenable_symbols(p)])
-end
+mismatch(p::AbstractParameters, k::Symbol) = -logpdf(prior(p,k), getfield(p,k))
+mismatch(p::AbstractParameters) = sum(mismatch(p,k) for k in flattenable_symbols(p))
+∇mismatch(p::AbstractParameters, k::Symbol) = -gradlogpdf(prior(p,k), getfield(p,k))
+∇mismatch(p::AbstractParameters) = transpose([∇mismatch(p,k) for k in flattenable_symbols(p)])
 
 # The functions below is just for ForwardDiff to work with vectors instead of p
 # which requires `mismatch` to know about the priors, which are containted in `T`
@@ -404,14 +401,10 @@ function subfun(::Type{T}) where {T<:AbstractParameters}
     return λ -> T(; zip(ks, λ2p(λ))...)
 end
 function ∇subfun(::Type{T}) where {T<:AbstractParameters}
-    ks = flattenable_symbols(T)
-    ∇λ2p(λ) = (∇subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, ks))
-    return λ -> T(; zip(ks, ∇λ2p(λ))...)
+    λ -> [∇subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))]'
 end
 function ∇²subfun(::Type{T}) where {T<:AbstractParameters}
-    ks = flattenable_symbols(T)
-    ∇²λ2p(λ) = (∇²subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, ks))
-    return λ -> T(; zip(ks, ∇²λ2p(λ))...)
+    λ -> Diagonal([∇²subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))])
 end
 function invsubfun(::Type{T}) where {T<:AbstractParameters}
     return p -> [invsubfun(T, s)(pᵢ) for (pᵢ,s) in zip(flattenable_values(p), flattenable_symbols(T))]
