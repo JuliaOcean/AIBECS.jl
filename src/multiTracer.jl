@@ -6,33 +6,45 @@
 Generate 𝐹 and ∇ₓ𝐹 from user input
 ============================================ =#
 
+# What would be the usage like
+# FUN = AIBECSfunction(...)
+# F = FUN.f
+# ∇ₓF = FUN.jac
+#
 function AIBECSfunction(Ts::Tuple, Gs::Tuple, nb)
     nt = length(Ts)
     tracers(x) = state_to_tracers(x, nb, nt)
     tracer(x, i) = state_to_tracer(x, nb, nt, i)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
-    function G(x, p)
+    function G!(du, x, p)
         xs = tracers(x)
-        return reduce(vcat, Gⱼ(xs..., p) for Gⱼ in Gs) # nonlinear part
+        du .= reduce(vcat, Gⱼ(xs..., p) for Gⱼ in Gs) # nonlinear part
+        du
     end
-    function F(x, p)
-        xout = G(x, p)
-        for (j, (xoutⱼ, Tⱼ)) in enumerate(zip(tracers(xout), Ts))
-            mul!(xoutⱼ, Tⱼ(p), tracer(x, j), -1.0, 1.0)
+    function F!(du, x, p)
+        G!(du, x, p)
+        for (j, (duⱼ, Tⱼ)) in enumerate(zip(tracers(du), Ts))
+            mul!(duⱼ, Tⱼ(p), tracer(x, j), -1.0, 1.0)
         end
-        xout
+        du
     end
     ∇ₓG(x, p) = local_jacobian(Gs, x, p, nt, nb)     # Jacobian of nonlinear part
     ∇ₓF(x, p) = ∇ₓG(x, p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
-    return ODEFunction(F, jac=∇ₓF)
+    f(du, u, p, t) = F!(du, u, p)
+    jac(u, p, t) = ∇ₓF(u, p)
+    return ODEFunction(f, jac=jac)
 end
-function AIBECSfunction(Ts, Gs, nb, ::Type{P}) where {P<:APar}
+function AIBECSfunction(Ts, Gs, nb, ::Type{P}) where {P <: APar}
     fun = AIBECSfunction(Ts, Gs, nb)
-    F(x,p::P) = fun.f(x,p)
-    ∇ₓF(x,p::P) = fun.jac(x,p)
-    F(x,λ::Vector) = fun.f(x,λ2p(P, λ))
-    ∇ₓF(x,λ::Vector) = fun.jac(x,λ2p(P, λ))
-    return ODEFunction(F, jac=∇ₓF)
+    f(du, u, p::P, t) = fun.f(du, u, p, t)
+    f(du, u, λ::Vector, t) = fun.f(du, u, λ2p(P, λ), t)
+    jac(u, p::P, t) = fun.jac(u, p, t)
+    jac(u, λ::Vector, t) = fun.jac(u, λ2p(P, λ), t)
+    return ODEFunction(f, jac=jac)
+end
+function F_and_∇ₓF(fun::ODEFunction)
+    dx = copy(x)
+    F(x) = fun.f()
 end
 
 """
@@ -40,7 +52,7 @@ end
 
 Returns the state function `F` and its jacobian, `∇ₓF`.
 """
-function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb, ::Type{P}) where {P<:APar}
+function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb, ::Type{P}) where {P <: APar}
     nt = length(Ts)
     tracers(x) = state_to_tracers(x, nb, nt)
     tracer(x, i) = state_to_tracer(x, nb, nt, i)
@@ -62,8 +74,8 @@ function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb, ::Type{P}) where 
     ∇ₓF(x, v::Vector) = ∇ₓF(x, λ2p(P, λ))
     return F, ∇ₓF
 end
-#or I could to
-function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb, ::Type{P}) where {P<:APar}
+# or I could to
+function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb, ::Type{P}) where {P <: APar}
     F, ∇ₓF = state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb)
     F(x, λ::Vector) = F(x, λ2p(P, λ))
     ∇ₓF(x, v::Vector) = ∇ₓF(x, λ2p(P, λ))
@@ -73,7 +85,7 @@ function state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb, ::Type{P}) where 
 
 Returns the state function `F` and its jacobian, `∇ₓF` (with all tracers transported by single `T`).
 """
-function state_function_and_Jacobian(T, Gs::Tuple, nb, ::Type{P}) where {P<:APar}
+function state_function_and_Jacobian(T, Gs::Tuple, nb, ::Type{P}) where {P <: APar}
     nt = length(Gs)
     tracers(x) = state_to_tracers(x, nb, nt)
     tracer(x, i) = state_to_tracer(x, nb, nt, i)
@@ -85,17 +97,17 @@ function state_function_and_Jacobian(T, Gs::Tuple, nb, ::Type{P}) where {P<:APar
             mul!(tracer(xout, j), T_all, tracer(x, j), -1.0, 1.0)
         end
         xout
-    end
+        end
     F(x, λ::Vector) = F(x, λ2p(P, λ))
     ∇ₓG(x, p) = local_jacobian(Gs, x, p, nt, nb)      # Jacobian of nonlinear part
     function ∇ₓF(x, p)
         T_all = T(p)
         ∇ₓG(x, p) - blockdiag([T_all for _ in 1:nt]...) # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
-    end
+        end
     ∇ₓF(x, λ::Vector) = ∇ₓF(x, λ2p(P, λ))
     return F, ∇ₓF
 end
-function state_function_and_Jacobian(T, G, ::Type{P}) where {P<:APar}
+function state_function_and_Jacobian(T, G, ::Type{P}) where {P <: APar}
     F(x, p::P) = G(x, p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
     F(x, λ::Vector) = F(x, λ2p(P, λ))
     ∇ₓG(x, p) = sparse(Diagonal(localderivative(G, x, p))) # Jacobian of nonlinear part
@@ -144,7 +156,7 @@ function inplace_state_function_and_Jacobian(Ts::Tuple, Gs::Tuple, nb)
             @views dx[ij] .-= Tⱼ(p) * x[ij]
     end
         return dx
-    end
+        end
     ∇ₓG(x, p) = inplace_local_jacobian(Gs, x, p, nt, nb)     # Jacobian of nonlinear part
     ∇ₓF(x, p) = ∇ₓG(x, p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
     return F!, ∇ₓF
@@ -223,9 +235,9 @@ function generate_objective(ωs, ωp, grd, modify::Function, obs)
     function f(x, p)
         xs = unpack_tracers(x, grd)
         return ωp * mismatch(p) + sum([ωᵢ * indirectmismatch(xs, grd, modify, obs, i, Mᵢ, iwetᵢ) for (i, (ωᵢ, Mᵢ, iwetᵢ)) in enumerate(zip(ωs, Ms, iwets))])
-    end
+        end
     return f
-end
+    end
 
 
 
@@ -251,7 +263,7 @@ function generate_∇ₓobjective(ωs, grd, modify::Function, obs)
     function ∇ₓf(x, p)
         xs = unpack_tracers(x, grd)
         return sum([ωᵢ * ∇indirectmismatch(unpack_tracers(x, grd), grd, modify, obs, i, Mᵢ, iwetᵢ) for (i, (ωᵢ, Mᵢ, iwetᵢ)) in enumerate(zip(ωs, Ms, iwets))])
-    end
+        end
     return ∇ₓf
 end
 
