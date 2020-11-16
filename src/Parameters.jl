@@ -162,6 +162,8 @@ Note that there is no check that the metadata you give is consistent.
 These metadata will hopefully be useful for advanced usage of AIBECS, e.g., using prior information and/or bounds for optimization.
 """
 abstract type AbstractParameters{T} <: AbstractVector{T} end
+# TODO: Should it still be a subtype of AVec?
+const APar = AbstractParameters # alias to make code more readable
 
 """
     symbols(p)
@@ -171,8 +173,8 @@ Returns the symbols in `p`.
 Can also be used directly on the type of `p`
 (because the symbols of `p::T` are contained in the type `T`).
 """
-symbols(::Type{T}) where {T <: AbstractParameters} = fieldnames(T)
-symbols(::T) where {T <: AbstractParameters} = symbols(T)
+symbols(::Type{T}) where {T <: APar} = fieldnames(T)
+symbols(::T) where {T <: APar} = symbols(T)
 
 """
     flattenable_symbols(p)
@@ -186,8 +188,8 @@ e.g., when doing `vec(p)`.
 Can also be used directly on the type of `p`
 (because the flattenable symbols of `p::T` are contained in the type `T`).
 """
-flattenable_symbols(::T) where {T <: AbstractParameters} = flattenable_symbols(T)
-flattenable_symbols(::Type{T}) where {T <: AbstractParameters} = fieldnames(T)[collect(flattenable(T))]
+flattenable_symbols(::T) where {T <: APar} = flattenable_symbols(T)
+flattenable_symbols(::Type{T}) where {T <: APar} = fieldnames(T)[collect(flattenable(T))]
 
 """
     values(p::T) where {T <: AbstractParameters}
@@ -196,7 +198,7 @@ Returns a vector of **all** the values of `p`.
 
 Note that `values(p)` is different from `vec(p)`.
 """
-Base.values(p::T) where {T <: AbstractParameters} = [getfield(p, s) for s in symbols(T)]
+Base.values(p::T) where {T <: APar} = [getfield(p, s) for s in symbols(T)]
 
 """
     flattenable_values(p::T) where {T <: AbstractParameters}
@@ -205,7 +207,7 @@ Returns a vector of the **flattenable** values of `p`.
 
 Note that `vec(p)` is different from `values(p)`.
 """
-flattenable_values(p::T) where {T <: AbstractParameters} = [getfield(p, s) for s in flattenable_symbols(T)]
+flattenable_values(p::T) where {T <: APar} = [getfield(p, s) for s in flattenable_symbols(T)]
 
 """
     vec(p::T) where {T <: AbstractParameters}
@@ -214,7 +216,7 @@ Returns a **SI-unit-converted** vector of flattenable values of `p`.
 
 Note that `vec(p) ≠ flattenable_values(p)` if `p` has units.
 """
-Base.vec(p::T) where {T <: AbstractParameters} = [UnPack.unpack(p, Val(s)) for s in flattenable_symbols(T)]
+Base.vec(p::T) where {T <: APar} = [UnPack.unpack(p, Val(s)) for s in flattenable_symbols(T)]
 
 
 """
@@ -225,8 +227,8 @@ Returns the length of the **flattened/optimzable** vector of `p`.
 May be different from the number of parameters.
 Can also be used directly on the type of `p`.
 """
-Base.length(::T) where {T <: AbstractParameters} = sum(flattenable(T))
-Base.length(::Type{T}) where {T <: AbstractParameters} = sum(flattenable(T))
+Base.length(::T) where {T <: APar} = sum(flattenable(T))
+Base.length(::Type{T}) where {T <: APar} = sum(flattenable(T))
 
 """
     size(p::AbstractParameter)
@@ -236,21 +238,21 @@ Returns the size of the **flattened/optimzable** vector of `p`.
 May be different from the number of parameters.
 Can also be used directly on the type of `p`.
 """
-Base.size(::T) where {T <: AbstractParameters} = (length(T),)
-Base.size(::Type{T}) where {T <: AbstractParameters} = (length(T),)
+Base.size(::T) where {T <: APar} = (length(T),)
+Base.size(::Type{T}) where {T <: APar} = (length(T),)
 
-function Base.show(io::IO, p::T) where T <: AbstractParameters
+function Base.show(io::IO, p::T) where T <: APar
     print(T)
     t = table(p)
     show(io, t; summary=false)
 end
-function Base.show(io::IO, m::MIME"text/plain", p::T) where T <: AbstractParameters
+function Base.show(io::IO, m::MIME"text/plain", p::T) where T <: APar
     print(T)
     t = table(p)
     show(io, m, t; summary=false)
 end
 
-function table(p::T, nf::NamedTuple) where {T <: AbstractParameters}
+function table(p::T, nf::NamedTuple) where {T <: APar}
     t = DataFrame(Symbol = collect(symbols(p)), Value = values(p))
     for (n,f) in zip(keys(nf), nf)
         setproperty!(t, n, collect(f(p)))
@@ -264,7 +266,7 @@ end
 Returns a `DataFrame` (a table) of `p`.
 Useful for printing and saving into an actual text/latex table.
 """
-function table(p::AbstractParameters)
+function table(p::APar)
     ks, vs = Symbol[], Function[]
     all(isnothing, initial_value(p)) || (push!(ks, Symbol("Initial value")); push!(vs, initial_value))
     all(isequal(1), units(p)) || (push!(ks, :Unit); push!(vs, units))
@@ -285,7 +287,7 @@ end
 
 Returns a LaTeX-formatted table of the parameters.
 """
-latex(p::AbstractParameters) = show(stdout, MIME("text/latex"), table(p))
+latex(p::APar) = show(stdout, MIME("text/latex"), table(p))
 
 """
     unpack(p <: AbstractParameters, s)
@@ -294,7 +296,7 @@ Unpacks the parameter `s` from `p`.
 
 Note this is specialized and will convert the parameter value to SI units.
 """
-@inline UnPack.unpack(p::T, ::Val{f}) where {T<:AbstractParameters,f} = ustrip(upreferred(getproperty(p, f) * units(T, f)))
+@inline UnPack.unpack(p::T, ::Val{f}) where {T<:APar,f} = ustrip(upreferred(getproperty(p, f) * units(T, f)))
 
 """
     +(p::T, v::Vector) where {T <: AbstractParameters}
@@ -306,14 +308,14 @@ using dual and hyperdual numbers.
 If you want to change the values of `p`, you should do so explicitly
 rather than use this `+` method.
 """
-Base.:+(p::T, v::Vector) where {T <: AbstractParameters} = reconstruct(T, flattenable_values(p) + v)
+Base.:+(p::T, v::Vector) where {T <: APar} = reconstruct(T, flattenable_values(p) + v)
 
 """
     reconstruct(T, v)
 
 Reconstructs the parameter of type `T` from flattenable vector `v`.
 """
-function reconstruct(::Type{T}, v::Vector{V}) where {T <: AbstractParameters, V}
+function reconstruct(::Type{T}, v::Vector{V}) where {T <: APar, V}
     all(isnothing, initial_value(T)) && error("Can't reconstruct without initial values")
     reconstructed_v = convert(Vector{V}, collect(initial_value(T))) # fill in initial values
     reconstructed_v[collect(flattenable(T))] .= v            # fill in v
@@ -327,15 +329,15 @@ Returns the i-th element of vec(p).
 
 This is not efficient and only used for testing the derivatives with ForwardDiff.
 """
-Base.getindex(p::T, i) where {T <: AbstractParameters} = flattenable_values(p)[i]
+Base.getindex(p::T, i) where {T <: APar} = flattenable_values(p)[i]
 
 
-function (::Type{T})(args::Quantity...) where {T <: AbstractParameters}
+function (::Type{T})(args::Quantity...) where {T <: APar}
     all(isequal(1), units(T)) && error("$T needs `units` for this construction to work")
     return T([ustrip(x |> units(T, f)) for (x,f) in zip(args, fieldnames(T))]...)
 end
 
-function (::Type{T})(;kwargs...) where {T <: AbstractParameters}
+function (::Type{T})(;kwargs...) where {T <: APar}
     all(isnothing, initial_value(T)) && length(kwargs) ≠ length(symbols(T)) && error("$T needs `initial_value` if one of the parameters is not supplied")
     value(f::Symbol, v::Quantity) = ustrip(v |> units(T, f))
     value(f::Symbol, v) = v
@@ -346,12 +348,12 @@ end
 Writing to savable formats
 ===============================#
 
-function Base.Dict(p::T, s=symbols(p)) where {T<:AbstractParameters}
+function Base.Dict(p::T, s=symbols(p)) where {T<:APar}
     v = [getfield(p,s) for s in s]
     u = [units(p,s) for s in s]
     return Dict([(s,v*u) for (s,v,u) in zip(s,v,u)])
 end
-function Base.NamedTuple(p::T, s=symbols(p)) where {T<:AbstractParameters}
+function Base.NamedTuple(p::T, s=symbols(p)) where {T<:APar}
     v = [getfield(p,s) for s in s]
     u = [units(p,s) for s in s]
     return (; zip(s, v .* u)...)
@@ -360,71 +362,75 @@ end
 #=====================
 mismatch of parameters
 =====================#
-"""
-    mismatch(p::AbstractParameters)
 
-Returns the sum of the negative log-likelihood of each flattenable parameter.
-"""
-mismatch(p::AbstractParameters, k::Symbol) = -logpdf(prior(p,k), getfield(p,k))
-mismatch(p::AbstractParameters) = sum(mismatch(p,k) for k in flattenable_symbols(p))
-∇mismatch(p::AbstractParameters, k::Symbol) = -gradlogpdf(prior(p,k), getfield(p,k))
-∇mismatch(p::AbstractParameters) = transpose([∇mismatch(p,k) for k in flattenable_symbols(p)])
+# in p space (should not be needed except for checking/testing)
+mismatch(p::T, k) where {T<:APar} = mismatch(T, bijector(T, k)(p))
+mismatch(p::T) where {T<:APar} = mismatch(T, bijector(T)(p))
 
+# in λ space
+mismatch(::Type{T}, λ) where {T<:APar} = sum(mismacth(T, kᵢ, λᵢ) for (k, λᵢ) in zip(flattenable_symbols(T), λ))
+mismatch(::Type{T}, k, λ) where {T<:APar} = mismatch(prior(T, k), λ)
+mismatch(d::ContinuousUnivariateDistribution, λ) = -logpdf(transformed(d), λ)
+
+# TODO check if I need that below:
 # The functions below is just for ForwardDiff to work with vectors instead of p
 # which requires `mismatch` to know about the priors, which are containted in `T`
-function generate_objective(ωs, μx, σ²x, v, ωp, ::Type{T}) where {T<:AbstractParameters}
+function generate_objective(ωs, μx, σ²x, v, ωp, ::Type{T}) where {T<:APar}
     nt, nb = length(ωs), length(v)
     tracers(x) = state_to_tracers(x, nb, nt)
     f(x, p) = ωp * mismatch(T, p) +
         sum([ωⱼ * mismatch(xⱼ, μⱼ, σⱼ², v) for (ωⱼ, xⱼ, μⱼ, σⱼ²) in zip(ωs, tracers(x), μx, σ²x)])
     return f
 end
-function mismatch(::Type{T}, v) where {T<:AbstractParameters}
-    return sum(-logpdf(prior(T,k), v[i]) for (i,k) in enumerate(flattenable_symbols(T)))
-end
 
 #==================
 Change of variables
 ==================#
+
+
+# using Bijectors and evaluating parameter mismatch in λ-space
+# Usage should look like this
+# F, ∇ₓF = generate_state_function(...)
+# f, ∇ₓf = generate_objective(...) # This requires to dispatch them like f(p::APar) = ... and f(λ::Vector) = ...
+# obj, grad, hess = F1Method(F, ∇ₓF, f, ∇ₓf, ...) # directly in λ-space
+# p2λ = bijector(MyParams) # just reexport bijector and inverse
+# λ2p = inverse(p2λ)
+# λ₀ = p2λ(p₀)
+# results = optimize(obj, grad, hess, λ₀, ...)
+# λ_opt = results.minimizer
+# p_opt = λ2p(λ_opt) # and done and dusted...
+# some actual code that I should write and test
+import Bijectors: bijector
 """
-    subfun
+    bijector(T::AbstractParameters [, k::Symbol])
 
-Returns the substitution function for the change of variables of parameters.
+Returns the function for the change of variables of the parameters.
 
-If the prior of parameter `pᵢ` is `LogNormal`, then the substitution function is `exp`.
-If the prior is `Uniform`, then the change of variables is the logit function.
-Otherwise, it's `identity`.
+The function is a bijection from the supports/domains of the priors to ℝⁿ,
+from the Bijectors.jl package.
+You can specify the parameter symbol to get the bijector of that parameter.
 """
-function subfun(::Type{T}) where {T<:AbstractParameters}
-    ks = flattenable_symbols(T)
-    λ2p(λ) = (subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, ks))
-    return λ -> T(; zip(ks, λ2p(λ))...)
-end
-function ∇subfun(::Type{T}) where {T<:AbstractParameters}
-    λ -> [∇subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))]'
-end
-function ∇²subfun(::Type{T}) where {T<:AbstractParameters}
-    λ -> Diagonal([∇²subfun(T, s)(λᵢ) for (λᵢ,s) in zip(λ, flattenable_symbols(T))])
-end
-function invsubfun(::Type{T}) where {T<:AbstractParameters}
-    return p -> [invsubfun(T, s)(pᵢ) for (pᵢ,s) in zip(flattenable_values(p), flattenable_symbols(T))]
-end
-# substitution function (change of variables) is determined from prior distribution
-subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = subfun(prior(T,s))
-∇subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = ∇subfun(prior(T,s))
-∇²subfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = ∇²subfun(prior(T,s))
-invsubfun(::Type{T}, s::Symbol) where {T<:AbstractParameters} = invsubfun(prior(T,s))
-# using TransformVariables
-import TransformVariables: transform
-to∞(x) = isinf(x) ? TransformVariables.Infinity{x>0}() : x # convert Inf to ∞
-transform(d::ContinuousUnivariateDistribution) = as(Real, to∞(minimum(d)), to∞(maximum(d)))
-subfun(d::ContinuousUnivariateDistribution) = x -> transform(d)(x)
-∇subfun(d::ContinuousUnivariateDistribution) = x -> ForwardDiff.derivative(subfun(d), x)
-∇²subfun(d::ContinuousUnivariateDistribution) = x -> ForwardDiff.derivative(∇subfun(d), x)
-invsubfun(d::ContinuousUnivariateDistribution) = x -> inverse(transform(d))(x)
+bijector(::Type{T}) where {T<:APar} = bijector(prior(T)[flattenable(T)]) # should work out of the box!
+bijector(::Type{T}, k) where {T<:APar} = bijector(prior(T, k)) # not sure even needed
+export bijector
 
-export subfun, ∇subfun, ∇²subfun, invsubfun
+"""
+p2λ(p::AbstractParameters)
 
+Converts `p` to a real-valued vector for optimization.
+(referred to as the λ space in AIBECS)
+"""
+p2λ(p::T) = bijector(T)(flattenable_values(p))
+"""
+λ2p(T::Type{AbstractParameters}, λ::Vector)
+
+Converts real-valued vector `λ` back to parameters object `p`.
+
+Note that the instance of your parameters type `T` is required here because
+it contains information on non-optimizable parameters and priors of optimizable parameters
+"""
+λ2p(T::Type{APar}, λ) = T(; zip(flattenable_symbols(T), inverse(bijector(T))(λ))...)
+export p2λ, λ2p
 
 export AbstractParameters, latex
 
