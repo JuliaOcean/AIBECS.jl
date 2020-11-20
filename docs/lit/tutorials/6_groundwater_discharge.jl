@@ -30,10 +30,6 @@
 using AIBECS
 grd, T_OCIM2 = OCIM2.load()
 
-# The transport is
-
-T_gw(p) = T_OCIM2
-
 # For the radioactive decay, we simply use
 
 function decay(x, p)
@@ -97,7 +93,7 @@ p = GroundWatersParameters()
 
 # We generate the state function `F` and its Jacobian `∇ₓF`,
 
-F, ∇ₓF = state_function_and_Jacobian(T_gw, G_gw)
+F, ∇ₓF = F_and_∇ₓF(T_OCIM2, G_gw)
 
 # generate the steady-state problem `prob`,
 

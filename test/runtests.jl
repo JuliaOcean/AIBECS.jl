@@ -21,7 +21,7 @@ test_setup_only = [:OCIM1, :OCIM0, :OCCA]
 @testset "test setup.jl only" for C in test_setup_only
     @testset "$C" begin
         eval(:(Circulation = $C))
-        include("setup.jl") #TODO change back to just setup.jl
+        include("setup.jl")
     end
 end
 
@@ -30,9 +30,9 @@ test_plots = [:OCIM2]
 @testset "Test setup, plots, and sources" for C in test_plots
     @testset "$C" begin
         eval(:(Circulation = $C))
-        include("setup.jl")    #TODO change back to just setup.jl (can't remember why...)
-        include("plots.jl")    #TODO change back to just setup.jl
-        include("sources.jl")  #TODO change back to just setup.jl
+        include("setup.jl")
+        include("plots.jl")
+        include("sources.jl")
     end
 end
 
@@ -48,10 +48,11 @@ test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000]
         include("gridtools.jl")
         include("cost_functions.jl")
         include("solvers.jl")
-        include("time_steps.jl")
         include("derivatives.jl")
     end
 end
+
+
 
 
 

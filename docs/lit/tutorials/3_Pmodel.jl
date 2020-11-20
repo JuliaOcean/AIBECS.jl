@@ -119,7 +119,7 @@ p = PmodelParameters()
 # We generate the state function `F` and its Jacobian `∇ₓF`,
 
 nb = sum(iswet(grd))
-F, ∇ₓF = state_function_and_Jacobian((T_DIP, T_POP), (G_DIP, G_POP), nb)
+F, ∇ₓF = F_and_∇ₓF((T_DIP, T_POP), (G_DIP, G_POP), nb)
 
 # generate the steady-state problem,
 
@@ -165,7 +165,7 @@ T_POP2(p) = transportoperator(grd, z -> w(z,p); frac_seafloor=f_topo)
 
 # With this new vertical transport for POP, we can recreate our problem, solve it again
 
-F2, ∇ₓF2 = state_function_and_Jacobian((T_DIP, T_POP2), (G_DIP, G_POP), nb)
+F2, ∇ₓF2 = F_and_∇ₓF((T_DIP, T_POP2), (G_DIP, G_POP), nb)
 prob2 = SteadyStateProblem(F2, ∇ₓF2, x, p)
 sol2 = solve(prob2, CTKAlg()).u
 DIP2, POP2 = state_to_tracers(sol2, grd) # unpack tracers

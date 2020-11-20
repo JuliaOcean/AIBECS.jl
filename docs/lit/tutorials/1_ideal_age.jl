@@ -51,12 +51,6 @@ grd, TOCIM2 = OCIM2.load()
 
 # `grd` is an `OceanGrid` object containing information about the 3D grid of the OCIM2 circulation and `TOCIM2` is the transport matrix representing advection and diffusion.
 
-# We define the function `T(p)` as
-
-T(p) = TOCIM2
-
-# (It turns out the circulation `T(p)` does not effectively depend on `p` but that's how we must define it anyway, i.e., as a function of `p`.)
-
 # The local sources and sinks for the age take the form
 
 function G(x,p)
@@ -88,7 +82,7 @@ p = IdealAgeParameters(1.0, 30.0)
 
 # We now use the AIBECS to generate the state function $\boldsymbol{F}$ (and its Jacobian) via
 
-F, ∇ₓF = state_function_and_Jacobian(T, G)
+F, ∇ₓF = F_and_∇ₓF(TOCIM2, G)
 
 # (`∇ₓF` is the **Jacobian** of the state function $\nabla_{\boldsymbol{x}}\boldsymbol{F}$, calculated automatically using dual numbers.)
 

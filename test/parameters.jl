@@ -68,12 +68,22 @@ p = TestParameters()
         @test xgeo == ustrip(upreferred(p.xgeo * units(p, :xgeo)))
         @test τDIP == ustrip(upreferred(p.τDIP * units(p, :τDIP)))
     end
-    @testset "Prior for $spᵢ ($Dᵢ)" for (spᵢ, Dᵢ) in zip([:σ, :w′, :xgeo], [LocationScale, Normal, LogNormal])
-        D = prior(p, spᵢ)
-        @test D isa Dᵢ
-        λ2p, ∇λ2p, ∇²λ2p, p2λ = subfun(D), ∇subfun(D), ∇²subfun(D), invsubfun(D)
-        @test p2λ(λ2p(0.5)) ≈ 0.5
-        @test ForwardDiff.derivative(λ2p, 0.5) ≈ ∇λ2p(0.5)
-        @test ForwardDiff.derivative(∇λ2p, 0.5) ≈ ∇²λ2p(0.5)
+    @testset "p <-> λ transformations" begin
+        λ = p2λ(p)
+        np = length(λ)
+        λtest = randn(np)
+        @test p2λ(λ2p(TestParameters, λ)) ≈ λ
+        @test p2λ(λ2p(TestParameters, λtest)) ≈ λtest
+        @testset "$k" for k in AIBECS.flattenable_symbols(p)
+            D = prior(p, k)
+            @test D isa ContinuousUnivariateDistribution
+            lb, ub = limits(p, k)
+            b = bijector(D)
+            @test b(lb) == -Inf
+            @test b(ub) == +Inf
+            b⁻¹ = inv(b)
+            @test b⁻¹(-Inf) == lb
+            @test b⁻¹(+Inf) == ub
+        end
     end
 end

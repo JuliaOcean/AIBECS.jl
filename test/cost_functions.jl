@@ -10,28 +10,29 @@ WOA = WorldOceanAtlasTools
 δconvert(x) = @. exp(x)
 cs = (δconvert, identity, identity)
 # generate mismatch functions
-f, ∇ₓf, ∇ₚf = generate_objective_and_derivatives(ωs, μx, σ²x, v, ωp)
+f, ∇ₓf = f_and_∇ₓf(ωs, μx, σ²x, v, ωp, TestParameters)
 
 #===========================================
 Tests
 ===========================================#
+
+# TODO add tests for other types of mismatch functions!
 
 @testset "Mismatch / cost functions" begin
     nt = length(T_all)
     nx = nt * nb
     np = length(p)
     x = p.xgeo * ones(nx)
-    fval = f(x, p)
-    ∇ₓfval = ∇ₓf(x, p)
-    ∇ₚfval = ∇ₚf(x, p)
+    λ = p2λ(p)
+    fλ = f(x, λ)
+    ∇ₓfλ = ∇ₓf(x, λ)
     @testset "Mismatch function" begin
-        @test fval isa Float64
-        @test fval > 0
+        @test fλ isa Float64
+        @test fλ > 0
+        @test fλ ≈ f(x, p)
     end
     @testset "Derivative w.r.t the state, x" begin
-        @test size(∇ₓfval) == (1, nx)
-    end
-    @testset "Derivative w.r.t the parameters, p" begin
-        @test size(∇ₚfval) == (1, np)
+        @test size(∇ₓfλ) == (1, nx)
+        @test ∇ₓfλ ≈ ∇ₓf(x, p)
     end
 end
