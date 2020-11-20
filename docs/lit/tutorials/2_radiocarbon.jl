@@ -46,7 +46,6 @@
 
 using AIBECS
 grd, T_OCCA = OCCA.load()
-T(p) = T_OCCA
 
 # The local sources and sinks are simply given by
 
@@ -92,7 +91,7 @@ p = RadiocarbonParameters(λ = 50u"m"/10u"yr",
 
 # We generate the state function and its Jacobian, generate the corresponding steady-state problem, and solve it, via
 
-F, ∇ₓF = state_function_and_Jacobian(T, G)
+F, ∇ₓF = F_and_∇ₓF(T_OCCA, G)
 x = zeros(length(z)) # an initial guess
 prob = SteadyStateProblem(F, ∇ₓF, x, p)
 R = solve(prob, CTKAlg()).u

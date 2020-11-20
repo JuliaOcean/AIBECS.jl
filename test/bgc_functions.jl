@@ -1,15 +1,14 @@
 #===========================================
 Transport matrices
 ===========================================#
-T_DIP(p) = T_Circulation
-T_DOP = T_DIP
+T_D(p) = T_Circulation
 S₀ = PFDO(ones(nb), DIV, Iabove)
 S′ = PFDO(ztop, DIV, Iabove)
 function T_POP(p)
     @unpack w₀, w′ = p
     return w₀ * S₀ + w′ * S′
 end
-T_all = (T_DIP, T_DOP, T_POP)
+T_all = (T_D, T_D, T_POP)
 
 #===========================================
 Sources minus sinks
@@ -68,11 +67,14 @@ function G_POP!(dx, DIP, DOP, POP, p)
 end
 Gs = (G_DIP!, G_DOP!, G_POP!)
 
+
 #===========================================
 AIBECS F and ∇ₓF
 ===========================================#
-F, ∇ₓF = state_function_and_Jacobian(T_all, sms_all, nb)
-F!, ∇ₓF! = inplace_state_function_and_Jacobian(T_all, Gs, nb)
+fun = AIBECSFunction(T_all, sms_all, nb)
+fun! = AIBECSFunction((T_D, T_POP), Gs, nb, 3, [1,1,2])
+F, ∇ₓF = F_and_∇ₓF(T_all, sms_all, nb)
+F!, ∇ₓF! = F_and_∇ₓF((T_D, T_POP), Gs, nb, 3, [1,1,2]) # <- faster because inplace and only one T_D
 
 #===========================================
 AIBECS split operators for CNLF

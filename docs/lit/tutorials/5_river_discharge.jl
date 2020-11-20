@@ -27,10 +27,6 @@
 using AIBECS
 grd, T_OCIM2 = OCIM2.load()
 
-# The transport is
-
-T_radiorivers(p) = T_OCIM2
-
 # For the radioactive decay, we simply use
 
 function decay(x, p)
@@ -99,7 +95,7 @@ p = RadioRiversParameters()
 
 # We generate the state function `F` and its Jacobian `∇ₓF`,
 
-F, ∇ₓF = state_function_and_Jacobian(T_radiorivers, G_radiorivers)
+F, ∇ₓF = F_and_∇ₓF(T_OCIM2, G_radiorivers)
 
 # generate the steady-state problem `prob`,
 

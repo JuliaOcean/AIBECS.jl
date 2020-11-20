@@ -10,19 +10,12 @@
     n = nt * nb
     @unpack xgeo = p
     x = xgeo * ones(n)
-    testp = AIBECS.reconstruct(typeof(p), 2vec(p)) # other value for testing p
+    testp = AIBECS.reconstruct(TestParameters, 2vec(p)) # other value for testing p
     @testset "∇ₓF" begin
         @test ForwardDiff.jacobian(x -> F(x, p), x) ≈ ∇ₓF(x, p) rtol = 1e-14
         @test ForwardDiff.jacobian(x -> F(x, p), 2x) ≈ ∇ₓF(2x, p) rtol = 1e-14
         @test ForwardDiff.jacobian(x -> F(x, p), -x) ≈ ∇ₓF(-x, p) rtol = 1e-14
         @test ForwardDiff.jacobian(x -> F(x, testp), x) ≈ ∇ₓF(x, testp) rtol = 1e-14
-    end
-    @testset "∇ₚf" begin
-        fAD = generate_objective(ωs, μx, σ²x, v, ωp, typeof(p))
-        @test fAD(x,p) ≈ f(x,p)
-        @test ForwardDiff.jacobian(p -> [fAD(x, p)], p) ≈ ∇ₚf(x, p) rtol = 1e-14
-        @test ForwardDiff.jacobian(p -> [fAD(x, p)], testp) ≈ ∇ₚf(x, testp) rtol = 1e-14
-        @test ForwardDiff.jacobian(p -> [fAD(2x, p)], p) ≈ ∇ₚf(2x, p) rtol = 1e-14
     end
     @testset "∇ₓf" begin
         @test ForwardDiff.jacobian(x -> [f(x, p)], x) ≈ ∇ₓf(x, p) rtol = 1e-14

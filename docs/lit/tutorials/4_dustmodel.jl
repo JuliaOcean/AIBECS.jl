@@ -32,7 +32,7 @@ grd, T_OCIM = OCIM0.load()
 
 function T_dust(p)
     @unpack fsedremin = p
-    return T_OCIM + transportoperator(grd, z -> w(z,p), fsedremin=fsedremin)
+    return LinearOperators((T_OCIM, transportoperator(grd, z -> w(z,p), fsedremin=fsedremin)))
 end
 
 # For the settling transport of dust particles, we have used the `transportoperator` function
@@ -52,9 +52,8 @@ end
 
 function w(z,p)
     @unpack w₀, w′ = p
-    return @. w₀ + w′ * z
+    return w₀ + w′ * z
 end
-z = depthvec(grd)
 
 # The parameters `fsedremin`, `w₀`, and `w′` will be defined shortly.
 
@@ -107,11 +106,11 @@ p = DustModelParameters()
 
 # We generate the state function `F` and its Jacobian `∇ₓF`,
 
-F, ∇ₓF = state_function_and_Jacobian(T_dust, G_dust)
+nb = count(iswet(grd))
+F, ∇ₓF = F_and_∇ₓF(T_dust, G_dust, nb)
 
 # generate the steady-state problem,
 
-nb = sum(iswet(grd))
 x = ones(nb) # initial guess
 prob = SteadyStateProblem(F, ∇ₓF, x, p)
 
@@ -136,7 +135,8 @@ plt1 = plotverticalintegral(s_dust * u"g/m^3/s" .|> u"mg/m^3/yr", xlabel="", yla
 
 # Let's look at what is exported below 500 m and compare:
 
-plt2 = plothorizontalslice(s * u"g/m^3" .* w(z,p) * u"m/s" .|> u"mg/yr/m^2", grd, depth=500u"m", color=cgrad(:starrynight, scale=:exp), xlabel="", ylabel="", title="Flux at 500m")
+wflux = map(z -> w(z,p), depthvec(grd)) * u"m/s"
+plt2 = plothorizontalslice(s * u"g/m^3" .* wflux .|> u"mg/yr/m^2", grd, depth=500u"m", color=cgrad(:starrynight, scale=:exp), xlabel="", ylabel="", title="Flux at 500m")
 plot(plt1, plt2, layout=(2,1))
 
 # We can also take a look at the global mean profile (the horizontal average)

@@ -161,7 +161,7 @@ FullParams{Float64}
 Note that there is no check that the metadata you give is consistent.
 These metadata will hopefully be useful for advanced usage of AIBECS, e.g., using prior information and/or bounds for optimization.
 """
-abstract type AbstractParameters{T} <: AbstractVector{T} end
+abstract type AbstractParameters{T} end
 # TODO: Should it still be a subtype of AVec?
 const APar = AbstractParameters # alias to make code more readable
 
@@ -280,7 +280,9 @@ function table(p::APar)
     nf = (; zip(ks, vs)...)
     t = table(p, nf)
 end
-
+# These line prevent the default (0.0, 1.0) value
+limits(::T) where {T<:APar} = limits(T)
+limits(::Type{T}) where {T<:APar} = Tuple(nothing for _ in 1:fieldcount(T))
 
 """
     latex(p)
@@ -308,18 +310,22 @@ using dual and hyperdual numbers.
 If you want to change the values of `p`, you should do so explicitly
 rather than use this `+` method.
 """
-Base.:+(p::T, v::Vector) where {T <: APar} = reconstruct(T, flattenable_values(p) + v)
+Base.:+(p::T, v::Vector) where {T <: APar} = reconstruct(T.name.wrapper, flattenable_values(p) + v)
 
 """
     reconstruct(T, v)
 
 Reconstructs the parameter of type `T` from flattenable vector `v`.
+
+Note that `T` must be the generic type (or type wrapper if you will).
+I.e., `T` must *not* include the parametric scalar type, as in,
+use `T == Params` instead of `T == Params{Float64}`.
 """
 function reconstruct(::Type{T}, v::Vector{V}) where {T <: APar, V}
     all(isnothing, initial_value(T)) && error("Can't reconstruct without initial values")
     reconstructed_v = convert(Vector{V}, collect(initial_value(T))) # fill in initial values
     reconstructed_v[collect(flattenable(T))] .= v            # fill in v
-    return T.name.wrapper{V}(reconstructed_v...)  # wrapper allows to change type
+    return T{V}(reconstructed_v...)  # wrapper allows to change type
 end
 
 """
@@ -364,11 +370,12 @@ mismatch of parameters
 =====================#
 
 # in p space (should not be needed except for checking/testing)
-mismatch(p::T, k) where {T<:APar} = mismatch(T, bijector(T, k)(p))
-mismatch(p::T) where {T<:APar} = mismatch(T, bijector(T)(p))
+mismatch(p::T, k::Symbol) where {T<:APar} = mismatch(T, bijector(T, k)(p))
+mismatch(p::T) where {T<:APar} = mismatch(T, p2λ(p))
+mismatch(::Type{T}, p::Tp) where {T<:APar, Tp<:APar} = mismatch(p)
 
 # in λ space
-mismatch(::Type{T}, λ) where {T<:APar} = sum(mismacth(T, kᵢ, λᵢ) for (k, λᵢ) in zip(flattenable_symbols(T), λ))
+mismatch(::Type{T}, λ) where {T<:APar} = sum(mismatch(T, k, λᵢ) for (k, λᵢ) in zip(flattenable_symbols(T), λ))
 mismatch(::Type{T}, k, λ) where {T<:APar} = mismatch(prior(T, k), λ)
 mismatch(d::ContinuousUnivariateDistribution, λ) = -logpdf(transformed(d), λ)
 
@@ -410,8 +417,8 @@ The function is a bijection from the supports/domains of the priors to ℝⁿ,
 from the Bijectors.jl package.
 You can specify the parameter symbol to get the bijector of that parameter.
 """
-bijector(::Type{T}) where {T<:APar} = bijector(prior(T)[flattenable(T)]) # should work out of the box!
-bijector(::Type{T}, k) where {T<:APar} = bijector(prior(T, k)) # not sure even needed
+bijector(::Type{T}) where {T<:APar} = bijector.([p for p in prior(T) if !isnothing(p)])
+bijector(::Type{T}, k) where {T<:APar} = bijector(prior(T, k))
 export bijector
 
 """
@@ -420,7 +427,7 @@ p2λ(p::AbstractParameters)
 Converts `p` to a real-valued vector for optimization.
 (referred to as the λ space in AIBECS)
 """
-p2λ(p::T) = bijector(T)(flattenable_values(p))
+p2λ(p::T) where {T<:APar} = [bijector(T,k)(v) for (k,v) in zip(flattenable_symbols(p), flattenable_values(p))]
 """
 λ2p(T::Type{AbstractParameters}, λ::Vector)
 
@@ -429,7 +436,10 @@ Converts real-valued vector `λ` back to parameters object `p`.
 Note that the instance of your parameters type `T` is required here because
 it contains information on non-optimizable parameters and priors of optimizable parameters
 """
-λ2p(T::Type{APar}, λ) = T(; zip(flattenable_symbols(T), inverse(bijector(T))(λ))...)
+function λ2p(::Type{T}, λs) where {T<:APar}
+    ps = [inv(bijector(T,k))(λ) for (k,λ) in zip(flattenable_symbols(T), λs)]
+    reconstruct(T, ps)
+end
 export p2λ, λ2p
 
 export AbstractParameters, latex
