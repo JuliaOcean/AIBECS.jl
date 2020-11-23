@@ -6,15 +6,25 @@
 Generate 𝐹 and ∇ₓ𝐹 from user input
 ============================================ =#
 
-struct LinearOperators{N,T<:AbstractSparseMatrix}
-    ops::NTuple{N,T}
+# TODO replace this with DiffEqOperators when possible
+struct LinearOperators{T<:Tuple}
+    ops::T
 end
+LinearOperators(ops...) = LinearOperators((ops...,))
 SparseArrays.blockdiag(As::LinearOperators...) = blockdiag([sum(A.ops) for A in As]...)
 function LinearAlgebra.mul!(du, A::LinearOperators, u, α, β)
     for (i, op) in enumerate(A.ops)
         (i==1) ? mul!(du, op, u, α, β) : mul!(du, op, u, α, 1)
     end
     du
+end
+LinearAlgebra.factorize(A::LinearOperators) = factorize(sum(A.ops))
+Base.:\(A::LinearOperators, u::AbstractArray) = factorize(A) \ u
+Base.:+(A::LinearOperators, B::AbstractSparseArray) = LinearOperators(A.ops..., B)
+Base.:+(B::AbstractSparseArray, A::LinearOperators) = A + B
+function Base.:*(A::LinearOperators, u::AbstractArray) # has to be same type!
+    du = similar(u)
+    mul!(du, A, u, 1, 0)
 end
 export LinearOperators
 
