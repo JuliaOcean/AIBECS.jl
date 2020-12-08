@@ -26,6 +26,7 @@ function Base.:*(A::LinearOperators, u::AbstractArray) # has to be same type!
     du = similar(u)
     mul!(du, A, u, 1, 0)
 end
+SparseArrays.findnz(A::LinearOperators) = findnz(sum(A.ops))
 export LinearOperators
 
 # What would be the usage like
@@ -33,22 +34,22 @@ export LinearOperators
 # F = FUN.f
 # ∇ₓF = FUN.jac
 # AIBECSFunction creates an ODEFunction from the Ts and Gs
-AIBECSFunction(T::AbstractSparseArray, G::Function) = AIBECSFunction(p -> T, G, T.n)
-AIBECSFunction(T::Function, G::Function, nb::Int) = AIBECSFunction(T, (G,), nb)
-function AIBECSFunction(T::Function, Gs::Tuple, nb::Int)
+AIBECSFunction(T::AbstractSparseArray, G::Function; kwargs...) = AIBECSFunction(p -> T, G, T.n; kwargs...)
+AIBECSFunction(T::Function, G::Function, nb::Int; kwargs...) = AIBECSFunction(T, (G,), nb; kwargs...)
+function AIBECSFunction(T::Function, Gs::Tuple, nb::Int; kwargs...)
     nt = length(Gs) # if a single T is given, then nt is given by the number of Gs
     Tidx = ones(Int64, nt) # and all the tracers share the same T
-    AIBECSFunction((T,), Gs, nb, nt, Tidx)
+    AIBECSFunction((T,), Gs, nb, nt, Tidx; kwargs...)
 end
-function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int=length(Ts), Tidx::AbstractVector=1:nt)
+function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int=length(Ts), Tidx::AbstractVector=1:nt; kwargs...)
     if all(isinplace(G, nt + 2) for G in Gs) # +2 to account for dx and p
-        iipAIBECSFunction(Ts, Gs, nb, nt, Tidx)
+        iipAIBECSFunction(Ts, Gs, nb, nt, Tidx; kwargs...)
     else
-        oopAIBECSFunction(Ts, Gs, nb, nt, Tidx)
+        oopAIBECSFunction(Ts, Gs, nb, nt, Tidx; kwargs...)
     end
 end
 
-function iipAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
+function iipAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt; M=nothing)
     tracers(u) = state_to_tracers(u, nb, nt)
     tracer(u, i) = state_to_tracer(u, nb, nt, i)
     function G(du, u, p)
@@ -75,6 +76,28 @@ function iipAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
         blockdiag([uniqueTs[Tidx[j]] for j in 1:nt]...)
     end
     jac(u, p, t) = ∇ₓG(u, p) - T(p)
+    # in place ∇ₓF # Not working yet! must account for LinearOpeartors!!
+    if !isnothing(M)
+        iT = findfirst([any(m.nargs == 1 for m in methods(Tᵢ)) for Tᵢ in Ts]) # 1dt index of fixed transport T
+        J = sparse(M, nb, Ts[iT]())
+        idxG = [findblockdiagonalindices(J, nb, nt, i, j) for i in 1:nt, j in 1:nt]
+        idxT = [findblockindices(J, nb, nt, i, i) for i in 1:nt]
+    end
+    function jac(J, du, u, p, t)
+        (M isa Nothing) && error("Subsparsity patterns not supplied")
+        for i in 1:nt, j in 1:nt
+            localderivative!(view(J.nzval, idxG[i,j]), Gs[i], du, tracers(u), j, p)
+            if j == i
+                J.nzval[idxT[i]] .-= T[i](p).nzval
+            end
+        end
+        J
+    end
+    function jac(J, u, p, t)
+        (M isa Nothing) && error("Subsparsity patterns not supplied")
+        du = similar(u[1:nb])
+        jac(J, du, u, p, t)
+    end
     return ODEFunction{true}(f, jac=jac)
 end
 function oopAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
@@ -101,8 +124,8 @@ function oopAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
     return ODEFunction(f, jac=jac)
 end
 # This AIBECSFunction overloads F and ∇ₓF for λ instead of p
-function AIBECSFunction(Ts, Gs, nb::Int, ::Type{P}) where {P <: APar}
-    AIBECSFunction(AIBECSFunction(Ts, Gs, nb), P)
+function AIBECSFunction(Ts, Gs, nb::Int, ::Type{P}; kwargs...) where {P <: APar}
+    AIBECSFunction(AIBECSFunction(Ts, Gs, nb; kwargs...), P)
 end
 function AIBECSFunction(fun::ODEFunction{false}, ::Type{P}) where {P <: APar}
     jac(u, p::P, t) = fun.jac(u, p, t)
@@ -113,10 +136,15 @@ function AIBECSFunction(fun::ODEFunction{false}, ::Type{P}) where {P <: APar}
 end
 function AIBECSFunction(fun::ODEFunction{true}, ::Type{P}) where {P <: APar}
     jac(u, p::P, t) = fun.jac(u, p, t)
+    jac(J, u, p::P, t) = fun.jac(J, u, p, t)
+    jac(J, du, u, p::P, t) = fun.jac(J, du, u, p, t)
     jac(u, λ::Vector, t) = fun.jac(u, λ2p(P, λ), t)
+    jac(J, u, λ::Vector, t) = fun.jac(J, u, λ2p(P, λ), t)
+    jac(J, du, u, λ::Vector, t) = fun.jac(J, du, u, λ2p(P, λ), t)
     f(du, u, p::P, t) = fun.f(du, u, p, t)
     f(u, p::P, t) = fun.f(u, p, t)
     f(du, u, λ::Vector, t) = fun.f(du, u, λ2p(P, λ), t)
+    f(u, λ::Vector, t) = fun.f(u, λ2p(P, λ), t)
     return ODEFunction{true}(f, jac=jac)
 end
 
@@ -138,11 +166,13 @@ function F_and_∇ₓF(fun::ODEFunction{false})
 end
 function F_and_∇ₓF(fun::ODEFunction{true})
     ∇ₓF(u, p) = fun.jac(u, p, 0)
+    ∇ₓF(J, u, p) = fun.jac(J, u, p, 0)
+    ∇ₓF(J, du, u, p) = fun.jac(J, du, u, p, 0)
     F(du, u, p) = fun.f(du, u, p, 0)
     F(u, p) = fun.f(u, p, 0)
     F, ∇ₓF
 end
-F_and_∇ₓF(args...) = F_and_∇ₓF(AIBECSFunction(args...))
+F_and_∇ₓF(args...; kwargs...) = F_and_∇ₓF(AIBECSFunction(args...; kwargs...))
 export F_and_∇ₓF
 
 
@@ -169,6 +199,9 @@ function localderivative(Gᵢ, xs, j, p) # for multiple tracers
 end
 function localderivative(Gᵢ!, dx, xs, j, p) # if Gᵢ are in-place
     return ForwardDiff.derivative((dx, λ) -> Gᵢ!(dx, perturb_tracer(xs, j, λ)..., p), dx, 0.0)
+end
+function localderivative!(res, Gᵢ!, dx, xs, j, p) # if Gᵢ are in-place
+    return ForwardDiff.derivative!(res, (dx, λ) -> Gᵢ!(dx, perturb_tracer(xs, j, λ)..., p), dx, 0.0)
 end
 perturb_tracer(xs, j, λ) = (xs[1:j - 1]..., xs[j] .+ λ, xs[j + 1:end]...)
 

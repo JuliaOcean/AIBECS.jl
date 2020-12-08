@@ -35,6 +35,7 @@ include("CTKsolvers.jl")
 include("Parameters.jl")
 include("overload_solve.jl")
 include("multiTracer.jl")
+include("sparsity.jl")
 
 # Available circulations
 include("OCIM0.jl")
