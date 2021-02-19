@@ -32,7 +32,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 UnitfulRecipes = "42071c24-d89e-48dd-8a24-8a12d9b8861f"
 
 [compat]
-BSON = "0.2"
+BSON = "0.2, 0.3"
 Bijectors = "0.8"
 DataDeps = "0.7"
 DataFrames = "0.20, 0.21, 0.22"
