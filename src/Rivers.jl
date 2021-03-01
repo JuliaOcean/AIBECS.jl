@@ -241,7 +241,7 @@ citation() = """
 - For the formal publication that describe the dataset: Dai, A., and K. E. Trenberth, 2002: Estimates of freshwater discharge from continents: Latitudinal and seasonal variations. J. Hydrometeorol., 3, 660–687.
 - For descriptions of updates to the dataset:
     - Dai, A., T. Qian, K. E. Trenberth, and J. D Milliman, 2009: Changes in continental freshwater discharge from 1948-2004. J. Climate, 22, 2773–2791.
-    - Dai, A., 2016: Historical and future changes in streamflow and continental runoff: A review, in Terrestrial Water Cycle and Climate Change: Natural and Human-Induced Impacts, Geophysical Monograph 221. Ed. Qiuhong Tang and Taikan Oki, AGU, John Wiley &amp;amp; Sons, 17–37 (DOI: 10.1002/9781118971772).
+    - Dai, A., 2016: Historical and future changes in streamflow and continental runoff: A review, in Terrestrial Water Cycle and Climate Change: Natural and Human-Induced Impacts, Geophysical Monograph 221. Ed. Qiuhong Tang and Taikan Oki, AGU, John Wiley & Sons, 17–37 (DOI: 10.1002/9781118971772).
 """
 
 uconvert(u, r::River) = River(r.name, r.lon, r.lat, uconvert(u, r.VFR))
