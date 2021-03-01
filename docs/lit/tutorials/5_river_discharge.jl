@@ -123,3 +123,32 @@ p = RadioRiversParameters(τ = 50.0u"yr")
 prob = SteadyStateProblem(F, ∇ₓF, x, p)
 s_τ50 = solve(prob, CTKAlg()).u * u"mol/m^3"
 plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,1))
+
+# Point-wise sources like the rivers used here can be problematic numerically because these
+# can generate large gradients and numerical noise with to the spatial discretization:
+
+cmap = :RdYlBu_4
+plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=0, color=cmap, clim=(-10,10))
+
+# Note, for an example of numerical noise, the negative values appearing in red.
+# Hence, it might be wise to smooth the 3D field of the river sources.
+# We can do this using the `smooth_operator` function
+# (`smooth_operator` creates an operator that can be applied to smooth the AIBECS vector
+# along the stencil of the given transport matrix and in a volume-conservative way).
+# And we can check that the negative values disappear after smoothing of the sources:
+
+S = smooth_operator(grd, T_OCIM2)
+s_0 = S * (S * s_0) # smooth river sources twice
+s_smooth = solve(prob, CTKAlg()).u * u"mol/m^3"
+plothorizontalslice(s_smooth, grd, zunit=u"μmol/m^3", depth=0, color=cmap, clim=(-10,10))
+
+# Note that such numerical noise generally dampens out with distance and depth
+
+cmap = :viridis
+plot(
+    plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,2)),
+    plothorizontalslice(s_smooth, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,2)),
+    layout=(2,1)
+)
+
+# Nevertheless, it is always good to reduce noise as much as possible!
