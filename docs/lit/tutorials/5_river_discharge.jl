@@ -125,7 +125,7 @@ s_τ50 = solve(prob, CTKAlg()).u * u"mol/m^3"
 plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,1))
 
 # Point-wise sources like the rivers used here can be problematic numerically because these
-# can generate large gradients and numerical noise with to the spatial discretization:
+# can generate large gradients and numerical noise with the given spatial discretization:
 
 cmap = :RdYlBu_4
 plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=0, color=cmap, clim=(-10,10))
