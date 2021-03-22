@@ -85,7 +85,25 @@ export directional_transport, directional_transports
 
 
 
+"""
+    smooth_operator(grd, T; σs=(1.0, 1.0, 0.25))
 
+return a matrix of the same size and sparsity as `T` that smoothes data using
+a Gaussian Kernel for values, but conserving mass.
+"""
+function smooth_operator(grd, T; σs=(1.0, 1.0, 0.25))
+    st = stencil(grd, T)
+    weight(dir) = Kernel.gaussian(σs)[dir]
+    Isym, Jsym, _, _ = symmetric_IJVVᵀ(T)
+    dirs = directions(Isym, Jsym, grd)
+    A = sparse(Isym, Jsym, weight.(dirs))
+    # We add mass conservation to the Gaussian smoothing matrix
+    # by modifying A column by column such that A conserves mass,
+    # i.e., such that vᵀ A x = vᵀ x
+    v = depthvec(grd)
+    A * sparse(Diagonal(v ./ (A' * v)))
+end
+export smooth_operator
 
 
 

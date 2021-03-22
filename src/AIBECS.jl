@@ -25,6 +25,7 @@ using NearestNeighbors
 @reexport using MetadataArrays
 using Shapefile
 using Bijectors
+using ImageFiltering
 
 
 

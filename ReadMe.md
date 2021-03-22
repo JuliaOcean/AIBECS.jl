@@ -42,9 +42,9 @@
 
 
 
-**AIBECS** (for **A**lgebraic **I**mplicit **B**iogeochemical **E**lemental **C**ycling **S**ystem, pronounced like the cool [ibex](https://en.wikipedia.org/wiki/Ibex)) is a Julia package that provides ocean biogeochemistry modelers with an easy-to-use interface for creating and running models of the ocean system.
+**AIBECS** (for **A**lgebraic **I**mplicit **B**iogeochemical **E**lemental **C**ycling **S**ystem, pronounced like the cool [ibex](https://en.wikipedia.org/wiki/Ibex)) is a Julia package that provides ocean biogeochemistry modellers with an easy-to-use interface for creating and running models of the ocean system.
 
-AIBECS is a system because it allows you to chose some biogeochemical tracers, define their interactions, select an ocean circulation and *Voilà!* — your model is ready to run.
+AIBECS is a system because it allows you to choose some biogeochemical tracers, define their interactions, select an ocean circulation and *Voilà!* — your model is ready to run.
 
 ## Getting started
 
@@ -63,7 +63,7 @@ For a single tracer, *x* can be interpreted as the 3D field of its concentration
 In AIBECS, *x* is represented as a column vector.
 
 The operator 𝓣 is a spatial differential operator that represents the transport of tracers.
-For example, for a single tracer transported by the ocean circulation,
+For example, for a single tracer transported by ocean circulation,
 
 𝓣 = ∇ ⋅ (***u*** + **K**∇)
 
@@ -81,8 +81,10 @@ That's pretty much the whole concept!
 ## References
 
 If you use this package, please cite it.
-And if you use data with these package (like the ocean circulation from the OCIM) please also cite them.
-The references under bibtex format are available in the [CITATION.bib](./CITATION.bib) file.
+
+If you use data provided by this package (like the ocean circulation from the OCIM), please cite them as well.
+
+For convenience, all the references are available in [BibTeX](https://en.wikipedia.org/wiki/BibTeX) format in the [CITATION.bib](./CITATION.bib) file.
 
 Also, if you want to do research using the AIBECS, and you think I could help, do not hesitate to contact me directly (contacts on my [website](www.bpasquier.com)), I would be happy to contribute and collaborate!
 
