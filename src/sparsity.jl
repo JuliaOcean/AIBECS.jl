@@ -39,25 +39,32 @@ end
 #end
 
 import SparseArrays.sparse
-function sparse(::DiagonalSparsity, nb, T)
+function sparse(::DiagonalSparsity, grd, T)
+    nb = count(iswet(grd))
     sparse(Diagonal(trues(nb)))
 end
-function sparse(::CirculationSparsity, nb, T)
+function sparse(::CirculationSparsity, grd, T)
     i, j = findnz(T)
+    nb = count(iswet(grd))
     sparse(i, j, trues(length(i)), nb, nb)
 end
-function sparse(::ParticleSparsity, nb, T)
-    tmp = buildIabove(grd) + I # <- this does not work because no grd available here!!!
+function sparse(::ParticleSparsity, grd, T)
+    nb = count(iswet(grd))
+    tmp = buildIabove(grd) + I
     i, j = findnz(tmp)
     sparse(i, j, trues(length(i)), nb, nb)
 end
-function sparse(::ZeroSparsity, nb, T)
+function sparse(::ZeroSparsity, grd, T)
+    nb = count(iswet(grd))
     sparse([], [], trues(0), nb, nb)
 end
-function sparse(M::Array{<:SubSparsityPattern,2}, nb, T)
+function sparse(M::Array{<:SubSparsityPattern,2}, grd, T)
     m, n = size(M)
     m ≠ n && error("Incorrect size")
-    reduce(vcat, reduce(hcat, sparse(M[i,j], nb, T) for j in 1:n) for i in 1:m)
+    reduce(vcat, reduce(hcat, sparse(M[i,j], grd, T) for j in 1:n) for i in 1:m)
+end
+function sparse(Ts, Gs, grd, nt=length(Gs), Tidx=1:nt)
+    
 end
 export sparse
 

@@ -98,7 +98,7 @@ function load()
             so that particulate sinking flux divergence operators can be built.
             (See the comments at the start of the Archer_etal_2000.jl file for details.)
             """
-    return grid, T
+    return grid, DiffEqArrayOperator(T)
 end
 
 end

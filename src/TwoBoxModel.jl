@@ -70,7 +70,7 @@ function load()
             at the root of the AIBECS.jl package repository.
             (Look for the "Sarmiento_Gruber_2006" key.)
             """
-    return grid, T
+    return grid, DiffEqArrayOperator(T)
 end
 
 end

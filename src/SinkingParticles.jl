@@ -186,7 +186,53 @@ function transportoperator(grd, w::Function;
               cumfrac_seafloor = zcumsum(frac_seafloor, grd))
     return PFDO(grd, δz, ustrip.(upreferred.(w.(z_top))), ustrip.(upreferred.(w.(z_bot))), frac_seafloor, cumfrac_seafloor, fsedremin, Iabove)
 end
+"""
+    iiptransportoperator(grd; w=p->(z->1.0), fsedrmein=p->1.0, frac_seafloor=float.(isseafloorvec(grd)))
 
+Advanced usage: Returns a transportoperator corresponding to the sinking speed function `w`
+and fractional remin at the seafloor `fsedremin`.
 
-export transportoperator
+# Examples
+
+Create the particle flux divergence with settling velocity of 100m/s
+
+```julia-repl
+julia> w(p) = z -> 2z + 1     # settling velocity
+
+julia> fsedremin(p) = 0.95    # fractional remin at seafloor
+
+julia> T_particles = iiptransportoperator(grd; w, fsedremin)
+```
+
+You can also specify `frac_seafloor` as a keyword argument to apply the subgrid topography (see `ETOPO`).
+
+This function is intendended for advanced users an computation heavy code.
+
+See also `transportoperator` for a more basic, out-of-place version.
+"""
+function iiptransportoperator(grd; w=p->(z->1.0), frac_seafloor=float.(isseafloorvec(grd)), fsedremin=p->1.0)
+    nb = count(iswet(grd))
+    δz = ustrip.(grd.δz_3D[iswet(grd)])
+    cumfrac_seafloor = zcumsum(frac_seafloor, grd)
+    Iabove = buildIabove(grd)
+    i, j, v = findnz(Iabove)
+    SP = sparse([i; 1:nb], [j; 1:nb], [ones(length(i)); -ones(nb)], nb, nb)
+    iIabove = findall(SP.nzval .== 1)
+    iDiag = findall(SP.nzval .== -1)
+    z_top = topdepthvec(grd)
+    z_bot = bottomdepthvec(grd)
+    function update_func(A,u,p,t)
+        A.nzval[iDiag] .= w(p).(z_bot) .* (1 .+ frac_seafloor .* (1 .- fsedremin(p)) .- cumfrac_seafloor) ./ δz
+        A.nzval[iIabove] .= w(p).(z_top[i]) .* (cumfrac_seafloor[j] .- 1) ./ δz[i]
+        A
+    end
+    DiffEqArrayOperator(SP; update_func)
+end
+#=
+function inplacetrasportoperator(grd, w!::Function)
+    divo = DiffEqArrayOperator(DIVO(grd))
+
+end
+=#
+export transportoperator, iiptransportoperator
 

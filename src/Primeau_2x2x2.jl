@@ -64,7 +64,7 @@ function load()
     grd = build_grid()
     T = build_T(grd)
     println(" ✔")
-    return grd, ustrip.(T)
+    return grd, DiffEqArrayOperator(ustrip.(T))
 end
 
 end

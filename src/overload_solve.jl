@@ -1,4 +1,3 @@
-using DiffEqBase
 
 struct CTKAlg <: DiffEqBase.AbstractSteadyStateAlgorithm end
 

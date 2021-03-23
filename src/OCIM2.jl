@@ -119,7 +119,7 @@ function load(; version="CTL_He")
           at the root of the AIBECS.jl package repository.
           (Look for the "DeVries_Holzer_2019" key.)
           """
-    return grid, ustrip.(T), He3Flux, He4Flux
+    return grid, DiffEqArrayOperator(ustrip.(T)), He3Flux, He4Flux
 end
 
 citation() = "DeVries, T., & Holzer, M. (2019). Radiocarbon and helium isotope constraints on deep ocean ventilation and mantle‐³He sources. Journal of Geophysical Research: Oceans, 124, 3036–3057. https://doi.org/10.1029/2018JC014716"

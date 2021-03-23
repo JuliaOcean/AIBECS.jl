@@ -7,49 +7,45 @@ Generate 𝐹 and ∇ₓ𝐹 from user input
 ============================================ =#
 
 # TODO replace this with DiffEqOperators when possible
-struct LinearOperators{T<:Tuple}
-    ops::T
-end
-LinearOperators(ops...) = LinearOperators((ops...,))
-SparseArrays.blockdiag(As::LinearOperators...) = blockdiag([sum(A.ops) for A in As]...)
-function LinearAlgebra.mul!(du, A::LinearOperators, u, α, β)
-    for (i, op) in enumerate(A.ops)
-        (i==1) ? mul!(du, op, u, α, β) : mul!(du, op, u, α, 1)
-    end
-    du
-end
-LinearAlgebra.factorize(A::LinearOperators) = factorize(sum(A.ops))
-Base.:\(A::LinearOperators, u::AbstractArray) = factorize(A) \ u
-Base.:+(A::LinearOperators, B::AbstractSparseArray) = LinearOperators(A.ops..., B)
-Base.:+(B::AbstractSparseArray, A::LinearOperators) = A + B
-function Base.:*(A::LinearOperators, u::AbstractArray) # has to be same type!
-    du = similar(u)
-    mul!(du, A, u, 1, 0)
-end
-SparseArrays.findnz(A::LinearOperators) = findnz(sum(A.ops))
-export LinearOperators
+# SciMLBase
+# ├─ AbstractSciMLOperator
+# │  └─ AbstractDiffEqOperator
+# │     ├─ AbstractDiffEqLinearOperator
+# │     │  ├─ DiffEqIdentity
+# │     │  ├─ DiffEqScalar
+# │     │  ├─ DiffEqArrayOperator
+# │     │  ├─ FactorizedDiffEqArrayOperator
+# │     │  ├─ AbstractDerivativeOperator      <- DiffEqOperators
+# │     │  │  └─ DerivativeOperator           <- DiffEqOperators
+# │     │  ├─ AbstractDiffEqCompositeOperator <- DiffEqOperators
+# │     │  │  ├─ DiffEqScaledOperator         <- DiffEqOperators
+# │     │  │  ├─ DiffEqOperatorCombination    <- DiffEqOperators
+# │     │  │  └─ DiffEqOperatorComposition    <- DiffEqOperators
+# │     │  └─ AbstractMatrixFreeOperator      <- DiffEqOperators
+# │     └─ AffineDiffEqOperator
+# └─ AbstractDiffEqAffineOperator <- DiffEqOperators
+# exported:
+# - AffineDiffEqOperator
+# - DiffEqScalar
+# - DiffEqArrayOperator
+# - DiffEqIdentity
+#
+# I think I need to simply use DiffEqArrayOperator and let composition magic happen
+# thanks to AbstractDiffEqCompositeOperator.
 
-# What would be the usage like
-# FUN = AIBECSfunction(...)
-# F = FUN.f
-# ∇ₓF = FUN.jac
-# AIBECSFunction creates an ODEFunction from the Ts and Gs
-AIBECSFunction(T::AbstractSparseArray, G::Function; kwargs...) = AIBECSFunction(p -> T, G, T.n; kwargs...)
-AIBECSFunction(T::Function, G::Function, nb::Int; kwargs...) = AIBECSFunction(T, (G,), nb; kwargs...)
-function AIBECSFunction(T::Function, Gs::Tuple, nb::Int; kwargs...)
-    nt = length(Gs) # if a single T is given, then nt is given by the number of Gs
-    Tidx = ones(Int64, nt) # and all the tracers share the same T
-    AIBECSFunction((T,), Gs, nb, nt, Tidx; kwargs...)
-end
-function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int=length(Ts), Tidx::AbstractVector=1:nt; kwargs...)
+AIBECSFunction(T::AbstractDiffEqLinearOperator, G::Function; kw...) = AIBECSFunction((T,), (G,); kw...)
+function AIBECSFunction(Ts::Tuple, Gs::Tuple; kwargs...)
+    nt = length(Ts)
     if all(isinplace(G, nt + 2) for G in Gs) # +2 to account for dx and p
-        iipAIBECSFunction(Ts, Gs, nb, nt, Tidx; kwargs...)
+        iipAIBECSFunction(Ts, Gs; kwargs...)
     else
-        oopAIBECSFunction(Ts, Gs, nb, nt, Tidx; kwargs...)
+        oopAIBECSFunction(Ts, Gs; kwargs...)
     end
 end
 
-function iipAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt; M=nothing)
+function iipAIBECSFunction(Ts, Gs) # TODO Add something here for inplace jacobian? like M=nothing)
+    nb = length(Gs)
+    nt = size(Ts[1], 1)
     tracers(u) = state_to_tracers(u, nb, nt)
     tracer(u, i) = state_to_tracer(u, nb, nt, i)
     function G(du, u, p)
@@ -59,70 +55,65 @@ function iipAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt; M=nothing)
         du
     end
     function f(du, u, p, t)
-        G(du, u, p)
-        for jT in eachindex(Ts)
-            op = Ts[jT](p)
-            for j in findall(Tidx .== jT)
-                mul!(tracer(du, j), op, tracer(u, j), -1, 1)
-            end
+        for j in 1:nt
+            update_coefficients!(Ts[j], nothing, p, nothing) # not sure if needed?
+            mul!(tracer(du, j), -Ts[j], tracer(u, j))
+            Gs[j](Ts[j].cache, tracers(u)..., p)
+            tracer(du, j) .+= Ts[j].cache
         end
         du
     end
     f(u, p, t) = (du = copy(u); f(du, u, p, t); du)
-    # Jacobian
-    ∇ₓG(u, p) = inplace_local_jacobian(Gs, u, p, nt, nb)
+    # Jacobian TODO CHECK
+    ∇ₓG(u, p) = inplace_local_jacobian(Gs, u, p, nt, nb) # here, only G is inplace (not ∇ₓG)
     function T(p)
-        uniqueTs = [Tⱼ(p) for Tⱼ in Ts]
-        blockdiag([uniqueTs[Tidx[j]] for j in 1:nt]...)
+        for j in 1:nt
+            update_coefficients!(Ts[j], nothing, p, nothing) # not sure if needed?
+        end
+        blockdiag(Ts...)
     end
     jac(u, p, t) = ∇ₓG(u, p) - T(p)
-    # in place ∇ₓF # Not working yet! must account for LinearOpeartors!!
-    if !isnothing(M)
-        iT = findfirst([any(m.nargs == 1 for m in methods(Tᵢ)) for Tᵢ in Ts]) # 1dt index of fixed transport T
-        J = sparse(M, nb, Ts[iT]())
-        idxG = [findblockdiagonalindices(J, nb, nt, i, j) for i in 1:nt, j in 1:nt]
-        idxT = [findblockindices(J, nb, nt, i, i) for i in 1:nt]
-    end
-    function jac(J, du, u, p, t)
-        (M isa Nothing) && error("Subsparsity patterns not supplied")
-        for i in 1:nt, j in 1:nt
-            localderivative!(view(J.nzval, idxG[i,j]), Gs[i], du, tracers(u), j, p)
-            if j == i
-                J.nzval[idxT[i]] .-= T[i](p).nzval
-            end
-        end
-        J
-    end
-    function jac(J, u, p, t)
-        (M isa Nothing) && error("Subsparsity patterns not supplied")
-        du = similar(u[1:nb])
-        jac(J, du, u, p, t)
-    end
+
+    # TODO in place ∇ₓF below # Not working yet! must account for LinearOpeartors!!
+    #if !isnothing(M)
+    #    iT = findfirst([any(m.nargs == 1 for m in methods(Tᵢ)) for Tᵢ in Ts]) # 1dt index of fixed transport T
+    #    J = sparse(M, nb, Ts[iT]())
+    #    idxG = [findblockdiagonalindices(J, nb, nt, i, j) for i in 1:nt, j in 1:nt]
+    #    idxT = [findblockindices(J, nb, nt, i, i) for i in 1:nt]
+    #end
+    #function jac(J, du, u, p, t)
+    #    (M isa Nothing) && error("Subsparsity patterns not supplied")
+    #    for i in 1:nt, j in 1:nt
+    #        localderivative!(view(J.nzval, idxG[i,j]), Gs[i], du, tracers(u), j, p)
+    #        if j == i
+    #            J.nzval[idxT[i]] .-= T[i](p).nzval
+    #        end
+    #    end
+    #    J
+    #end
+    #function jac(J, u, p, t)
+    #    (M isa Nothing) && error("Subsparsity patterns not supplied")
+    #    du = similar(u[1:nb])
+    #    jac(J, du, u, p, t)
+    #end
     return ODEFunction{true}(f, jac=jac)
 end
-function oopAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
+function oopAIBECSFunction(Ts, Gs)
+    nb = size(Ts[1], 1)
+    nt = length(Gs)
     tracers(u) = state_to_tracers(u, nb, nt)
     tracer(u, i) = state_to_tracer(u, nb, nt, i)
     G(u, p) = reduce(vcat, Gⱼ(tracers(u)..., p) for Gⱼ in Gs)
-    function f(u, p, t)
-        du = G(u, p)
-        for jT in eachindex(Ts)
-            op = Ts[jT](p)
-            for j in findall(Tidx .== jT)
-                mul!(tracer(du, j), op, tracer(u, j), -1, 1)
-            end
-        end
-        du
-    end
+    f(u, p, t) = G(u,p) - reduce(vcat, Ts[j] * tracer(u, j) for j in 1:nt)
     # Jacobian
     ∇ₓG(u, p) = local_jacobian(Gs, u, p, nt, nb)
-    function T(p)
-        uniqueTs = [Tⱼ(p) for Tⱼ in Ts]
-        blockdiag([uniqueTs[Tidx[j]] for j in 1:nt]...)
-    end
+    T(p) = blockdiag([Tⱼ.A for Tⱼ in Ts]...) ;
     jac(u, p, t) = ∇ₓG(u, p) - T(p)
     return ODEFunction(f, jac=jac)
 end
+#
+###### EDITING HERE ######
+#
 # This AIBECSFunction overloads F and ∇ₓF for λ instead of p
 function AIBECSFunction(Ts, Gs, nb::Int, ::Type{P}; kwargs...) where {P <: APar}
     AIBECSFunction(AIBECSFunction(Ts, Gs, nb; kwargs...), P)
@@ -213,7 +204,7 @@ perturb_tracer(xs, j, λ) = (xs[1:j - 1]..., xs[j] .+ λ, xs[j + 1:end]...)
 Returns the state function `F` and its jacobian, `∇ₓF`.
 """
 function split_state_function_and_Jacobian(Ts::Tuple, Ls::Tuple, NLs::Tuple, nb)
-    nt = length(Ts)
+    nt = length(Gs)
     tracers(x) = state_to_tracers(x, nb, nt)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
     NL(x, p) = reduce(vcat, NLⱼ(tracers(x)..., p) for NLⱼ in NLs) # nonlinear part

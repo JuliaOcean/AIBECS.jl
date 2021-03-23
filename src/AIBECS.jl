@@ -26,6 +26,9 @@ using NearestNeighbors
 using Shapefile
 using Bijectors
 using ImageFiltering
+using SciMLBase: AbstractDiffEqLinearOperator
+using DiffEqBase
+using DiffEqOperators
 
 
 

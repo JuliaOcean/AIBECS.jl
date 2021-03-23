@@ -18,6 +18,7 @@ using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
 using BSON                  # For saving circulation as BSON format
 using Unitful               # for units
+using DiffEqBase            # for DiffEqArrayOperator
 using Reexport
 @reexport using OceanGrids            # To store the grid
 
@@ -90,7 +91,7 @@ function load(; version="")
           at the root of the AIBECS.jl package repository.
           (Look for the "Forget_2010" key.)
           """
-    return grid, ustrip.(T)
+    return grid, DiffEqArrayOperator(ustrip.(T))
 end
 
 citation() = "Forget, G., 2010: Mapping Ocean Observations in a Dynamical Framework: A 2004–06 Ocean Atlas. J. Phys. Oceanogr., 40, 1201–1221, https://doi.org/10.1175/2009JPO4043.1"

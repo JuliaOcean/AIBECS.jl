@@ -83,7 +83,7 @@ function load(; version="CTL")
           at the root of the AIBECS.jl package repository.
           (Look for the "DeVries_Primeau_2011" and "DeVries_2014" keys.)
           """
-    return grid, ustrip.(T)
+    return grid, DiffEqArrayOperator(ustrip.(T))
 end
 
 citation() = """

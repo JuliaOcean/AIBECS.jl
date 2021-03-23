@@ -73,7 +73,7 @@ function load(; version="")
           at the root of the AIBECS.jl package repository.
           (Look for the "DeVries_Primeau_2011" and "Primeau_etal_2013" keys.)
           """
-    return grid, ustrip.(T)
+    return grid, DiffEqArrayOperator(ustrip.(T))
 end
 
 citation() = """
