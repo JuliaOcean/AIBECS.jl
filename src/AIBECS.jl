@@ -29,6 +29,7 @@ using ImageFiltering
 using SciMLBase: AbstractDiffEqLinearOperator
 using DiffEqBase
 using DiffEqOperators
+using SparseDiffTools
 
 
 
