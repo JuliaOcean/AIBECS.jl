@@ -116,12 +116,14 @@ function AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer)
     # i) Create ∇G(x) as a DiffEqArrayOperator
     jac0 = vcat((hcat((Diagonal(ones(nb)) for _ in 1:nt)...) for _ in 1:nt)...) # nt×nt blocks of diagonals
     colorsG = matrix_colors(jac0)
-    x0 = ones(nt*nb)
-    dummy_G(du,u) = mul!(du,jac0,u)
-    jac_cache = ForwardColorJacCache(dummy_G, x0, colorvec=colorsG, sparsity=jac0)
+    # TODO, make use of cache for Jacobian
+    # currently on hold because of https://github.com/JuliaDiff/SparseDiffTools.jl/issues/135
+    #x0 = ones(nt*nb)
+    #dummy_G(du,u) = mul!(du,jac0,u)
+    #jac_cache = ForwardColorJacCache(dummy_G, x0, colorvec=colorsG, sparsity=jac0)
     function update_∇G(J, u, p, t)
         G_no_p(du, u) = G(du, u, p)
-        forwarddiff_color_jacobian!(J, G_no_p, u, jac_cache)
+        forwarddiff_color_jacobian!(J, G_no_p, u, colorvec=colorsG, sparsity=jac0)
     end
     jacG = similar(jac0)
     ∇G = DiffEqArrayOperator(jacG, update_func=update_∇G)
@@ -132,17 +134,23 @@ function AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer)
     return ODEFunction{true}(f, jac=jac)
 end
 
+
+
+
+
 # This AIBECSFunction overloads F and ∇ₓF for λ instead of p
 function AIBECSFunction(Ts, Gs, ::Type{P}) where {P <: APar}
     AIBECSFunction(AIBECSFunction(Ts, Gs), P)
 end
 function AIBECSFunction(fun::ODEFunction, ::Type{P}) where {P <: APar}
-    jac(u, p::P, t) = fun.jac(u, p, t)
-    jac(J, u, p::P, t) = fun.jac(J, u, p, t)
-    jac(J, du, u, p::P, t) = fun.jac(J, du, u, p, t)
-    jac(u, λ::Vector, t) = fun.jac(u, λ2p(P, λ), t)
-    jac(J, u, λ::Vector, t) = fun.jac(J, u, λ2p(P, λ), t)
-    jac(J, du, u, λ::Vector, t) = fun.jac(J, du, u, λ2p(P, λ), t)
+    jac = fun.jac
+    # These cannot work (see TODO notes below)
+    #jac(u, p::P, t) = fun.jac(u, p, t)
+    #jac(J, u, p::P, t) = fun.jac(J, u, p, t)
+    #jac(J, du, u, p::P, t) = fun.jac(J, du, u, p, t)
+    #jac(u, λ::Vector, t) = fun.jac(u, λ2p(P, λ), t)
+    #jac(J, u, λ::Vector, t) = fun.jac(J, u, λ2p(P, λ), t)
+    #jac(J, du, u, λ::Vector, t) = fun.jac(J, du, u, λ2p(P, λ), t)
     f(du, u, p::P, t) = fun.f(du, u, p, t)
     f(u, p::P, t) = fun.f(u, p, t)
     f(du, u, λ::Vector, t) = fun.f(du, u, λ2p(P, λ), t)
@@ -152,6 +160,14 @@ end
 
 export AIBECSFunction
 
+# TODO Rethink this part for dispathcing between parameters and vectors
+# so that update_coefficients! can also join in on the party and dispatch on
+# parameters and vectors as well.
+# This is necessary because the commented lines above will not work anymore.
+# Option 2 is to refactor the parameters type completely, but that means
+# giving up on (a lot of) niceties I built up, will be significant work,
+# and thus will take quite some time to finish.
+# That being said, option 2 is the long-term goal for composability.
 """
     F, ∇ₓF = state_function_and_Jacobian(Ts, Gs, nb)
 
