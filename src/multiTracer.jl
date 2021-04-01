@@ -62,34 +62,24 @@ end
 convert(::Type{AbstractMatrix}, L::BlockDiagDiffEqOperator) = blockdiag((convert(AbstractMatrix, A) for A in L.ops)...)
 
 
-
-
+# If Parameters type if given, convert it into λ2p and pass that on
+AIBECSFunction(Ts::Tuple, Gs::Tuple, ::Type{P}) where {P <: APar} = AIBECSFunction(Ts, Gs, λ -> λ2p(P, λ))
 # Special case if only one tracer (no tuple) is given as arguments
-AIBECSFunction(T::AbstractDiffEqLinearOperator, G::Function) = AIBECSFunction((T,), (G,))
+AIBECSFunction(T::AbstractDiffEqLinearOperator, G::Function, λ2p=nothing) = AIBECSFunction((T,), (G,), λ2p)
 # dispatch depending on number of args of G functions
-function AIBECSFunction(Ts::Tuple, Gs::Tuple)
+function AIBECSFunction(Ts::Tuple, Gs::Tuple, λ2p=nothing)
     nt = length(Ts)
     nb = size(Ts[1], 1)
     tracers(u) = state_to_tracers(u, nb, nt)
     tracer(u, i) = state_to_tracer(u, nb, nt, i)
     if all(isinplace(G, nt + 2) for G in Gs) # +2 to account for dx and p
-        AIBECSFunction_fromipGs(Ts, Gs, nt, nb, tracers, tracer)
+        AIBECSFunction_fromipGs(Ts, Gs, nt, nb, tracers, tracer, λ2p)
     else
-        AIBECSFunction_fromoopGs(Ts, Gs, nt, nb, tracers, tracer)
+        AIBECSFunction_fromoopGs(Ts, Gs, nt, nb, tracers, tracer, λ2p)
     end
-end
-# AIBECSFunction from in-place Gs
-function AIBECSFunction_fromipGs(Ts, Gs, nt, nb, tracers, tracer)
-    function G(du, u, p)
-        for j in 1:nt
-            Gs[j](tracer(du, j), tracers(u)..., p)
-        end
-        du
-    end
-    return AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer)
 end
 # AIBECSFunction from out-of-place Gs
-function AIBECSFunction_fromoopGs(Ts, Gs, nt, nb, tracers, tracer)
+function AIBECSFunction_fromoopGs(Ts, Gs, nt, nb, tracers, tracer, λ2p)
     function G(du, u, p)
         du = copy(u)
         for j in 1:nt
@@ -97,93 +87,64 @@ function AIBECSFunction_fromoopGs(Ts, Gs, nt, nb, tracers, tracer)
         end
         du
     end
-    return AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer)
+    return AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer, λ2p)
 end
-# Given inplace big G(du, u, p) and these other functions, build the ODEFunction
-# Note here G is the "big" G for all the tracers!
-function AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer)
-    function f(du, u, p, t)
-        G(du, u, p) # comment out if G(u) is not first
+# AIBECSFunction from in-place Gs
+function AIBECSFunction_fromipGs(Ts, Gs, nt, nb, tracers, tracer, λ2p)
+    function G(du, u, p)
         for j in 1:nt
-            update_coefficients!(Ts[j], nothing, p, nothing) # necessary
-            mul!(tracer(du, j), Ts[j], tracer(u, j), 1, -1) # du <- G(u) - T * u
-            #Gs[j](Ts[j].cache, tracers(u)..., p)
-            #tracer(du, j) .+= Ts[j].cache
+            Gs[j](tracer(du, j), tracers(u)..., p)
         end
         du
     end
+    return AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer, λ2p)
+end
+# Given inplace big G(du, u, p) and these other functions, build the ODEFunction
+# Note here G is the "big" G for all the tracers!
+function AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer, λ2p)
+    function f(du, u, p, t)
+        G(du, u, p)
+        for j in 1:nt
+            update_coefficients!(Ts[j], nothing, p, nothing) # necessary
+            mul!(tracer(du, j), Ts[j], tracer(u, j), 1, -1) # du <- G(u) - T * u
+        end
+        du
+    end
+    f(du, u, λ::Vector, t) = f(du, u, λ2p(λ), t)
     f(u, p, t) = (du = copy(u); f(du, u, p, t); du)
+    f(u, λ::Vector, t) = f(u, λ2p(λ), t)
     # i) Create ∇G(x) as a DiffEqArrayOperator
     jac0 = vcat((hcat((Diagonal(ones(nb)) for _ in 1:nt)...) for _ in 1:nt)...) # nt×nt blocks of diagonals
     colorsG = matrix_colors(jac0)
-    # TODO, make use of cache for Jacobian
-    # currently on hold because of https://github.com/JuliaDiff/SparseDiffTools.jl/issues/135
-    #x0 = ones(nt*nb)
-    #dummy_G(du,u) = mul!(du,jac0,u)
-    #jac_cache = ForwardColorJacCache(dummy_G, x0, colorvec=colorsG, sparsity=jac0)
+    # TODO, make use of cache for Jacobian (https://github.com/JuliaDiff/SparseDiffTools.jl/issues/135)
     function update_∇G(J, u, p, t)
         G_no_p(du, u) = G(du, u, p)
         forwarddiff_color_jacobian!(J, G_no_p, u, colorvec=colorsG, sparsity=jac0)
     end
+    update_∇G(J, u, λ::Vector, t) = update_∇G(J, u, λ2p(λ), t)
     jacG = similar(jac0)
     ∇G = DiffEqArrayOperator(jacG, update_func=update_∇G)
-    # ii) Create T as a BlockDiagDiffEqOperator
+    # ii) Create T as a BlockDiagDiffEqOperator and return jac = ∇G(x) - T
     T = BlockDiagDiffEqOperator{Float64}(Ts)
-    # Then return ∇G(x) - T
     jac = ∇G - T
     return ODEFunction{true}(f, jac=jac)
 end
-
-
-
-
-
-# This AIBECSFunction overloads F and ∇ₓF for λ instead of p
-function AIBECSFunction(Ts, Gs, ::Type{P}) where {P <: APar}
-    AIBECSFunction(AIBECSFunction(Ts, Gs), P)
-end
-function AIBECSFunction(fun::ODEFunction, ::Type{P}) where {P <: APar}
-    jac = fun.jac
-    # These cannot work (see TODO notes below)
-    #jac(u, p::P, t) = fun.jac(u, p, t)
-    #jac(J, u, p::P, t) = fun.jac(J, u, p, t)
-    #jac(J, du, u, p::P, t) = fun.jac(J, du, u, p, t)
-    #jac(u, λ::Vector, t) = fun.jac(u, λ2p(P, λ), t)
-    #jac(J, u, λ::Vector, t) = fun.jac(J, u, λ2p(P, λ), t)
-    #jac(J, du, u, λ::Vector, t) = fun.jac(J, du, u, λ2p(P, λ), t)
-    f(du, u, p::P, t) = fun.f(du, u, p, t)
-    f(u, p::P, t) = fun.f(u, p, t)
-    f(du, u, λ::Vector, t) = fun.f(du, u, λ2p(P, λ), t)
-    f(u, λ::Vector, t) = fun.f(u, λ2p(P, λ), t)
-    return ODEFunction{true}(f, jac=jac)
-end
-
 export AIBECSFunction
 
-# TODO Rethink this part for dispathcing between parameters and vectors
-# so that update_coefficients! can also join in on the party and dispatch on
-# parameters and vectors as well.
-# This is necessary because the commented lines above will not work anymore.
-# Option 2 is to refactor the parameters type completely, but that means
-# giving up on (a lot of) niceties I built up, will be significant work,
-# and thus will take quite some time to finish.
-# That being said, option 2 is the long-term goal for composability.
 """
-    F, ∇ₓF = state_function_and_Jacobian(Ts, Gs, nb)
+    F, ∇ₓF = state_function_and_Jacobian(Ts, Gs)
 
 Returns the state function `F` and its jacobian, `∇ₓF`.
-
-    F, ∇ₓF = state_function_and_Jacobian(T, Gs, nb)
-
-Returns the state function `F` and its jacobian, `∇ₓF` (with all tracers transported by single `T`).
 """
-function F_and_∇ₓF(fun::ODEFunction)
+function F_and_∇ₓF(fun::ODEFunction, λ2p)
     ∇ₓF(u, p) = (update_coefficients!(fun.jac, u, p, nothing) ; convert(AbstractMatrix, fun.jac))
+    ∇ₓF(u, λ::Vector) = ∇ₓF(u, λ2p(λ))
     F(du, u, p) = fun.f(du, u, p, nothing)
     F(u, p) = fun.f(u, p, nothing)
     F, ∇ₓF
 end
-F_and_∇ₓF(args...) = F_and_∇ₓF(AIBECSFunction(args...))
+F_and_∇ₓF(Ts, Gs, ::Type{P}) where {P <: APar} = F_and_∇ₓF(Ts, Gs, λ -> λ2p(P, λ))
+F_and_∇ₓF(Ts, Gs, λ2p=nothing) = F_and_∇ₓF(AIBECSFunction(Ts, Gs, λ2p), λ2p)
 export F_and_∇ₓF
 
 
@@ -221,14 +182,17 @@ perturb_tracer(xs, j, λ) = (xs[1:j - 1]..., xs[j] .+ λ, xs[j + 1:end]...)
 
 
 
-
+# TODO update split functionality with DiffEqOperators
+# This is important because it will eventually be used for
+# preconditioning in Krylov methods
+# Although I may need to revisit the API before that.
 """
     F, ∇ₓF = state_function_and_Jacobian(Ts, Gs, nb)
 
 Returns the state function `F` and its jacobian, `∇ₓF`.
 """
 function split_state_function_and_Jacobian(Ts::Tuple, Ls::Tuple, NLs::Tuple, nb)
-    nt = length(Gs)
+    nt = length(Ts)
     tracers(x) = state_to_tracers(x, nb, nt)
     T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
     NL(x, p) = reduce(vcat, NLⱼ(tracers(x)..., p) for NLⱼ in NLs) # nonlinear part

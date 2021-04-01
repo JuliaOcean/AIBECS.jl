@@ -18,14 +18,19 @@ test_setup_only = [:OCIM1, :OCIM0, :OCCA]
 # Using `include` evaluates at global scope,
 # so `Circulation` must be changed at the global scope too.
 # This is why there is an `eval` in the for loop(s) below
+
+println("Testing setup ---------------------------------------------------------")
 @testset "test setup.jl only" for C in test_setup_only
     @testset "$C" begin
+        println("  $C")
         eval(:(Circulation = $C))
         include("setup.jl")
     end
 end
+println("Done testing setup ----------------------------------------------------\n")
 
 
+println("Testing setup, plots, and sources -------------------------------------")
 test_plots = [:OCIM2]
 @testset "Test setup, plots, and sources" for C in test_plots
     @testset "$C" begin
@@ -35,8 +40,10 @@ test_plots = [:OCIM2]
         include("sources.jl")
     end
 end
+println("Done testing, plots, and sources --------------------------------\n")
 
 
+println("Testing everything ---------------------------------------------------")
 include("parameters.jl")
 test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000]
 @testset "test everything" for C in test_everything
@@ -51,6 +58,7 @@ test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000]
         include("derivatives.jl")
     end
 end
+println("Done testing everything ----------------------------------------------\n")
 
 
 

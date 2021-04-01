@@ -13,6 +13,7 @@ https://github.com/fprimeau/BIOGEOCHEM_TEACHING/blob/master/boxmodel.png
 using LinearAlgebra, SparseArrays
 using Unitful
 using Reexport
+using DiffEqBase            # for DiffEqArrayOperator
 @reexport using OceanGrids            # To store the grid
 using ..CirculationGeneration
 CG = CirculationGeneration

@@ -1,13 +1,12 @@
 #===========================================
 Transport matrices
 ===========================================#
-T_D(p) = T_Circulation
-S₀ = PFDO(ones(nb), DIV, Iabove)
-S′ = PFDO(ztop, DIV, Iabove)
-function T_POP(p)
+T_D = T_Circulation
+function w(p)
     @unpack w₀, w′ = p
-    return w₀ * S₀ + w′ * S′
+    z -> w₀ + w′ * z
 end
+T_POP = iiptransportoperator(grd; w)
 T_all = (T_D, T_D, T_POP)
 
 #===========================================
@@ -71,10 +70,13 @@ Gs = (G_DIP!, G_DOP!, G_POP!)
 #===========================================
 AIBECS F and ∇ₓF
 ===========================================#
-fun = AIBECSFunction(T_all, sms_all, nb)
-fun! = AIBECSFunction((T_D, T_POP), Gs, nb, 3, [1,1,2])
-F, ∇ₓF = F_and_∇ₓF(T_all, sms_all, nb)
-F!, ∇ₓF! = F_and_∇ₓF((T_D, T_POP), Gs, nb, 3, [1,1,2]) # <- faster because inplace and only one T_D
+fun = AIBECSFunction(T_all, sms_all)
+F, ∇ₓF = F_and_∇ₓF(T_all, sms_all)
+
+fun1 = AIBECSFunction(T_all, sms_all)
+fun2 = AIBECSFunction(T_all, Gs)
+F1, ∇ₓF1 = F_and_∇ₓF(T_all, sms_all, nb)
+F2, ∇ₓF2 = F_and_∇ₓF(T_all, Gs)
 
 #===========================================
 AIBECS split operators for CNLF
@@ -98,7 +100,7 @@ L_POP(DIP, DOP, POP, p) = -dissolution(POP, p)
 NL_all = (NL_DIP, NL_DOP, NL_POP)
 L_all = (L_DIP, L_DOP, L_POP)
 
-F2, L, NL, ∇ₓF2, ∇ₓL, ∇ₓNL, T = split_state_function_and_Jacobian(T_all, L_all, NL_all, nb)
+F3, L, NL, ∇ₓF3, ∇ₓL, ∇ₓNL, T = split_state_function_and_Jacobian(T_all, L_all, NL_all, nb)
 
 #===========================================
 Tests
@@ -106,21 +108,21 @@ Tests
 
 @testset "Biogeochemical functions" begin
     @testset "Particle Flux Divergence is conservative" begin
-        @test norm(v) / norm(T_POP(p)' * v) > ustrip(upreferred(1u"Myr"))
+        @test norm(v) / norm(T_POP.A' * v) > ustrip(upreferred(1u"Myr"))
     end
     nt = length(T_all)
     n = nt * nb
     @unpack xgeo = p
     x = xgeo * ones(n) .* exp.(cos.(collect(1:n))/10)
     @testset "State function" begin
-        F₀ = F(x, p)
+        F₀ = F1(x, p)
         v_all = repeat(v, nt)
         @test F₀ isa Vector{Float64}
         @test size(F₀) == (n,)
-        @test norm(v_all .* x) / norm(v_all' * F₀) > ustrip(upreferred(1u"Myr"))
+        @test norm(v_all .* x) / norm(v_all .* F₀) > ustrip(upreferred(1u"Myr"))
     end
     @testset "Jacobian of the state function" begin
-        ∇ₓF₀ = ∇ₓF(x, p)
+        ∇ₓF₀ = ∇ₓF1(x, p)
         @test ∇ₓF₀ isa SparseMatrixCSC
         @test size(∇ₓF₀) == (n,n)
     end
@@ -134,11 +136,8 @@ end
     x = xgeo * ones(n) .* exp.(cos.(collect(1:n))/10)
     dx = similar(x)
     @testset "F! ≈ F" begin
-        F₀ = F!(dx, x, p)
-        @test F₀ ≈ F(x,p) rtol=1e-10
-    end
-    @testset "∇ₓF! ≈ ∇ₓF" begin
-        @test ∇ₓF(x,p) ≈ ∇ₓF!(x,p) rtol=1e-10
+        F₀ = F2(dx, x, p)
+        @test F₀ ≈ F1(x,p) rtol=1e-10
     end
 end
 
@@ -148,15 +147,15 @@ end
     @unpack xgeo = p
     x = xgeo * ones(n) .* exp.(cos.(collect(1:n))/10)
     @testset "split F ≈ F" begin
-        @test F2(x,p) ≈ F(x,p) rtol=1e-10
+        @test F3(x,p) ≈ F1(x,p) rtol=1e-10
     end
     @testset "split F ≈ L + NL" begin
-        @test F2(x,p) ≈ L(x,p) + NL(x,p) - T(p) * x rtol=1e-10
+        @test F3(x,p) ≈ L(x,p) + NL(x,p) - T(p) * x rtol=1e-10
     end
     @testset "split ∇ₓF ≈ ∇ₓF" begin
-        @test ∇ₓF(x,p) ≈ ∇ₓF2(x,p) rtol=1e-10
+        @test ∇ₓF1(x,p) ≈ ∇ₓF3(x,p) rtol=1e-10
     end
     @testset "split ∇ₓF ≈ T + ∇ₓNL" begin
-        @test ∇ₓF2(x,p) ≈ ∇ₓL(p) + ∇ₓNL(x,p) - T(p) rtol=1e-10
+        @test ∇ₓF3(x,p) ≈ ∇ₓL(p) + ∇ₓNL(x,p) - T(p) rtol=1e-10
     end
 end

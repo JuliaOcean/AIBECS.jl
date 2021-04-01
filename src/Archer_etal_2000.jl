@@ -25,6 +25,7 @@ The boxes are grouped as indicated:
 using LinearAlgebra, SparseArrays
 using Unitful
 using Reexport
+using DiffEqBase            # for DiffEqArrayOperator
 @reexport using OceanGrids            # To store the grid
 using ..CirculationGeneration
 CG = CirculationGeneration

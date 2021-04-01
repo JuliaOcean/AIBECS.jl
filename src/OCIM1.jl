@@ -11,6 +11,7 @@ using DataDeps              # For storage location of data
 using BSON                  # For saving circulation as BSON format
 using Unitful               # for units
 using Reexport
+using DiffEqBase            # for DiffEqArrayOperator
 @reexport using OceanGrids            # To store the grid
 
 function fallback_download(remotepath, localdir)

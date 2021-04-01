@@ -18,6 +18,7 @@ from the Sarmiento and Gruber book (2006) book.
 using LinearAlgebra, SparseArrays
 using Unitful
 using Reexport
+using DiffEqBase            # for DiffEqArrayOperator
 @reexport using OceanGrids            # To store the grid
 using ..CirculationGeneration
 CG = CirculationGeneration

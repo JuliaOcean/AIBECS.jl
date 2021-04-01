@@ -1,7 +1,6 @@
 
 # Load the circulation and grid
-grd, T_Circulation_unit = Circulation.load()
-T_Circulation = ustrip.(T_Circulation_unit) # strip units for now
+grd, T_Circulation = Circulation.load()
 
 # Define useful constants and arrays
 iwet = indices_of_wet_boxes(grd)
@@ -14,6 +13,7 @@ DIV = DIVO(grd)
 Iabove = buildIabove(grd)
 
 @testset "Circulation and grid" begin
+    println("    Circulation and grid")
     @testset "wet3D" begin
         wet3D = iswet(grd)
         @test wet3D isa BitArray{3}
@@ -24,14 +24,16 @@ Iabove = buildIabove(grd)
     end
     @testset "Transport matrix" begin
         T = T_Circulation
-        @test T isa SparseMatrixCSC
-        println("Divergence timescale: ", norm(ones(nb)) / norm(T * ones(nb)) * u"s" |> u"Myr")
-        println("Mass conservation timescale: ", norm(v) / norm(T' * v) * u"s" |> u"Myr")
+        @test T isa DiffEqArrayOperator
+        @test T.A isa SparseMatrixCSC
+        println("      Divergence timescale: ", norm(ones(nb)) / norm(T * ones(nb)) * u"s" |> u"Myr")
+        println("      Mass conservation timescale: ", norm(v) / norm(T.A' * v) * u"s" |> u"Myr") # TODO adjoint(Op)
     end
     # TODO add tests for consistency of wet3D, grid, and T
 end
 
 @testset "Constants, vectors, and matrices types" begin
+    println("    Constants, vectors, and matrices types")
     # Test their types
     @testset "iwet (indices of wet boxes)" begin
         @test iwet isa Vector{<:Int}
