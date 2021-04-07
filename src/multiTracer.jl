@@ -81,7 +81,6 @@ end
 # AIBECSFunction from out-of-place Gs
 function AIBECSFunction_fromoopGs(Ts, Gs, nt, nb, tracers, tracer, λ2p)
     function G(du, u, p)
-        du = copy(u)
         for j in 1:nt
             tracer(du, j) .= Gs[j](tracers(u)..., p)
         end
@@ -106,7 +105,7 @@ function AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer, λ2p)
         G(du, u, p)
         for j in 1:nt
             update_coefficients!(Ts[j], nothing, p, nothing) # necessary
-            mul!(tracer(du, j), Ts[j], tracer(u, j), 1, -1) # du <- G(u) - T * u
+            mul!(tracer(du, j), Ts[j], tracer(u, j), -1, 1) # du <- G(u) - T * u
         end
         du
     end

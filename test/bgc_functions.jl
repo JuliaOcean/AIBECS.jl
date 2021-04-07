@@ -7,6 +7,8 @@ function w(p)
     z -> w₀ + w′ * z
 end
 T_POP = iiptransportoperator(grd; w)
+update_coefficients!(T_POP, nothing, p, nothing)
+T_POP_old(p) = transportoperator(grd, w(p))
 T_all = (T_D, T_D, T_POP)
 
 #===========================================
@@ -75,7 +77,7 @@ F, ∇ₓF = F_and_∇ₓF(T_all, sms_all)
 
 fun1 = AIBECSFunction(T_all, sms_all)
 fun2 = AIBECSFunction(T_all, Gs)
-F1, ∇ₓF1 = F_and_∇ₓF(T_all, sms_all, nb)
+F1, ∇ₓF1 = F_and_∇ₓF(T_all, sms_all)
 F2, ∇ₓF2 = F_and_∇ₓF(T_all, Gs)
 
 #===========================================
@@ -107,6 +109,7 @@ Tests
 ===========================================#
 
 @testset "Biogeochemical functions" begin
+    @test T_POP_old(p) ≈ T_POP.A
     @testset "Particle Flux Divergence is conservative" begin
         @test norm(v) / norm(T_POP.A' * v) > ustrip(upreferred(1u"Myr"))
     end
@@ -119,7 +122,9 @@ Tests
         v_all = repeat(v, nt)
         @test F₀ isa Vector{Float64}
         @test size(F₀) == (n,)
-        @test norm(v_all .* x) / norm(v_all .* F₀) > ustrip(upreferred(1u"Myr"))
+        # Not sure about this test below, which sort-of tests if F is conservative,
+        # although it should not be because of the geological restoring.
+        @test norm(v_all .* x) / norm(v_all' * F₀) > ustrip(upreferred(1u"Myr"))
     end
     @testset "Jacobian of the state function" begin
         ∇ₓF₀ = ∇ₓF1(x, p)
