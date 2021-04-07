@@ -87,7 +87,7 @@ zonalaverage(dummy, grd)
 using OceanBasins
 OCEANS = oceanpolygons()
 basins = sum(i*isbasin(latvec(grd), lonvec(grd), OCEANS) for (i,isbasin) in enumerate([isindian2, ispacific2, isatlantic2, isantarctic]))
-surfacemap(basins, grd, seriestype=:heatmap, color=:lightrainbow)
+plothorizontalslice(basins, grd, depth=0, seriestype=:heatmap, color=:lightrainbow)
 
 # and you can mask a specific region with the `mask` keyword argument
 
