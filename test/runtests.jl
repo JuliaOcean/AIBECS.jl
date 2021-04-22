@@ -3,13 +3,19 @@
 using AIBECS, Test
 using SparseArrays, LinearAlgebra
 using Unitful
-using Unitful: °, m, km
+using Unitful: °, m, km, Myr
 using WorldOceanAtlasTools
 using DiffEqBase
 using ForwardDiff, DualNumbers
 using DataFrames
 using Distributions
 using Plots
+
+# Nonlinear solver packages
+using NLsolve
+using NLSolvers
+#using SUNDIALS # KINSOL
+using SIAMFANLEquations
 
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true

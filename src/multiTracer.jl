@@ -40,7 +40,7 @@ struct BlockDiagDiffEqOperator{T,T1} <: AbstractDiffEqLinearOperator{T}
         new{T,typeof(ops)}(ops)
     end
 end
-Base.size(L::BlockDiagDiffEqOperator) = size(L.ops[1]) .* length(L.ops)
+size(L::BlockDiagDiffEqOperator) = size(L.ops[1]) .* length(L.ops)
 function (L::BlockDiagDiffEqOperator)(u,p,t::Number)
     update_coefficients!(L,u,p,t)
     sum(A*u for A in L.ops)
@@ -60,6 +60,72 @@ function update_coefficients!(L::BlockDiagDiffEqOperator,u,p,t)
     end
 end
 convert(::Type{AbstractMatrix}, L::BlockDiagDiffEqOperator) = blockdiag((convert(AbstractMatrix, A) for A in L.ops)...)
+
+
+# SubBlock of linear pat of G that may add to i, remove from o, and depends on dep
+struct SubBlockOperator{T,T1} <: AbstractDiffEqLinearOperator{T}
+    op::T1
+    i::Union{Int64, Nothing} # acts as a source on tracer i
+    o::Union{Int64, Nothing} # acts as a sink on tracer o
+    dep::Int64               # depends on tracer dep
+    function SubBlockOperator(op::AbstractDiffEqLinearOperator{T}, i, o, dep) where T
+        new{T, typeof(op)}(op, i, o, dep)
+    end
+end
+struct BlockOperators{T,T1} <: AbstractDiffEqLinearOperator{T}
+    ops::T1
+    nb::Int64
+    nt::Int64
+    function BlockOperators(ops::AbstractDiffEqLinearOperator{T}...; nb, nt) where T
+        new{T, typeof(ops)}(ops, nb, nt)
+    end
+end
+size(L::BlockOperators) = (L.nb * L.nt, L.nb * L.nt)
+export SubBlockOperator, BlockOperators
+
+
+
+
+#function (L::BlockOperators)(u,p,t::Number)
+#    update_coefficients!(L,u,p,t)
+#    sum(A*u for A in L.ops)
+#end
+#function (L::SubBlockOperator)(u,p,t::Number)
+#    update_coefficients!(L,u,p,t)
+#    L.op*u
+#end
+function (L::BlockOperators)(du,u,p,t::Number)
+    update_coefficients!(L,u,p,t)
+    nt = L.nt
+    nb = L.nb
+    tracer(u, i) = state_to_tracer(u, nb, nt, i)
+    for A in L.ops
+        isnothing(A.i) || mul!(tracer(du, A.i), A.op, tracer(u, A.dep), 1, 1)
+        isnothing(A.o) || mul!(tracer(du, A.o), A.op, tracer(u, A.dep), -1, 1)
+    end
+end
+function update_coefficients!(L::BlockOperators,u,p,t)
+    for A in L.ops
+        update_coefficients!(A,u,p,t)
+    end
+end
+update_coefficients!(L::SubBlockOperator,u,p,t) = update_coefficients!(L.op,u,p,t)
+function convert(::Type{AbstractMatrix}, L::BlockOperators{T,T1}) where {T,T1}
+    nt = L.nt
+    nb = L.nb
+    out = vcat((hcat((sparse(Diagonal(zeros(T, nb))) for _ in 1:nt)...) for _ in 1:nt)...) # nt×nt blocks of diagonals
+    for L in L.ops
+        !isnothing(L.i) && (out.nzval[block_indices(nb, nt, L.i, L.dep)] .+= diagonal(L.op))
+        !isnothing(L.o) && (out.nzval[block_indices(nb, nt, L.o, L.dep)] .-= diagonal(L.op))
+    end
+    out
+end
+# TODO check that this works for L * x where L is not a scalar but a diagonal
+diagonal(L::SubBlockOperator) = diagonal(L.op)
+diagonal(L::DiffEqScalar) = L.val
+diagonal(L::DiffEqArrayOperator) = diagaonal(L.op)
+block_indices(nb, nt, i, j) = ((j-1) * nb * nt + i - 1) .+ (1:nt:nb*nt)
+convert(::Type{AbstractMatrix}, L::SubBlockOperator) = convert(AbstractMatrix, L.op)
 
 
 # If Parameters type if given, convert it into λ2p and pass that on
@@ -128,7 +194,13 @@ function AIBECSFunction_from_ipG(Ts, G, nt, nb, tracers, tracer, λ2p)
     jac = ∇G - T
     return ODEFunction{true}(f, jac=jac)
 end
+
 export AIBECSFunction
+
+
+
+
+
 
 """
     F, ∇ₓF = state_function_and_Jacobian(Ts, Gs)
@@ -136,8 +208,10 @@ export AIBECSFunction
 Returns the state function `F` and its jacobian, `∇ₓF`.
 """
 function F_and_∇ₓF(fun::ODEFunction, λ2p)
-    ∇ₓF(u, p) = (update_coefficients!(fun.jac, u, p, nothing) ; convert(AbstractMatrix, fun.jac))
+    ∇ₓF(u, p) = (update_coefficients!(fun.jac, u, p, nothing) ; convert(AbstractArray, fun.jac))
+    ∇ₓF(jac, u, p) = (update_coefficients!(jac, u, p, nothing) ; jac)
     ∇ₓF(u, λ::Vector) = ∇ₓF(u, λ2p(λ))
+    ∇ₓF(jac, λ::Vector) = ∇ₓF(jac, u, λ2p(λ))
     F(du, u, p) = fun.f(du, u, p, nothing)
     F(u, p) = fun.f(u, p, nothing)
     F, ∇ₓF
@@ -185,6 +259,85 @@ perturb_tracer(xs, j, λ) = (xs[1:j - 1]..., xs[j] .+ λ, xs[j + 1:end]...)
 # This is important because it will eventually be used for
 # preconditioning in Krylov methods
 # Although I may need to revisit the API before that.
+
+# transform a function v(p) or v(dx,p) into a diagonal DiffEqArrayOperator
+# usfeul for split case
+function _LinearFunction(v::Function, nb)
+    A = Diagonal(zeros(nb)) # TODO check if this is slow for materizalizing jacobian?
+    ip = isinplace(v, 2)    # v(dx,p) => 2 arguments if is in-place
+    update_func(A, u, p, t) = ip ? v(A.nz, p) : (A.nz .= v(p))
+    DiffEqArrayOperator(A; update_func)
+end
+function _AffineFunction(v::Function, nb)
+    A = Diagonal(zeros(nb)) # TODO check if this is slow for materizalizing jacobian?
+    ip = isinplace(v, 2)    # v(dx,p) => 2 arguments if is in-place
+    update_func(A, u, p, t) = ip ? v(A.nz, p) : (A.nz .= v(p))
+    DiffEqArrayOperator(A; update_func)
+end
+
+
+# G(x,p) = L(p) * x + b(p)
+
+# If Parameters type if given, convert it into λ2p and pass that on
+split_AIBECSFunction(Ts::Tuple, Ls::Tuple, Gs::Tuple, ::Type{P}) where {P <: APar} = split_AIBECSFunction(Ts, Ls, Gs, λ -> λ2p(P, λ))
+# Special case if only one tracer (no tuple) is given as arguments
+split_AIBECSFunction(T::AbstractDiffEqLinearOperator, Ls::Tuple, G::Function, λ2p=nothing) = AIBECSFunction((T,), Ls, (G,), λ2p)
+# dispatch depending on number of args of G functions
+function split_AIBECSFunction(Ts::Tuple, Ls::Tuple, Gs::Tuple, λ2p=nothing)
+    nt = length(Ts)
+    nb = size(Ts[1], 1)
+    tracers(u) = state_to_tracers(u, nb, nt)
+    tracer(u, i) = state_to_tracer(u, nb, nt, i)
+    AIBECSFunction_fromipGs(Ts, Gs, nt, nb, tracers, tracer, λ2p)
+end
+function split_AIBECSFunction_fromipGs(Ts, Ls, Gs, nt, nb, tracers, tracer, λ2p)
+    function G(du, u, p)
+        for j in 1:nt
+            Gs[j](tracer(du, j), tracers(u)..., p)
+        end
+        du
+    end
+    return split_AIBECSFunction_from_ipG(Ts, Ls, G, nt, nb, tracers, tracer, λ2p)
+end
+function split_AIBECSFunction_from_ipG(Ts, Ls, G, nt, nb, tracers, tracer, λ2p)
+    function f(du, u, p, t)
+        G(du, u, p)
+        for j in 1:nt
+            update_coefficients!(Ts[j], nothing, p, nothing) # necessary
+            mul!(tracer(du, j), Ts[j], tracer(u, j), -1, 1) # du <- G(u) - T * u
+        end
+        for L in Ls
+            update_coefficients!(L.operator, nothing, p, nothing) # necessary
+            (L.out==0) || mul!(tracer(du, out), L.operator, tracer(u, in), 1, 1)
+            (L.in==0) || mul!(tracer(du, in), L.operator, tracer(u, in), -1, 1)
+        end
+        du
+    end
+    f(du, u, λ::Vector, t) = f(du, u, λ2p(λ), t)
+    f(u, p, t) = (du = copy(u); f(du, u, p, t); du)
+    f(u, λ::Vector, t) = f(u, λ2p(λ), t)
+    # i) Create ∇G(x) as a DiffEqArrayOperator
+    jac0 = vcat((hcat((Diagonal(ones(nb)) for _ in 1:nt)...) for _ in 1:nt)...) # nt×nt blocks of diagonals
+    colorsG = matrix_colors(jac0)
+    # TODO, make use of cache for Jacobian (https://github.com/JuliaDiff/SparseDiffTools.jl/issues/135)
+    function update_∇G(J, u, p, t)
+        G_no_p(du, u) = G(du, u, p)
+        forwarddiff_color_jacobian!(J, G_no_p, u, colorvec=colorsG, sparsity=jac0)
+    end
+    update_∇G(J, u, λ::Vector, t) = update_∇G(J, u, λ2p(λ), t)
+    jacG = similar(jac0)
+    ∇G = DiffEqArrayOperator(jacG, update_func=update_∇G)
+    # ii) Create T as a BlockDiagDiffEqOperator and return jac = ∇G(x) - T
+    T = BlockDiagDiffEqOperator{Float64}(Ts)
+    L = BlockOperators{Float64}(Ls...; nb=nb, nt=nt)
+    f1 = ODEFunction{true}(L-T)
+    f2 = ODEFunction{true}(G, jac=∇G)
+    return SplitFunction{true}(f1, f2)
+end
+export split_AIBECSFunction
+
+
+
 """
     F, ∇ₓF = state_function_and_Jacobian(Ts, Gs, nb)
 
