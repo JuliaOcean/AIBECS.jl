@@ -8,7 +8,7 @@ const ∞ = Inf
 @initial_value @units @description @limits @flattenable struct TestParameters{T} <: AbstractParameters{T}
     xgeo::T | 2.17 | u"mmol/m^3" | "Geological mean P concentration"             |  (0,∞) | true
     τgeo::T |  1.0 | u"Myr"      | "Geological restoring timescale"              |  (0,∞) | false
-    k::T    | 10.0 | u"μmol/m^3" | "Half-saturation constant (Michaelis-Menten)" |  (0,∞) | true
+    k::T    |  0.1 | u"mmol/m^3" | "Half-saturation constant (Michaelis-Menten)" |  (0,∞) | true
     w₀::T   |  1.0 | u"m/d"      | "Sinking velocity at surface"                 |  (0,∞) | true
     w′::T   | 0.22 | u"m/d/m"    | "Vertical gradient of sinking velocity"       | (-∞,∞) | true
     τDOP::T | 0.25 | u"yr"       | "Remineralization timescale (DOP to DIP)"     |  (0,∞) | true

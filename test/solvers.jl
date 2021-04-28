@@ -32,6 +32,7 @@
 #===========================================
 my CTKAlg
 ===========================================#
+#=
 sol_CTKAlg = let
     n = nt * nb
     @unpack xgeo = p
@@ -54,6 +55,7 @@ sol_CTKAlg = let
         end
     end
 end
+=#
 
 
 #===========================================
@@ -86,7 +88,7 @@ end
 #===========================================
 SIAMFANLEquations
 ===========================================#
-sol_NLSolvers = let
+sol_SIAMFANL_Newton = let
     F!(dx, x) = F(dx, x, p)
     J!(jac, dx, x) = ∇ₓF(jac, x, p)
     @unpack xgeo = p
@@ -95,24 +97,47 @@ sol_NLSolvers = let
     ftol = ustrip(upreferred(1/1e6Myr))
     nsol(F!, x, dx, fun.jac, J!; rtol=ftol)
 end
-sol_NLSolvers_PTC = let
+sol_SIAMFANL_PTC = let
     F!(dx, x) = F(dx, x, p)
-    J!(jac, dx, x) = ∇ₓF(jac, x, p)
+    function J2!(jac2, dx, x, dt) # assumes jac2 = jac + diffeqscalar
+        for i in 1:length(jac2.ops)-1
+            update_coefficients!(jac2.ops[i], x, p, nothing)
+        end
+        update_coefficients!(jac2.ops[end], nothing, [dt], nothing) # dt part?
+        jac2
+    end
+    function update_dtpart!(A, u, p, t) # here p is just [dt]
+        dt = p[1]
+        A.diag .= -1 / dt # needs a minus because AIBECS expresses du/dt = F(u) while PTC uses -F(u).
+    end
     @unpack xgeo = p
     x = xgeo * ones(nb * nt)
+    pdt0=1/norm(F(x,p))
+    jac2 = fun.jac + DiffEqArrayOperator(Diagonal(-ones(nb*nt)/pdt0), update_func=update_dtpart!)
     dx = similar(x)
     ftol = ustrip(upreferred(1/1e6Myr))
-    ptcsol(F!, x, dx, fun.jac, J!; rtol=ftol)
+    ptcsol(F!, x, dx, jac2, J2!; rtol=ftol, pdt0=pdt0, jknowsdt=true, maxit=1000)
 end
 
-+(::DiffEqOpCombination{
-                              Float64, 
-                              Tuple{
-                                    DiffEqArrayOp{Float64, SparseMatrixCSC{Float64, Int64}, AIBECS.var"#update_∇G#87"{AIBECS.var"#G#80"{Tuple{typeof(sms_DIP), typeof(sms_DOP), typeof(sms_POP)}, Int64, AIBECS.var"#tracers#77"{Int64, Int64}, AIBECS.var"#tracer#78"{Int64, Int64}}, Vector{Int64}, SparseMatrixCSC{Float64, Int64}, Nothing}},
-                                    DiffEqScaledOp{Float64, typeof(SciMLBase.DEFAULT_UPDATE_FUNC), AIBECS.BlockDiagDiffEqOp{Float64, Tuple{DiffEqArrayOp{Float64, SparseMatrixCSC{Float64, Int64}, typeof(SciMLBase.DEFAULT_UPDATE_FUNC)}, DiffEqArrayOp{Float64, SparseMatrixCSC{Float64, Int64}, typeof(SciMLBase.DEFAULT_UPDATE_FUNC)}, DiffEqArrayOp{Float64, SparseMatrixCSC{Float64, Int64}, AIBECS.var"#update_func#11"{typeof(w), Vector{Float64}, AIBECS.var"#10#17", Vector{Float64}, Vector{Int64}, Vector{Int64}, Vector{Int64}, Vector{Int64}, Vector{Int64}, Vector{Float64}, Vector{Int64}}}}}}
-                                   },
-                              Vector{Float64}
-                             },
-  ::UniformScaling{Float64})
 
-
+function fun_SIAMFANL_PTC(dt0)
+    F!(dx, x) = F(dx, x, p)
+    function J2!(jac2, dx, x, dt) # assumes jac2 = jac + diffeqscalar
+        for i in 1:length(jac2.ops)-1
+            update_coefficients!(jac2.ops[i], x, p, nothing)
+        end
+        update_coefficients!(jac2.ops[end], nothing, [dt], nothing) # dt part?
+        jac2
+    end
+    function update_dtpart!(A, u, p, t) # here p is just [dt]
+        dt = p[1]
+        A.diag .= -1 / dt
+    end
+    @unpack xgeo = p
+    x = xgeo * ones(nb * nt)
+    pdt0=dt0/norm(F(x,p))
+    jac2 = fun.jac + DiffEqArrayOperator(Diagonal(-ones(nb*nt)/pdt0), update_func=update_dtpart!)
+    dx = similar(x)
+    ftol = ustrip(upreferred(1/1e6Myr))
+    ptcsol(F!, x, dx, jac2, J2!; rtol=ftol, pdt0=pdt0, jknowsdt=true, maxit=10000, keepsolhist=true)
+end
