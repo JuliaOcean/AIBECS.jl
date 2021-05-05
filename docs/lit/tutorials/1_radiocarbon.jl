@@ -3,8 +3,8 @@
 # # [Radiocarbon](@id radiocarbon)
 #---------------------------------------------------------
 
-#md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/2_radiocarbon.ipynb)
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/2_radiocarbon.ipynb)
+#md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/1_radiocarbon.ipynb)
+#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/1_radiocarbon.ipynb)
 
 # In this tutorial, we will simulate the radiocarbon age using the AIBECS by
 # 1. defining the transport `T(p)` and the sources and sinks `G(x,p)`,
