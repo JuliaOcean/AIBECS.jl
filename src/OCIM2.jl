@@ -21,7 +21,9 @@ module OCIM2
 
 using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
-using BSON                  # For saving circulation as BSON format
+using Downloads
+using JLD2                  # For saving circulation as JLD2 format
+using CodecZlib             # for JLD2 compression JLD2
 using Unitful               # for units
 using Reexport
 @reexport using OceanGrids            # To store the grid
@@ -30,24 +32,24 @@ function fallback_download(remotepath, localdir)
     @assert(isdir(localdir))
     filename = basename(remotepath)  # only works for URLs with filename as last part of name
     localpath = joinpath(localdir, filename)
-    Base.download(remotepath, localpath)
+    Downloads.download(remotepath, localpath)
     return localpath
 end
 
 # OCIM2 URLs
 function url(; version="CTL_He")
     url_start = "https://files.figshare.com/"
-    version == "CTL_He"             ? "$(url_start)22475534/OCIM2_CTL_He.bson" :
-    version == "CTL_noHe"           ? "$(url_start)23442083/OCIM2_CTL_noHe.bson" :
-    version == "KiHIGH_He"          ? "$(url_start)23419721/OCIM2_KiHIGH_He.bson" :
-    version == "KiHIGH_noHe"        ? "$(url_start)23418215/OCIM2_KiHIGH_noHe.bson" :
-    version == "KiLOW_He"           ? "$(url_start)23416925/OCIM2_KiLOW_He.bson" :
-    version == "KiLOW_noHe"         ? "$(url_start)23417861/OCIM2_KiLOW_noHe.bson" :
-    version == "KvHIGH_He"          ? "$(url_start)23416583/OCIM2_KvHIGH_He.bson" :
-    version == "KvHIGH_KiHIGH_noHe" ? "$(url_start)23417639/OCIM2_KvHIGH_KiHIGH_noHe.bson" :
-    version == "KvHIGH_KiLOW_He"    ? "$(url_start)23416181/OCIM2_KvHIGH_KiLOW_He.bson" :
-    version == "KvHIGH_KiLOW_noHe"  ? "$(url_start)23416055/OCIM2_KvHIGH_KiLOW_noHe.bson" :
-    version == "KvHIGH_noHe"        ? "$(url_start)23417396/OCIM2_KvHIGH_noHe.bson" :
+    version == "CTL_He"             ? "$(url_start)28336284/OCIM2_CTL_He.jld2" :
+    version == "CTL_noHe"           ? "$(url_start)28336299/OCIM2_CTL_noHe.jld2" :
+    version == "KiHIGH_He"          ? "$(url_start)28336302/OCIM2_KiHIGH_He.jld2" :
+    version == "KiHIGH_noHe"        ? "$(url_start)28336311/OCIM2_KiHIGH_noHe.jld2" :
+    version == "KiLOW_He"           ? "$(url_start)28336317/OCIM2_KiLOW_He.jld2" :
+    version == "KiLOW_noHe"         ? "$(url_start)28336323/OCIM2_KiLOW_noHe.jld2" :
+    version == "KvHIGH_He"          ? "$(url_start)28336326/OCIM2_KvHIGH_He.jld2" :
+    version == "KvHIGH_KiHIGH_noHe" ? "$(url_start)28336329/OCIM2_KvHIGH_KiHIGH_noHe.jld2" :
+    version == "KvHIGH_KiLOW_He"    ? "$(url_start)28336332/OCIM2_KvHIGH_KiLOW_He.jld2" :
+    version == "KvHIGH_KiLOW_noHe"  ? "$(url_start)28336341/OCIM2_KvHIGH_KiLOW_noHe.jld2" :
+    version == "KvHIGH_noHe"        ? "$(url_start)28336353/OCIM2_KvHIGH_noHe.jld2" :
     OCIM2versionerror(version)
 end
 
@@ -59,21 +61,21 @@ OCIM2versionerror(version) = error("""`$version` is not a valid OCIM2 version na
 
 # OCIM2 Hashes
 function sha(; version="CTL_He")
-    version == "CTL_He"             ? "2786a56e89315feb44102629470ec565bd67ee765cb0a49364a51e6206a15490" :
-    version == "CTL_noHe"           ? "bdfbdc67b224ea8a588450454feb1f440cfb3745c191ff3929ac66897a036e02" :
-    version == "KiHIGH_He"          ? "bf89d657b690bbfc8055c2182c04d50f5a408b7c610b4dc8daad52fba2482bf4" :
-    version == "KiHIGH_noHe"        ? "9ec3f7237e541185bbf577bc7bee8c6308f2e4a2e0457a7460e73a962902cd8c" :
-    version == "KiLOW_He"           ? "2a7094a5fc0bf5aa6d5d4e0f7ad4ed89901a7431a8d039df74835d84d4259a91" :
-    version == "KiLOW_noHe"         ? "a732a382365235446091f77c2cf2961af641b10662a653edec05295349151e8f" :
-    version == "KvHIGH_He"          ? "bf89d657b690bbfc8055c2182c04d50f5a408b7c610b4dc8daad52fba2482bf4" :
-    version == "KvHIGH_KiHIGH_noHe" ? "8ee547b2fd4ddc0b61796f0c4bc0e57622615c1e492939377b44a899f86a3122" :
-    version == "KvHIGH_KiLOW_He"    ? "c207e88e88a155972f51a82e1ec216efb9bd28073464074a7b023460ff9805b6" :
-    version == "KvHIGH_KiLOW_noHe"  ? "22c3de72f6d630901d929c769d1c88c09ba15264f489c34c1b0d1069fc2538c5" :
-    version == "KvHIGH_noHe"        ? "419cc207a0e104427677b816c645e8fdbca83d1201204dd4dd10a95200fbc070" :
+    version == "CTL_He"             ? "610d6abd269950766b75f48ceeee84eb6461782f88331931233bc8da9b96f69d" :
+    version == "CTL_noHe"           ? "87c486ae59c2e7702fe2812004e49164ee83dccf00cc05868de0127fc09af3da" :
+    version == "KiHIGH_He"          ? "1a2c115696b88df0191126102cea3ba201042e756ec7ed73d1100f0eddefa6c6" :
+    version == "KiHIGH_noHe"        ? "cd6e27786f78dd05497fd2c4eb2fb6d94d715940c81378ecefa3c0da35e2977b" :
+    version == "KiLOW_He"           ? "a1cf69ece4dbde9e8bef5b5d80fff4c50c0eaa6e55f43025af4740c7a27c9524" :
+    version == "KiLOW_noHe"         ? "5b3de3d3aaad2964f3eeaa8c432bbfca2f2a028c8d62e2f71a64660911a1dc78" :
+    version == "KvHIGH_He"          ? "7eb5d3f727c0292ebe91983d6ab8da1f471158cf7e86378f1cde3b487a12f7a8" :
+    version == "KvHIGH_KiHIGH_noHe" ? "2037df4277f635d729f1ec681ffcb4b59f818cde0a9ece14ad59c8c3a966988a" :
+    version == "KvHIGH_KiLOW_He"    ? "65fc71a09eb019dc3ae54fa069184f3449e5530eb57f68e6e4261786cf74ba5e" :
+    version == "KvHIGH_KiLOW_noHe"  ? "bbedae950868639e295056c6b42629593104bf92d55e906b6477d0d77d2b6326" :
+    version == "KvHIGH_noHe"        ? "b9a46234e1bcb2da14de6d4fb6e51d7a4ae27b1efbf7df26b47b08718cb30748" :
     OCIM2versionerror(version)
 end
 
-# Create registry entry for OCIM in BSON format
+# Create registry entry for OCIM in JLD2 format
 function register_OCIM2(; version="CTL_He")
     register(
         DataDep(
@@ -108,8 +110,7 @@ Returns the grid, the transport matrix, and the He fluxes (in that order).
 """
 function load(; version="CTL_He")
     register_OCIM2(version=version)
-    bson_file = @datadep_str string("AIBECS-OCIM2_$version/", "OCIM2_$version.bson")
-    BSON.@load bson_file grid T He3Flux He4Flux
+    jld2_file = @datadep_str string("AIBECS-OCIM2_$version/", "OCIM2_$version.jld2")
     @info """You are about to use the OCIM2_$version model.
           If you use it for research, please cite:
 
@@ -119,7 +120,9 @@ function load(; version="CTL_He")
           at the root of the AIBECS.jl package repository.
           (Look for the "DeVries_Holzer_2019" key.)
           """
-    return grid, ustrip.(T), He3Flux, He4Flux
+    jldopen(jld2_file) do file
+        file["grid"], ustrip.(file["T"]), file["He3Flux"], file["He4Flux"]
+    end
 end
 
 citation() = "DeVries, T., & Holzer, M. (2019). Radiocarbon and helium isotope constraints on deep ocean ventilation and mantle‐³He sources. Journal of Geophysical Research: Oceans, 124, 3036–3057. https://doi.org/10.1029/2018JC014716"

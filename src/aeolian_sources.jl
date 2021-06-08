@@ -5,6 +5,7 @@ module AeolianSources
 
 using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
+using Downloads
 using NCDatasets
 using Unitful               # for units
 using Reexport
@@ -15,7 +16,7 @@ function fallback_download(remotepath, localdir)
     @assert(isdir(localdir))
     filename = basename(remotepath)  # only works for URLs with filename as last part of name
     localpath = joinpath(localdir, filename)
-    Base.download(remotepath, localpath)
+    Downloads.download(remotepath, localpath)
     return localpath
 end
 
@@ -25,7 +26,7 @@ url() = "http://www.geo.cornell.edu/eas/PeoplePlaces/Faculty/mahowald/dust/Chien
 # Hashes
 sha() = "33b0036bcca87019e0636ec2d59e910be989693819a2d57f2e4ab053a564101f" # On 2 June 2020
 
-# Create registry entry for the aeolian source in BSON format
+# Create registry entry
 function register_AeolianSource()
     register(
         DataDep(

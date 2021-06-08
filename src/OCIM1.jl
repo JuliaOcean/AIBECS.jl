@@ -2,13 +2,15 @@ module OCIM1
 #=
 This module serves to load the OCIM1 matrix and grid.
 These are loaded from the public, persistant URL in FigShare.
-The Julia BSON format version of the OCIM1 was created with the code
+The Julia JLD2 format version of the OCIM1 was created with the code
 in the GitHub repository https://github.com/briochemc/OceanCirculations.
 =#
 
 using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
-using BSON                  # For saving circulation as BSON format
+using Downloads
+using JLD2                  # For saving circulation as JLD2 format
+using CodecZlib             # for JLD2 compression JLD2
 using Unitful               # for units
 using Reexport
 @reexport using OceanGrids            # To store the grid
@@ -17,14 +19,14 @@ function fallback_download(remotepath, localdir)
     @assert(isdir(localdir))
     filename = basename(remotepath)  # only works for URLs with filename as last part of name
     localpath = joinpath(localdir, filename)
-    Base.download(remotepath, localpath)
+    Downloads.download(remotepath, localpath)
     return localpath
 end
 
 # OCIM1 URLs
 function url(; version="CTL") # TODO add other OCIM1 circulations
     url_start = "https://files.figshare.com/"
-    version == "CTL" ? "$(url_start)23420027/OCIM1_CTL.bson" :
+    version == "CTL" ? "$(url_start)28335882/OCIM1_CTL.jld2" :
     OCIM1versionerror(version)
 end
 
@@ -36,11 +38,11 @@ OCIM1versionerror(version) = error("""`$version` is not a valid OCIM1 version na
 
 # OCIM1 Hashes
 function sha(; version="CTL")
-    version == "CTL" ? "28d4290c04844180191e71d5e1bc832ff43c1127dd621b719c6622a2288d5e24" :
+    version == "CTL" ? "12c4f524af0e014a9ea78b282c92127acefaeac752f3a0aa965845460f5f3c65" :
     OCIM1versionerror(version)
 end
 
-# Create registry entry for OCIM1 in BSON format
+# Create registry entry for OCIM1 in JLD2 format
 function register_OCIM1(; version="CTL")
     register(
         DataDep(
@@ -72,8 +74,7 @@ See *DeVries and Primeau* (2011) and *DeVries* (2014) for more details.
 """
 function load(; version="CTL")
     register_OCIM1(version=version)
-    bson_file = @datadep_str string("AIBECS-OCIM1_$version/", "OCIM1_$version.bson")
-    BSON.@load bson_file grid T
+    jld2_file = @datadep_str string("AIBECS-OCIM1_$version/", "OCIM1_$version.jld2")
     @info """You are about to use the OCIM1_$version model.
           If you use it for research, please cite:
 
@@ -83,7 +84,9 @@ function load(; version="CTL")
           at the root of the AIBECS.jl package repository.
           (Look for the "DeVries_Primeau_2011" and "DeVries_2014" keys.)
           """
-    return grid, ustrip.(T)
+    jldopen(jld2_file) do file
+        file["grid"], ustrip.(file["T"])
+    end
 end
 
 citation() = """
