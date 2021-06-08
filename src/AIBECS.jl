@@ -12,7 +12,8 @@ using FieldMetadata
 using Flatten
 using DataFrames
 using Distributions
-using BSON
+using JLD2
+using CodecZlib
 using NCDatasets
 @reexport using OceanGrids
 @reexport using Unitful

@@ -2,13 +2,15 @@ module OCIM0
 #=
 This module serves to load the OCIM0 matrix and grid.
 These are loaded from the public, persistant URL in FigShare.
-The Julia BSON format version of the OCIM0 was created with the code
+The Julia JLD2 format version of the OCIM0 was created with the code
 in the GitHub repository https://github.com/briochemc/OceanCirculations.
 =#
 
 using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
-using BSON                  # For saving circulation as BSON format
+using Downloads
+using JLD2                  # For saving circulation as JLD2 format
+using CodecZlib             # for JLD2 compression JLD2
 using Unitful               # for units
 using Reexport
 @reexport using OceanGrids            # To store the grid
@@ -17,20 +19,20 @@ function fallback_download(remotepath, localdir)
     @assert(isdir(localdir))
     filename = basename(remotepath)  # only works for URLs with filename as last part of name
     localpath = joinpath(localdir, filename)
-    Base.download(remotepath, localpath)
+    Downloads.download(remotepath, localpath)
     return localpath
 end
 
 # OCIM0 URLs
 function url(; version="")
     url_start = "https://files.figshare.com/"
-    return "$(url_start)18789281/OCIM0.1.bson"
+    return "$(url_start)28336086/OCIM0.1.jld2"
 end
 
 # OCIM0 Hashes
-sha(; version="") = "527f02545ecafb59f78eeaa616c012274608971fba887eea1384aa1d9b0d40a9"
+sha(; version="") = "4aaaccead0422534ff1adbd208962a8dce7f6cd1af710dcb60faff236863b266"
 
-# Create registry entry for OCIM0 in BSON format
+# Create registry entry for OCIM0 in JLD2 format
 function register_OCIM0(; version="")
     register(
         DataDep(
@@ -62,8 +64,7 @@ See *DeVries and Primeau* (2011) and *Primeau et al.* (2013) for more details.
 """
 function load(; version="")
     register_OCIM0()
-    bson_file = @datadep_str string("AIBECS-OCIM0.1/", "OCIM0.1.bson")
-    BSON.@load bson_file grid T
+    jld2_file = @datadep_str string("AIBECS-OCIM0.1/", "OCIM0.1.jld2")
     @info """You are about to use the OCIM0.1 model.
           If you use it for research, please cite:
 
@@ -73,7 +74,9 @@ function load(; version="")
           at the root of the AIBECS.jl package repository.
           (Look for the "DeVries_Primeau_2011" and "Primeau_etal_2013" keys.)
           """
-    return grid, ustrip.(T)
+    jldopen(jld2_file) do file
+        file["grid"], ustrip.(file["T"])
+    end
 end
 
 citation() = """
