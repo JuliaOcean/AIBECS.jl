@@ -321,13 +321,13 @@ end
 ## new functions for more generic obs packages
 # TODO Add an optional function argument to transform the data before computingn the mismatch
 # Example if for isotope tracers X where one ususally wants to minimize the mismatch in δ or ε.
-function mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmatrix(grd, obs.metadata), iwet=iswet(grd, obs))
+function mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmatrix(grd, obs), iwet=iswet(grd, obs))
     o = view(obs, iwet)
     δx = M * c(x) - o
     return 0.5 * transpose(δx) * W * δx / (transpose(o) * W * o)
 end
 mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = 0
-function ∇mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmatrix(grd, obs.metadata), iwet=iswet(grd, obs))
+function ∇mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmatrix(grd, obs), iwet=iswet(grd, obs))
     ∇c = Diagonal(ForwardDiff.derivative(λ -> c(x .+ λ), 0.0))
     o = view(obs, iwet)
     δx = M * c(x) - o
@@ -336,19 +336,17 @@ end
 ∇mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = transpose(zeros(length(x)))
 
 # In case the mismatch is not based on the tracer but on some function of it
-function indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M=interpolationmatrix(grd, obs[i].metadata), iwet=iswet(grd, obs[i]))
+# TODO Add option for correlation matrix for Bayesian inferenece
+function indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M=interpolationmatrix(grd, obs[i]), iwet=iswet(grd, obs[i]))
     x2 = modify(xs...)
     out = 0.0
-    M = interpolationmatrix(grd, obs[i].metadata)
-    iwet = iswet(grd, obs[i])
-    o = view(obs[i], iwet)
+    o = obs[i][iwet, :value]
     δx = M * x2[i] - o
     return 0.5 * transpose(δx) * δx / (transpose(o) * o)
 end
-function ∇indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M=interpolationmatrix(grd, obs[i].metadata), iwet=iswet(grd, obs[i]))
-    nt, nb = length(xs), length(iswet(grd))
+function ∇indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M=interpolationmatrix(grd, obs[i]), iwet=iswet(grd, obs[i]))
     x2 = modify(xs...)
-    o = view(obs[i], iwet)
+    o = obs[i][iwet, :value]
     δx = M * x2[i] - o
     ∇modᵢ = ∇modify(modify, xs, i)
     return transpose(δx) * M * ∇modᵢ / (transpose(o) * o)
