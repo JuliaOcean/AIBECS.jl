@@ -1,5 +1,12 @@
 
 
+const lonticks = (-180:30:360, ["180°", "", "120°W", "", "60°W", "", "0°", "", "60°E", "", "120°E", "", "180°", "", "120°W", "", "60°W", "", "0°"])
+const latticks = (-90:30:90, ["SP", "60°S", "30°S", "EQ", "30°N", "60°N", "NP"])
+function prettyticks(axis, defaultticks)
+    idx = findall(ustrip(minimum(axis)) .≤ defaultticks[1] .≤ ustrip(maximum(axis)))
+    (defaultticks[1][idx], defaultticks[2][idx])
+end
+
 #============================
 horizontal maps / (x,y) plots
 ============================#
@@ -8,8 +15,13 @@ horizontal maps / (x,y) plots
     x, y, z = p.args
     @series begin
         seriestype --> :heatmap
-        xguide --> "Longitude"
-        yguide --> "Latitude"
+        size --> (800,400)
+        aspect_ratio --> :equal
+        framestyle --> :box
+        xguide --> ""
+        yguide --> ""
+        xticks --> prettyticks(x, lonticks)
+        yticks --> prettyticks(y, latticks)
         x, y, z
     end
 end
@@ -44,7 +56,7 @@ Plots the vertical average of tracer `x`.
 """
 plotverticalmean(x, grd; mask=1, kwargs...) = horizontalplane(grd.lon, grd.lat, verticalmean(x, grd, mask); kwargs...)
 plotverticalaverage = plotverticalmean
-export plotverticalaverage, plotverticalmean, plotverticalintegral, plotverticalintegral!, plot∫dz, plot∫dz!, surfacemap, surfacemap!, plothorizontalslice
+export plotverticalaverage, plotverticalmean, plotverticalintegral, plotverticalintegral!, plot∫dz, plot∫dz!, surfacemap, surfacemap!, plothorizontalslice, plothorizontalslice!
 
 """
     minimap(grd; central_longitude=200°)
@@ -89,10 +101,13 @@ Vertical–meridional / (y,z) plots
 @userplot MeridionalPlane
 @recipe function f(p::MeridionalPlane)
     y, z, v = p.args
+    @show prettyticks(y, latticks)
     @series begin
         seriestype --> :heatmap
-        xguide --> "Latitude"
+        framestyle --> :box
+        xguide --> ""
         yguide --> "Depth"
+        xticks --> prettyticks(y, latticks)
         yflip --> true
         y, z, v
     end
@@ -103,13 +118,19 @@ end
 Plots a meridional slice of tracer `x` at longitude `lon`.
 """
 plotmeridionalslice(x, grd; lon=nothing, kwargs...) = meridionalplane(grd.lat, grd.depth, meridionalslice(x, grd; lon=lon); kwargs...)
+plotmeridionalslice!(x, grd; lon=nothing, kwargs...) = meridionalplane!(grd.lat, grd.depth, meridionalslice(x, grd; lon=lon); kwargs...)
+plotmeridionalslice!(ply, x, grd; lon=nothing, kwargs...) = meridionalplane!(plt, grd.lat, grd.depth, meridionalslice(x, grd; lon=lon); kwargs...)
+
 """
     plotzonalmean(x, grd; mask=1)
 
 Plots a zonal average of tracer `x`.
 """
 plotzonalmean(x, grd; mask=1, kwargs...) = meridionalplane(grd.lat, grd.depth, zonalmean(x, grd, mask)'; kwargs...)
+plotzonalmean!(x, grd; mask=1, kwargs...) = meridionalplane!(grd.lat, grd.depth, zonalmean(x, grd, mask)'; kwargs...)
+plotzonalmean!(plt, x, grd; mask=1, kwargs...) = meridionalplane!(plt, grd.lat, grd.depth, zonalmean(x, grd, mask)'; kwargs...)
 plotzonalaverage = plotzonalmean
+plotzonalaverage! = plotzonalmean!
 """
     plotzonalintegral(x, grd; mask=1)
 
@@ -117,7 +138,7 @@ Plots a zonal integral of tracer `x`.
 """
 plot∫dx(x, grd; mask=1, kwargs...) = meridionalplane(grd.lat, grd.depth, ∫dx(x, grd, mask)'; kwargs...)
 plotzonalintegral = plot∫dx
-export plotzonalintegral, plot∫dx, plotzonalmean, plotzonalaverage, plotmeridionalslice
+export plotzonalintegral, plot∫dx, plotzonalmean, plotzonalaverage, plotzonalmean!, plotzonalaverage!, plotmeridionalslice, plotmeridionalslice!
 
 
 
