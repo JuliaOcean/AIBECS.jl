@@ -101,7 +101,6 @@ Vertical–meridional / (y,z) plots
 @userplot MeridionalPlane
 @recipe function f(p::MeridionalPlane)
     y, z, v = p.args
-    @show prettyticks(y, latticks)
     @series begin
         seriestype --> :heatmap
         framestyle --> :box
@@ -187,6 +186,8 @@ Vertical / z plots
     @series begin
         yguide --> "Depth"
         yflip --> true
+        xguide_position --> :top
+        xmirror --> :true
         x, z
     end
 end
