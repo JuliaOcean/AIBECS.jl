@@ -66,7 +66,7 @@ s_A_2D = AeolianSources.load()
 # First, we must regrid these 2D maps onto the surface layer of `grd`, the 3D grid of the ocean circulation.
 # To do that, we interpolate the 2D map of dust deposition onto the ocean grid's lat and lon:
 
-s_dust_2D_monthly = s_A_2D[:Dust] # kg m⁻² s⁻¹
+s_dust_2D_monthly = s_A_2D[:dust] # kg m⁻² s⁻¹
 s_dust_2D_annual = permutedims(dropdims(sum(s_dust_2D_monthly, dims=3), dims=3), (2,1)) / 12
 s_dust_2D = regrid(s_dust_2D_annual, s_A_2D[:lat], s_A_2D[:lon], grd)
 
