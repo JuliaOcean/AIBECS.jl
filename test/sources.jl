@@ -1,20 +1,22 @@
 
 
 @testset "Aeolian sources" begin
-    s_A_2D = AeolianSources.load()
-    @testset "$k" for k in keys(s_A_2D)
-        v = s_A_2D[k]
-        v isa Vector && continue # skip if v is lat/lon
-        # Take annual mean
-        v_annual = permutedims(dropdims(mean(v, dims=3), dims=3), (2,1))
-        # Regrid to OCIM2 grid
-        v_regridded = regrid(v_annual, s_A_2D[:lat], s_A_2D[:lon], grd)
-        # Paint the top layer
-        v_3D = zeros(size(grd)...)
-        v_3D[:,:,1] .= ustrip.(upreferred.(v_regridded * u"kg/m^2/s" / grd.δdepth[1]))
-        v_vec = v_3D[iwet]
-        @test v_vec isa Vector
-        @test size(v_vec) == size(iwet)
+    @testset "$dataset" for dataset in AeolianSources.DATASET_NAMES
+        s_A_2D = AeolianSources.load(dataset)
+        @testset "$k" for k in keys(s_A_2D)
+            v = s_A_2D[k]
+            v isa Vector && continue # skip if v is lat/lon
+            # Take annual mean if Chien dataset
+            v_annual = permutedims(dataset == "Chien" ? dropdims(mean(v, dims=3), dims=3) : v, (2,1))
+            # Regrid to OCIM2 grid
+            v_regridded = regrid(v_annual, s_A_2D[:lat], s_A_2D[:lon], grd)
+            # Paint the top layer
+            v_3D = zeros(size(grd)...)
+            v_3D[:,:,1] .= ustrip.(upreferred.(v_regridded * u"kg/m^2/s" / grd.δdepth[1]))
+            v_vec = v_3D[iwet]
+            @test v_vec isa Vector
+            @test size(v_vec) == size(iwet)
+        end
     end
 end
 
