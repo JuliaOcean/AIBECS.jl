@@ -88,13 +88,13 @@ load(s="Chien") = rename(s) == "Chien" ? load_Chien() : load_Kok()
 #     Chien et al data        #
 #=============================#
 const Chien_AEROSOLTYPE_NAMES = (
-    "fire",    # Fires
-    "bioF",    # Biofuels
-    "FF",    # FossilFuel
-    "dust",    # Dust
-    "salt",    # Seasalts
-    "bioP",    # PrimaryBiogenicParticles
-    "volc",    # Volcanoes
+    :fire,    # Fires
+    :bioF,    # Biofuels
+    :FF,      # FossilFuel
+    :dust,    # Dust
+    :salt,    # Seasalts
+    :bioP,    # PrimaryBiogenicParticles
+    :volc,    # Volcanoes
 )
 function load_Chien()
     s = "Chien"
@@ -104,7 +104,7 @@ function load_Chien()
         Dict(
             :lat => ds["lat"][:],
             :lon => ds["lon"][:],
-            (Symbol(t) => ds["dep"][:,:,:,i] for (i,t) in enumerate(Chien_AEROSOLTYPE_NAMES))...
+            (t => ds["dep"][:,:,:,i] for (i,t) in enumerate(Chien_AEROSOLTYPE_NAMES))...
         )
     end # ds is closed
     @info """You are about to use the Chien et al. (2016) data for aeolian deposition.
@@ -125,15 +125,15 @@ end
 #       Kok et al data        #
 #=============================#
 const Kok_REGIONS_NAMES = (
-    "NWAf",    # western North Africa
-    "NEAf",    # eastern North Africa
-    "Sahel",   # southern Sahara and Sahel
-    "MECA",    # Middle East and central Asia
-    "EAsia",   # East Asia
-    "NAm",     # North America
-    "Aus",     # Australia
-    "SAm",     # South America
-    "SAf",     # southern Africa
+    :NWAf,    # western North Africa
+    :NEAf,    # eastern North Africa
+    :Sahel,   # southern Sahara and Sahel
+    :MECA,    # Middle East and central Asia
+    :EAsia,   # East Asia
+    :NAm,     # North America
+    :Aus,     # Australia
+    :SAm,     # South America
+    :SAf,     # southern Africa
 )
 
 function load_Kok()
@@ -145,7 +145,7 @@ function load_Kok()
         Dict(
             :lat => ds["lat"][:],
             :lon => ds["lon"][:],
-            (Symbol(r) => ds["Mean"][i,:,:] for (i,r) in enumerate(Kok_REGIONS_NAMES))...
+            (r => ds["Mean"][i,:,:] for (i,r) in enumerate(Kok_REGIONS_NAMES))...
         )
     end # ds is closed
     @info """You are about to use the Kok et al. (2021) data for aeolian deposition.
@@ -167,10 +167,12 @@ end
 #=============================#
 const CITATIONS = Dict(
     "Chien" => "- Chien, C.-T., K. R. M. Mackey, S. Dutkiewicz, N. M. Mahowald, J. M. Prospero, and A. Paytan (2016), Effects of African dust deposition on phytoplankton in the western tropical Atlantic Ocean off Barbados, Global Biogeochem. Cycles, 30, doi:10.1002/2015GB005334.",
-    "Kok" => """- Description: Kok, J. F., Adebiyi, A. A., Albani, S., Balkanski, Y., Checa-Garcia, R., Chin, M., Colarco, P. R., Hamilton, D. S., Huang, Y., Ito, A., Klose, M., Li, L., Mahowald, N. M., Miller, R. L., Obiso, V., Pérez García-Pando, C., Rocha-Lima, A., and Wan, J. S.: Contribution of the world's main dust source regions to the global cycle of desert dust, Atmos. Chem. Phys., 21, 8169–8193, https://doi.org/10.5194/acp-21-8169-2021, 2021.
+    "Kok" => """
+    - Description: Kok, J. F., Adebiyi, A. A., Albani, S., Balkanski, Y., Checa-Garcia, R., Chin, M., Colarco, P. R., Hamilton, D. S., Huang, Y., Ito, A., Klose, M., Li, L., Mahowald, N. M., Miller, R. L., Obiso, V., Pérez García-Pando, C., Rocha-Lima, A., and Wan, J. S.: Contribution of the world's main dust source regions to the global cycle of desert dust, Atmos. Chem. Phys., 21, 8169–8193, https://doi.org/10.5194/acp-21-8169-2021, 2021.
     - Dataset: Adebiyi, A. A., Kok, J. F., Wang, Y., Ito, A., Ridley, D. A., Nabat, P., and Zhao, C.: Dust Constraints from joint Observational-Modelling-experiMental analysis (DustCOMM): comparison with measurements and model simulations, Atmos. Chem. Phys., 20, 829–863, https://doi.org/10.5194/acp-20-829-2020, 2020.
-    - Source apportionment framework: Hamilton, D. S., Scanza, R. A., Feng, Y., Guinness, J., Kok, J. F., Li, L., Liu, X., Rathod, S. D., Wan, J. S., Wu, M., and Mahowald, N. M.: Improved methodologies for Earth system modelling of atmospheric soluble iron and observation comparisons using the Mechanism of Intermediate complexity for Modelling Iron (MIMI v1.0), Geosci. Model Dev., 12, 3835–3862, https://doi.org/10.5194/gmd-12-3835-2019, 2019.
-    - Climate model used: Scanza, R. A., Hamilton, D. S., Perez Garcia-Pando, C., Buck, C., Baker, A., and Mahowald, N. M.: Atmospheric processing of iron in mineral and combustion aerosols: development of an intermediate-complexity mechanism suitable for Earth system models, Atmos. Chem. Phys., 18, 14175–14196, https://doi.org/10.5194/acp-18-14175-2018, 2018."""
+    - Source apportionment framework: Kok, J. F., Adebiyi, A. A., Albani, S., Balkanski, Y., Checa-Garcia, R., Chin, M., Colarco, P. R., Hamilton, D. S., Huang, Y., Ito, A., Klose, M., Leung, D. M., Li, L., Mahowald, N. M., Miller, R. L., Obiso, V., Pérez García-Pando, C., Rocha-Lima, A., Wan, J. S., and Whicker, C. A.: Improved representation of the global dust cycle using observational constraints on dust properties and abundance, Atmos. Chem. Phys., 21, 8127–8167, https://doi.org/10.5194/acp-21-8127-2021, 2021.
+    - Climate model used: Scanza, R. A., Hamilton, D. S., Perez Garcia-Pando, C., Buck, C., Baker, A., and Mahowald, N. M.: Atmospheric processing of iron in mineral and combustion aerosols: development of an intermediate-complexity mechanism suitable for Earth system models, Atmos. Chem. Phys., 18, 14175–14196, https://doi.org/10.5194/acp-18-14175-2018, 2018.
+    """
 )
 citations(s="Chien") = CITATIONS[rename(s)]
 

@@ -116,32 +116,31 @@ prob = SteadyStateProblem(F, ∇ₓF, x, p)
 
 # and solve it
 
-s = solve(prob, CTKAlg()).u
+sol = solve(prob, CTKAlg()).u
 
 # Let's now run some vizualizations using the Plots.jl recipes.
 
 using Plots
 
-# Let's have a look at a map of the dust per m² integrated over the whole water column:
+# Let's have a look at a map of the mean dust concentration:
 
-plotverticalintegral(s * u"g/m^3", grd, color=cgrad(:turbid, rev=true, scale=:exp))
+plotverticalmean(sol * u"g/m^3", grd, color=cgrad(:turbid, rev=true, scale=:exp))
 
 # compared to the original source
 
-plt1 = plotverticalintegral(s_dust * u"g/m^3/s" .|> u"mg/m^3/yr", xlabel="", ylabel="", grd, color=cgrad(:starrynight, scale=:exp), title="Surface flux")
+plotverticalintegral(s_dust * u"g/m^3/s", xlabel="", ylabel="", grd, color=cgrad(:starrynight, scale=:exp), title="Surface flux", zunit=u"mg/m^2/yr")
 
 # Huh? This is odd isn't it? What is happening? It seems that dust settles slowly enough to actually explore the ocean basins a little bit.
 # This is of course dependent on our choice of model parameters.
 
-# Let's look at what is exported below 500 m and compare:
+# Let's look at what is exported below 500 m to compare:
 
 wflux = map(z -> w(z,p), depthvec(grd)) * u"m/s"
-plt2 = plothorizontalslice(s * u"g/m^3" .* wflux .|> u"mg/yr/m^2", grd, depth=500u"m", color=cgrad(:starrynight, scale=:exp), xlabel="", ylabel="", title="Flux at 500m")
-plot(plt1, plt2, layout=(2,1))
+plothorizontalslice(sol * u"g/m^3" .* wflux, grd, depth=500u"m", color=cgrad(:starrynight, scale=:exp), xlabel="", ylabel="", title="Flux at 500m", zunit=u"mg/yr/m^2")
 
 # We can also take a look at the global mean profile (the horizontal average)
 
-plothorizontalmean(s * u"g/m^3" .|> u"mg/m^3", grd)
+profile_plot = plothorizontalmean(sol * u"g/m^3" .|> u"mg/m^3", grd)
 
 # As you may see, it also seems that with this model, dust (here with a 1% fraction allowed to stay in the system when it reaches the seafloor)
 # accumulates a little bit in the deepest boxes of the model grid.
@@ -149,9 +148,13 @@ plothorizontalmean(s * u"g/m^3" .|> u"mg/m^3", grd)
 # Don't hesitate to play around with the parameters and see how things change!
 # For example, impose a larger fraction that stays in the bottom or change other parameters via
 
-p = DustModelParameters(w₀=0.1u"km/yr", w′=0.1u"km/yr/km", fsedremin=95.0u"percent")
-prob = SteadyStateProblem(F, ∇ₓF, x, p)
-s = solve(prob, CTKAlg()).u
-plotverticalintegral(s * u"g/m^3", grd, color=cgrad(:turbid, rev=true, scale=:exp))
+p2 = DustModelParameters(w₀=0.1u"km/yr", w′=0.1u"km/yr/km", fsedremin=95.0u"percent")
+prob2 = SteadyStateProblem(F, ∇ₓF, x, p2)
+sol2 = solve(prob2, CTKAlg()).u
+plotverticalmean(sol2 * u"g/m^3", grd, color=cgrad(:turbid, rev=true, scale=:exp))
 
 # And watch how all the dust accumulates in the deepest holes of the ocean basins!
+#
+# Indeed, this dust tracer penetrates much deeper in the ocean:
+
+plothorizontalmean!(profile_plot, sol2 * u"g/m^3" .|> u"mg/m^3", grd)
