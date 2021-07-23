@@ -32,6 +32,7 @@ end
     download_and_unpack
 
 Downloads and unpacks the AO zip file from the MTEL website.
+Returns the local path of where the AO is installed for you.
 """
 function download_and_unpack()
     register_AO_files()
@@ -57,7 +58,7 @@ function download_and_unpack()
           therefore this seems like the best solution at this stage. 
           PRs welcome to improve this!
           """
-    return nothing
+    return AO_path
 end
 
 end # module
