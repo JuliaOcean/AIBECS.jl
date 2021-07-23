@@ -11,17 +11,16 @@ function fallback_download(remotepath, localdir)
 end
 
 
-function register_AO_files(AO_version)
+function register_AO_files()
     register(
         DataDep(
-            string("AO_", AO_version, "_files"),
+            "AWESOME-OCIM",
             """
             References for OCIM1:
-            - DeVries, T., 2014: The oceanic anthropogenic CO2 sink: Storage, air‐sea fluxes, and transports over the industrial era, Global Biogeochem. Cycles, 28, 631–647, doi:10.1002/2013GB004739.
-            - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, https://doi.org/10.1175/JPO-D-10-05011.1
+            - John, S. G., Liang, H., Weber, T., Devries, T., Primeau, F., Moore, K., Holzer, M., Mahowald, N., Gardner, W., Mishonov, A., Richardson, M., J., Faugere, Y., and Taburet, G. (2020). AWESOME OCIM: A simple, flexible, and powerful tool for modeling elemental cycling in the oceans. Chemical Geology, 533, 119403. doi: 10.1016/j.chemgeo.2019.119403.
             """,
-            string("http://www.mtel.rocks/mtel/awesomeOCIM_files/AwesomeOCIM_", AO_version, ".zip"),
-            "46b8bfad2b9c73e04cbb2688efd7b477af6ce61ad0340aa894c950c5ba53fa14",
+            "https://github.com/hengdiliang/AWESOME-OCIM/archive/refs/heads/master.zip",
+            sha2_256,
             fetch_method = fallback_download,
             post_fetch_method = unpack
         )
@@ -34,16 +33,15 @@ end
 
 Downloads and unpacks the AO zip file from the MTEL website.
 """
-function download_and_unpack(AO_version)
-    register_AO_files(AO_version)
-    @info """You are about to download (and unpack) the AWESOME OCIM (AO) $AO_version files as a zip file from the MTEL website (https://www.mtel.rocks).
+function download_and_unpack()
+    register_AO_files()
+    @info """You are about to download (and unpack) the AWESOME OCIM (AO) files as a zip file from GitHub.
 
           Please check with Seth John (sethjohn@usc.edu) for references to cite if you use the other data contained in the AO files, e.g., GEOTRACES, WOA, etc.
-          (The references to DeVries et al. pertain to the OCIM v1 product, which is essentially the transport matrix representing the circulation.)
-
           """
-    files_path = @datadep_str string("AO_", AO_version, "_files/")
-    println("AO folder contains:\n",readdir(files_path)...)
+    files_path = @datadep_str "AWESOME-OCIM"
+    println("\nAO folder contains:\n")
+    run(`tree $(homedir())/.julia/datadeps/AWESOME-OCIM`)
     return nothing
 end
 
