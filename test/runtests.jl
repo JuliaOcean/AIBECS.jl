@@ -9,6 +9,7 @@ using DiffEqBase
 using ForwardDiff, DualNumbers
 using DataFrames
 using Distributions
+using DataDeps
 using Plots
 
 # For CI, make sure the downloads do not hang
