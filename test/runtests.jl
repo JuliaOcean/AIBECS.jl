@@ -9,6 +9,7 @@ using DiffEqBase
 using ForwardDiff, DualNumbers
 using DataFrames
 using Distributions
+using DataDeps
 using Plots
 
 # For CI, make sure the downloads do not hang
@@ -52,7 +53,7 @@ test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000]
     end
 end
 
-
+include("AO.jl")
 
 
 
