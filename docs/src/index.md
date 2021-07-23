@@ -2,7 +2,7 @@
 <img src="https://user-images.githubusercontent.com/4486578/60554111-8fc27400-9d79-11e9-9ca7-6d78ee89ea70.png" alt="logo" title="AIBECS_logo" align="middle" width="50%"/>
 ```
 
-# AIBECS.jl
+# [AIBECS.jl](https://github.com/JuliaOcean/AIBECS.jl)
 
 The **Algebraic Implicit Biogeochemistry Elemental Cycling System**
 
