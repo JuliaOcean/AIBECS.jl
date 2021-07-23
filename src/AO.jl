@@ -35,13 +35,28 @@ Downloads and unpacks the AO zip file from the MTEL website.
 """
 function download_and_unpack()
     register_AO_files()
-    @info """You are about to download (and unpack) the AWESOME OCIM (AO) files as a zip file from GitHub.
+    AO_path = datadep"AWESOME-OCIM"
+    @info """You are about to download (and unpack) the AWESOME OCIM (AO)
+          files as a zip file from GitHub and unpack them into:
 
-          Please check with Seth John (sethjohn@usc.edu) for references to cite if you use the other data contained in the AO files, e.g., GEOTRACES, WOA, etc.
+              $AO_path
+
+          You can run
+
+              tree $AO_path
+
+          (in shell mode) to check its contents.
+
+          Please check with Seth John (sethjohn@usc.edu) for references 
+          to cite if you use the other data contained in the AO files,
+          e.g., GEOTRACES, WOA, Weber and John, and so on.
+
+          Also note that downloading files like this from GitHub is 
+          probably not very robust. However, some of the data files in 
+          the AO repository do not exist anywhere else officially,
+          therefore this seems like the best solution at this stage. 
+          PRs welcome to improve this!
           """
-    files_path = @datadep_str "AWESOME-OCIM"
-    println("\nAO folder contains:\n")
-    run(`tree $(homedir())/.julia/datadeps/AWESOME-OCIM`)
     return nothing
 end
 
