@@ -87,5 +87,9 @@ nwet = count(iswet(grd))
 x = ones(nwet)
 plotverticalintegral(-T_West * x * u"mol/m^3/s" .|> u"μmol/m^3/s", grd, mask=depthvec(grd) .< 100, color=:seaborn_icefire_gradient, clim=1e2 .* (-1,1))
 
+# To get all the matrices for all directions you can use
+
+directional_transports(T, grd)
+
 #md # !!! warning
 #md #     This guide is still a work in progress and likely contains errors
