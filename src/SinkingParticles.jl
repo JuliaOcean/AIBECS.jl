@@ -82,6 +82,7 @@ and where the bottom one can be modified to further allow a fraction of particle
 Below is a detailed explanation of how this function computes the particle-flux divergence.
 Take these 3 boxes on top of each other:
 
+```
 ┌──────────────────┐
 │ water            │
 │←----c----→       │
@@ -95,6 +96,7 @@ Take these 3 boxes on top of each other:
 │     ┃⣿⣿⣿ land ⣿⣿⣿│
 │     ┃⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│
 └━━━━━┹────────────┘
+```
 
 A part of each of these boxes is water, while the rest is land. For the middle box,
 we will use the fractional area `a = frac_seafloor` of seafloor,
