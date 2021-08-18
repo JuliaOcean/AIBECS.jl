@@ -6,8 +6,11 @@ tags:
   - Biogeochemical Cycles
   - Earth Sciences
 authors:
-  - name: Benoit Pasquier
+  - name: Benoit Pasquier^[corresponding author]
     orcid: 0000-0002-3838-5976
+    affiliation: "1" # (Multiple affiliations must be quoted)
+  - name: Seth John
+    orcid: 0000-0002-8257-626X
     affiliation: "1" # (Multiple affiliations must be quoted)
 affiliations:
  - name: Department of Earth Sciences, University of Southern California
@@ -15,17 +18,11 @@ affiliations:
 date: 27 July 2021
 bibliography: paper.bib
 
-# Optional fields if submitting to a AAS journal too, see this blog post:
-# https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-#aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-#aas-journal: Astrophysical Journal <- The name of the AAS journal.
 ---
 
 # Summary
 
-<!--
-Has a clear description of the high-level functionality and purpose of the software for a diverse, non-specialist audience been provided?
---->
+
 
 Our Ocean is a beautifully complex system that continuously transports and mixes elements on a multitude of timescales and lengthscales.
 In order to improve our undesrstanding of global biogeochemical cycles, oceanographers collect more data every day that are then used in an increasingly wide variety of numerical models.
@@ -71,7 +68,8 @@ For hydrothermal-sourced tracers, the helium fluxes from the Earth's mantle comp
 AIBECS.jl also provides access to the data included with the AWESOME OCIM framework [@John_etal_2020], namely data from the Global Ocean Data Analysis Project [GLODAP, @Lauvset_etal_2016; @Olsen_etal_2016], P-cycling modelled fields from [@Weber_etal_Science_2018], nepholoid layers [@Gardner_etal_2018a; @Gardner_etal_2018b; Taburet_etal_2019], as well as other data already present within AIBECS or sattelite packages.
 Also useful to global biogeochemistry modelling are data from the World Ocean Atlas [@WOA_2018_nut] that can be downloaded, assisted by external package [WorldOceanAtlasTools.jl](https://github.com/briochemc/WorldOceanAtlasTools.jl) [@WorldOceanAtlasTools.jl-2019].
 Similarly GEOTRACES data [@Schlitzer:2018df] can be handled by the [GEOTRACES.jl](https://github.com/briochemc/GEOTRACES.jl) package (although GEOTRACES requires manual download of the data).
-Finally, more advanced usage such as optimization is facilitated by the [F1Method.jl](https://github.com/briochemc/F1Method.jl) package [@F1Method], which provides efficient gradient and Hessian computations of objective functions defined through AIBECS.jl, which can then be directly fed to optimization routines such as, e.g., the [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) package [@Optim.jl-2018] to optimize biogeochemical parameters.
+More advanced usage such as optimization is facilitated by the [F1Method.jl](https://github.com/briochemc/F1Method.jl) package [@F1Method], which provides efficient gradient and Hessian computations of objective functions defined through AIBECS.jl, which can then be directly fed to optimization routines such as, e.g., the [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) package [@Optim.jl-2018] to optimize biogeochemical parameters.
+Finally, plotting recipes for the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) [@Plots.jl], are available.
 
 
 
@@ -107,16 +105,6 @@ Continuous integration through GitHub actions also includes a fairly complete su
 # Statement of need
 
 
-<!--
-Do the authors clearly state what problems the software is designed to solve and who the target audience is?
-
-Do the authors describe how this software compares to other commonly-used packages?
-
-Is the paper well written (i.e., it does not require editing for structure, language, or writing quality)?
-
-References: Is the list of references complete, and is everything cited appropriately that should be cited (e.g., papers, datasets, software)? Do references in the text use the proper citation syntax?
--->
-
 
 
 
@@ -124,22 +112,38 @@ In spite of reduced realism, simplified ocean circulation models are at the fore
 The low computational costs of steady-state circulation models allow for efficient optimization and inference/estimation of biogeochemical parameters, e.g., for the carbon cycle [@DeVries:2014; @Weber_etal_PNAS_2016; @Roshan_DeVries_NatCom_2017; @DeVries_etal_Nature_2017], for other macronutrient cycles (e.g. phosphorus, nitrogen, silicon) [@Kwon_Primeau_2006; @Kwon_Primeau_2008; @DeVries_etal_GBC_2013; @Holzer_etal_JGRO_2014; @Holzer_Brzezinski_GBC_2015; @DeVries_Weber_GBC_2017; @Wang_etal_Nature_2019], for stoichiometric ratios [@DeVries_Deutsch_NatGeo_2014; @Teng_etal_NatGeo_2014; @Weber_Deutsch_Nature_2010], and for micronutrients and trace metals such as dissolved iron [@Frants_etal_2016; @Pasquier_Holzer_2017], zinc [@Roshan_etal_GBC_2018], and argon [@Holzer_etal_GRL_2019], and hydrothermal gases such as helium [@Holzer_etal_EPSL_2017].
 Efficient computation also allows for a wide range of experiments [@Primeau_etal:2013; @DeVries:2014; @Holzer_etal_GBC_2019].
 Further, these models are amenable to the development of new metrics, thanks to their matrix representation, which enables the use of powerful linear-algebra techniques to efficiently compute exact partitions, pathways, timescales, eigen modes, moments, and other novel diagnostics [@Primeau_JPO_2005; @Holzer_Primeau_JGRO_2013; @Pasquier_Holzer_2016; @Holzer_etal_2016; @Fu_etal_2018; @Pasquier_Holzer_BG_2018; @Holzer_etal_JGRO_2020; @Holzer_etal_GBC_2021].
-Finally, steady-state (and cyclo-stationary) circulation models are useful to bypass the need for long and costly spinups of large GCMs [@Khatiwala_etal_OM_2005; @Khatiwala_GBC_2007; @Khatiwala_OM_2008; @Khatiwala_Nature_2009; @Li_Primeau_OM_2008; @Bardin_etal_OM_2014; @Bardin_etal_OM_2016; @Huang_etal_2021].
+Finally, steady-state (and cyclo-stationary) circulation models are useful to bypass the need for long and costly spinups of large ocean general circulation models [@Khatiwala_etal_OM_2005; @Khatiwala_GBC_2007; @Khatiwala_OM_2008; @Khatiwala_Nature_2009; @Li_Primeau_OM_2008; @Bardin_etal_OM_2014; @Bardin_etal_OM_2016; @Huang_etal_2021].
 
 
 
-While most of these studies have used, in one form or another, a steady-state model of the ocean circulation, their implementation is generally tedious and requires a expertise.
+Most of these studies relied on private implementations and required significant expertise.
+Most often than not, these studies are hard to reproduce, if possible at all.
 Comparisons between different circulation models are moreover complicated by the lack of standardization across models.
-The recent development of new ocean circulation models as transport matrices [@Khatiwala_etal_OM_2005; @Khatiwala_GBC_2007; @Bardin_etal_OM_2014; @Bardin_etal_OM_2016; @Kvale_etal_GMD_2017; @Chamberlain_etal_OM_2019; @Zanna_etal_PNAS_2019], and hopefully, the future standardization of making transport matrix estimates from standard ocean general circulation models — particularly models from the Climate Model Intercomparison Project (CMIP), which includes past and future simulations of the ocean circulation — will increase the number of publicly available transport matrices for ocean-circulation models.
-My hope is that AIBECS.jl can provide a unified framework for these models.
+There is a need to facilitate and standardize the use of steady-state ocean-circulation models by providing
+1. an integrated tool for handling a number of different ocean-circulation models with tools for swapping circulations (including inteprolating from one model grid to another),
+2. a user-friendly interface for translating conceptual models of biogeochemical cycles into  the corresponding code (e.g., for sources, sinks, and vertical transport of tracers), and
+3. solvers for efficient simulations, optimization, diagnosis, and statistical analysis.
 
-Hence, the primary goal of AIBECS.jl is to facilitate and standardize the use of steady-state ocean-circulation models by providing (i) an integrated management of ocean-circulation-model data, (ii) tooling for regridding and inteprolating from one grid to another, (iii) functionality for generating tracer functions (sources, sinks, vertical transport), and (iv) solvers for efficient simulations.
 
-Future versions of AIBECS.jl will aim to compose its framework with state-of-the-art solvers, optimizers, and estimation algorithms provided by plugging into the SciML ecosystem [@Rackauckas_Nie_JORS_2017] and the larger Julia ecosystem.
+To the best of my knowledge, AIBECS.jl is, at present, the best candidate for answering this need.
+Although it serves a similar purpose, the fairly recently developped AWESOME OCIM [@John_etal_2020] currently lacks important features.
+It provides only a single circulation model (the OCIM), cannot handle multiple tracers or nonlinear systems out of the box, and requires a MATLAB license.
+In comparison, AIBECS.jl provides a free, open-source, unified framework for biogeochemical-tracer-modelling studies that use steady-state circulation models.
+Among other advantages, AIBECS.jl offers more features, better computational efficiency, enhanced versatility, composability with other Julia packages, and ease of reproducibility (granted by version control and Julia's package manager) and improved syntax, which are pillars of modern scientific dissemination.
+AIBECS.jl has been used for teaching and is currently used for research by members of the Marine Trace Element Laboratory of the University of Southern California.
+
+
+
+The publication of circulation models as transport matrices from existing general circulation models [@Khatiwala_etal_OM_2005; @Khatiwala_GBC_2007; @Bardin_etal_OM_2014; @Bardin_etal_OM_2016; @Kvale_etal_GMD_2017; @Zanna_etal_PNAS_2019], and hopefully, future publication of transport matrix estimates from standard ocean general circulation models [e.g., @Chamberlain_etal_OM_2019] will increase the collection of circulations available from AIBECS.jl.
+(Of particular interest to the broader community would be transport matrix models from the Climate Model Intercomparison Project (CMIP), which includes past and future simulations of the ocean circulation.)
+
+
+Time and funding permitting, the scope of AIBECS could be extended to non steady simulation through better integration with external state-of-the-art solvers, optimizers, and estimation algorithms provided, e.g.,  by the SciML ecosystem [@Rackauckas_Nie_JORS_2017].
+This might allow for the eventual addition of cyclo-stationary circulations [e.g., CYCLOCIM: @Huang_etal_2021], which require adequate external Newton-Krylov solvers not yet available through AIBECS.jl.
+Finally, bridging packages could be implemented for improved composability with, e.g., statistical ([Turing.jl](https://github.com/TuringLang/Turing.jl) [@ge2018t]), optimization, and plotting software ([Makie.jl](https://github.com/JuliaPlots/Makie.jl) [@Makie.jl]) to meet demand.
 
 # Acknowledgements
 
-BP thanks Seth John for his support and insightful comments and discussions and François Primeau for his support in the early development phases.
-BP acknowledges financial support from Grants XXX YYY and ZZZ.
+BP thanks Seth John for his support and insightful comments and discussions and François Primeau for his support during the early development of AIBECS.jl.
 
 # References
