@@ -67,7 +67,7 @@ In complement, AIBECS provides access to a number of predefined fields that can 
 Fine-resolution (1-arc-minute) topography from the ETOPO1 dataset [@Amante_Eakins_2009] can be used for a refined interception of particulate fluxes by subgrid topographic features not captured by coarser circulation models.
 For aeolian deposition, AIBECS.jl includes aerosol-type- and region-of-origin-partitioned dust deposition fields [@Chien_etal_2016; @Kok_etal_2021b].
 Datasets for global river discharge [@Dai_2017; @Dai_Trenberth_2002] and surface groundwater discharge [@Luijendijk_etal_2019; @Luijendijk_etal_2020] are included.
-For hydrothermal-sourced tracers, the helium fluxes from the Earth's mantle computed with the OCIM v1.0 and v2.0 are available when loading the corresponding circulation models [@DeVries:2014; DeVries_Holzer:2019].
+For hydrothermal-sourced tracers, the helium fluxes from the Earth's mantle computed with the OCIM v1.0 and v2.0 are available when loading the corresponding circulation models [@DeVries:2014; @DeVries_Holzer:2019].
 AIBECS.jl also provides access to the data included with the AWESOME OCIM framework [@John_etal_2020], namely data from the Global Ocean Data Analysis Project [GLODAP, @Lauvset_etal_2016; @Olsen_etal_2016], P-cycling modelled fields from [@Weber_etal_Science_2018], nepholoid layers [@Gardner_etal_2018a; @Gardner_etal_2018b; Taburet_etal_2019], as well as other data already present within AIBECS or sattelite packages.
 Also useful to global biogeochemistry modelling are data from the World Ocean Atlas [@WOA_2018_nut] that can be downloaded, assisted by external package [WorldOceanAtlasTools.jl](https://github.com/briochemc/WorldOceanAtlasTools.jl) [@WorldOceanAtlasTools.jl-2019].
 Similarly GEOTRACES data [@Schlitzer:2018df] can be handled by the [GEOTRACES.jl](https://github.com/briochemc/GEOTRACES.jl) package (although GEOTRACES requires manual download of the data).
@@ -120,95 +120,26 @@ References: Is the list of references complete, and is everything cited appropri
 
 
 
-Steady-state ocean circulation models, which can bypass the need for long and costly spinups altogether, have been increasingly used because they provide significant computational efficiency gains [@Kwon_Primeau_2006; @Kwon_Primeau_2008; @DeVries_etal_GBC_2013; @Frants_etal_2016; @DeVries_Weber_GBC_2017; @Pasquier_Holzer_2017].
-
-<!--
-Need to find how citaations are ordered for prefix to work
--->
-
- [Primeau, 2003; Khatiwala et al., 2005; Primeau, 2005, Kwon and Primeau, 2006; Khatiwala et al., 2009; Weber and Deutsch, 2010; Wang et al., 2019], with existing and ongoing efforts to extract steady-state circulation estimates from existing general circulation models [Bardin, Kvale et al., 2017, Chamberlain et al., 2019, Zanna et al., 2019, competition for unswjob]
-
-AO stuff:
-CO2 uptake (DeVries, 2014; DeVries et al., 2017), reveal spatial variability in phytoplankton carbon to nutrient uptake ratios (DeVries and Deutsch, 2014; Teng et al., 2014), and constrain the export and fate of organic carbon (Weber et al., 2016; Roshan and DeVries, 2017; DeVries and Weber, 2017).
-The OCIM has also been used to constrain the global cycling and distribution of a wide range of elements including phosphorous (Primeau et al., 2013; DeVries et al., 2014), silicon (Holzer et al., 2014; DeVries et al., 2017), nitrogen (DeVries et al., 2012; Weber and Deutsch, 2012; DeVries et al., 2013; Weber and Deutsch, 2014; Wang
-et al., 2019), and zinc (Roshan et al., 2018; Weber et al., 2018)
-
-AIBECS.jl aims to facilitate and standardize the use of these models by providing
-(i) integrated management of ocean-circulation-model data,
-(ii) handling regridding and inteprolation from model one ocean-model grid to another,
-(iii) ...
-
-OCCA
-OCIM
-AWESOME OCIM
+In spite of reduced realism, simplified ocean circulation models are at the forefront of oceanographic research, as evidenced by their increasing use in recent literature.
+The low computational costs of steady-state circulation models allow for efficient optimization and inference/estimation of biogeochemical parameters, e.g., for the carbon cycle [@DeVries:2014; @Weber_etal_PNAS_2016; @Roshan_DeVries_NatCom_2017; @DeVries_etal_Nature_2017], for other macronutrient cycles (e.g. phosphorus, nitrogen, silicon) [@Kwon_Primeau_2006; @Kwon_Primeau_2008; @DeVries_etal_GBC_2013; @Holzer_etal_JGRO_2014; @Holzer_Brzezinski_GBC_2015; @DeVries_Weber_GBC_2017; @Wang_etal_Nature_2019], for stoichiometric ratios [@DeVries_Deutsch_NatGeo_2014; @Teng_etal_NatGeo_2014; @Weber_Deutsch_Nature_2010], and for micronutrients and trace metals such as dissolved iron [@Frants_etal_2016; @Pasquier_Holzer_2017], zinc [@Roshan_etal_GBC_2018], and argon [@Holzer_etal_GRL_2019], and hydrothermal gases such as helium [@Holzer_etal_EPSL_2017].
+Efficient computation also allows for a wide range of experiments [@Primeau_etal:2013; @DeVries:2014; @Holzer_etal_GBC_2019].
+Further, these models are amenable to the development of new metrics, thanks to their matrix representation, which enables the use of powerful linear-algebra techniques to efficiently compute exact partitions, pathways, timescales, eigen modes, moments, and other novel diagnostics [@Primeau_JPO_2005; @Holzer_Primeau_JGRO_2013; @Pasquier_Holzer_2016; @Holzer_etal_2016; @Fu_etal_2018; @Pasquier_Holzer_BG_2018; @Holzer_etal_JGRO_2020; @Holzer_etal_GBC_2021].
+Finally, steady-state (and cyclo-stationary) circulation models are useful to bypass the need for long and costly spinups of large GCMs [@Khatiwala_etal_OM_2005; @Khatiwala_GBC_2007; @Khatiwala_OM_2008; @Khatiwala_Nature_2009; @Li_Primeau_OM_2008; @Bardin_etal_OM_2014; @Bardin_etal_OM_2016; @Huang_etal_2021].
 
 
 
-<!---
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
-enables wrapping low-level languages (e.g., C) for speed without losing
-flexibility or ease-of-use in the user-interface. The API for `Gala` was
-designed to provide a class-based and user-friendly interface to fast (C or
-Cython-optimized) implementations of common operations such as gravitational
-potential and force evaluation, orbit integration, dynamical transformations,
-and chaos indicators for nonlinear dynamics. `Gala` also relies heavily on and
-interfaces well with the implementations of physical units and astronomical
-coordinate systems in the `Astropy` package [@astropy] (`astropy.units` and
-`astropy.coordinates`).
+While most of these studies have used, in one form or another, a steady-state model of the ocean circulation, their implementation is generally tedious and requires a expertise.
+Comparisons between different circulation models are moreover complicated by the lack of standardization across models.
+The recent development of new ocean circulation models as transport matrices [@Khatiwala_etal_OM_2005; @Khatiwala_GBC_2007; @Bardin_etal_OM_2014; @Bardin_etal_OM_2016; @Kvale_etal_GMD_2017; @Chamberlain_etal_OM_2019; @Zanna_etal_PNAS_2019], and hopefully, the future standardization of making transport matrix estimates from standard ocean general circulation models — particularly models from the Climate Model Intercomparison Project (CMIP), which includes past and future simulations of the ocean circulation — will increase the number of publicly available transport matrices for ocean-circulation models.
+My hope is that AIBECS.jl can provide a unified framework for these models.
 
-`Gala` was designed to be used by both astronomical researchers and by
-students in courses on gravitational dynamics or astronomy. It has already been
-used in a number of scientific publications [@Pearson:2017] and has also been
-used in graduate courses on Galactic dynamics to, e.g., provide interactive
-visualizations of textbook material [@Binney:2008]. The combination of speed,
-design, and support for Astropy functionality in `Gala` will enable exciting
-scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
---->
+Hence, the primary goal of AIBECS.jl is to facilitate and standardize the use of steady-state ocean-circulation models by providing (i) an integrated management of ocean-circulation-model data, (ii) tooling for regridding and inteprolating from one grid to another, (iii) functionality for generating tracer functions (sources, sinks, vertical transport), and (iv) solvers for efficient simulations.
 
-# Mathematics
-
-Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
-
-Double dollars make self-standing equations:
-
-$$\Theta(x) = \left\{\begin{array}{l}
-0\textrm{ if } x < 0\cr
-1\textrm{ else}
-\end{array}\right.$$
-
-You can also use plain \LaTeX for equations
-\begin{equation}\label{eq:fourier}
-\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
-\end{equation}
-and refer to \autoref{eq:fourier} from text.
-
-# Citations
-
-Citations to entries in paper.bib should be in
-[rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
-format.
-
-If you want to cite a software repository URL (e.g. something on GitHub without a preferred
-citation) then you can do it with the example BibTeX entry below for @fidgit.
-
-For a quick reference, the following citation commands can be used:
-- `@author:2001`  ->  "Author et al. (2001)"
-- `[@author:2001]` -> "(Author et al., 2001)"
-- `[@author1:2001; @author2:2001]` -> "(Author1 et al., 2001; Author2 et al., 2002)"
-
-# Figures
-
-Figures can be included like this:
-![Caption for example figure.\label{fig:example}](figure.png)
-and referenced from text using \autoref{fig:example}.
-
-Figure sizes can be customized by adding an optional second parameter:
-![Caption for example figure.](figure.png){ width=20% }
+Future versions of AIBECS.jl will aim to compose its framework with state-of-the-art solvers, optimizers, and estimation algorithms provided by plugging into the SciML ecosystem [@Rackauckas_Nie_JORS_2017] and the larger Julia ecosystem.
 
 # Acknowledgements
 
-We acknowledge contributions from Brigitta Sipocz, Syrtis Major, and Semyeong
-Oh, and support from Kathryn Johnston during the genesis of this project.
+BP thanks Seth John for his support and insightful comments and discussions and François Primeau for his support in the early development phases.
+BP acknowledges financial support from Grants XXX YYY and ZZZ.
 
 # References
