@@ -65,7 +65,7 @@ In AIBECS, ***x*** is represented as a column vector (that's why it's **bold** a
 The operator **T** is a spatial differential operator that represents the transport of tracers.
 For example, for a single tracer transported by ocean circulation,
 
-**T** = ∇⋅(***u*** + **K**∇)
+**T** = ∇⋅(***u*** - **K**∇)
 
 represents the effects of advection and eddy-diffusion.
 (***u*** is the 3D vector of the marine currents and **K** is a 3×3 eddy-diffusivity matrix.)
