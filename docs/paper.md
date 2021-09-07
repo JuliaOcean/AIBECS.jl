@@ -131,7 +131,7 @@ Finally, steady-state (and cyclo-stationary) circulation models are useful to by
 
 Although the steady-state assumption and matrix representation of the advective–diffusive tracer flux divergence simplifies the simulation of tracers compared to traditional Ocean General Circulation Models (OGCMs), most of the above mentioned studies required significant expertise and were built using private implementations that remain difficult to reproduce.
 Comparisons between different circulation models are moreover complicated by the lack of standardization across models.
-There is a need to facilitate and standardize the use of steady-state ocean-circulation models by providing
+There is a need to facilitate the use of steady-state ocean-circulation models by providing
 (i) an integrated framework for handling a number of different ocean-circulation models with tools for swapping circulations (including interpolating from one model grid to another),
 (ii) a user-friendly interface for translating mathematical models of biogeochemical cycles into  the corresponding code (e.g., for sources, sinks, and vertical transport of tracers), and
 (iii) solvers for efficient simulations, optimization, diagnosis, and statistical analysis.
