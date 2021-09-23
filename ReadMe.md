@@ -54,7 +54,7 @@ If you are new to AIBECS, head over to the [documentation](https://JuliaOcean.gi
 ## Concept
 
 This package was developed to exploit linear-algebra tools and algorithms in Julia to efficiently simulate marine tracers.
-AIBECS represents global biogeochemical cycles with a discretized system of nonlinear partial differential equations that takes the generic form
+AIBECS represents global biogeochemical cycles with a discretized system of nonlinear ordinary differential equations that takes the generic form
 
 ∂***x***/∂*t* + **T*****x*** = ***G***(***x***)
 
