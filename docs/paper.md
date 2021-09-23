@@ -44,8 +44,8 @@ A high barrier to entry for modelling in oceanography hinders advances in the fi
 
 A conceptual model of the cycle of any marine tracer essentially requires two components.
 (i) A model of how the tracer is transported (be it the ocean currents and eddies, gravitational settling, or a combination of those), and (ii) a model of the local sources and sinks at any location.
-AIBECS.jl is built on this concept and allows users to build numerical models of marine tracers by selecting a circulation (and/or vertical transport) and local sources and sinks.
-Tools for generating the equations, solving them, and then diagnosing and plotting the simulated tracers are also provided, either directly by AIBECS.jl, its dependencies, or by satellite packages in the AIBECS and Julia ecosystem.
+AIBECS.jl is built on this concept and allows users to build numerical models of marine tracers by selecting a circulation and/or vertical transport of the tracer with particles and local sources and sinks.
+Tools for generating the equations, solving them, and then diagnosing and plotting the simulated tracers are also provided, either directly by AIBECS.jl, by its dependencies, or by satellite packages in the AIBECS and Julia ecosystem.
 
 
 
@@ -73,13 +73,16 @@ and v2.0 [@DeVries_Holzer:2019],
 and the MITgcm-built Ocean Comprehensible Atlas (OCCA) ocean-state estimate model [@Forget:2010], of which the downloads are handled by the [DataDeps.jl](https://github.com/oxinabox/DataDeps.jl) package [@DataDeps:2018; @White_etal:2019].
 AIBECS.jl also offers classic two-box and three-box models [@Sarmiento_Gruber:2006; @Archer_etal:2000].
 The [OceanGrids.jl](https://github.com/briochemc/OceanGrids.jl) package, on which AIBECS depends, provides the underlying grid configuration types as well as regridding and interpolating routines.
-Swapping the underlying circulation model and grid requires a single-line-of-code change, facilitating benchmarks among them and, given past- or future-ocean circulation models, could be used in paleoceanography and climate-change studies.
-Additional circulation models that are represented in matrix form and made publicly available will be added to the collection.
+Swapping the underlying circulation model and grid requires a single-line-of-code change, facilitating intercomparison projects.
+As new circulation models that are represented in matrix form are made publicly available, they will be added to the collection.
+These could include past- and future-ocean circulation models, for paleoceanographic or climate-change studies, for example.
+
+
 
 
 
 AIBECS.jl also provides extra functionality to facilitate the generation of numerical models.
-Tooling to simulate gravitational settling of non-buoyant particulate tracers is provided by the `transportoperator` function.
+Tooling to simulate gravitational settling of tracers with non-buoyant particles is provided by the `transportoperator` function.
 In addition, AIBECS provides access to a number of predefined fields that can be used to generate source and sink processes.
 Fine-resolution (1-arc-minute) topography from the ETOPO1 dataset [@Amante_Eakins_2009] can be used for a refined interception of particulate fluxes by subgrid topographic features not captured by coarser circulation models.
 For aeolian deposition, AIBECS.jl includes aerosol-type- and region-of-origin-partitioned dust deposition fields [@Chien_etal_2016; @Kok_etal_2021b].
@@ -140,7 +143,7 @@ There is a need to facilitate the use of steady-state ocean-circulation models b
 AIBECS.jl provides a free, open-source, unified framework for biogeochemical-tracer-modelling studies that use steady-state circulation models.
 Among other advantages over existing solutions (i.e., the AO), AIBECS.jl offers better computational efficiency, enhanced versatility, composability with other Julia packages, and ease of reproducibility (granted by version control and Julia's package manager) and improved syntax, which are pillars of modern scientific dissemination.
 Thus, AIBECS users may include sea-going oceanographers and educators who will benefit from its simplicity, as well as more experienced modellers who can leverage its computational advantages.
-AIBECS.jl has been used for teaching and is currently used for research by members of the Marine Trace Element Laboratory of the University of Southern California.
+AIBECS.jl has been used for teaching and is currently used for research focused on marine trace metals.
 
 
 
@@ -152,7 +155,7 @@ Of particular interest to the broader community to facilitate the simulation of 
 
 
 Further devepment could include Newton–Krylov solvers for cyclo-stationary states [e.g., CYCLOCIM: @Huang_etal_2021] or time-dependent solvers for transient biogeochemical simualtions provided, e.g., by the SciML ecosystem [@Rackauckas_Nie_JORS_2017].
-Bridging packages could be implemented for improved composability with, e.g., statistical ([Turing.jl](https://github.com/TuringLang/Turing.jl) [@ge2018t]), optimization, and plotting software ([Makie.jl](https://github.com/JuliaPlots/Makie.jl) [@Makie.jl; @Danisch_Krumbiegel_2021]).
+Bridging packages could be implemented for improved composability with statistical packages [e.g., [Turing.jl](https://github.com/TuringLang/Turing.jl): @ge2018t], optimization tools, and plotting software [e.g., [Makie.jl](https://github.com/JuliaPlots/Makie.jl): @Makie.jl; @Danisch_Krumbiegel_2021].
 
 
 
