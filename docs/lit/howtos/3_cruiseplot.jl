@@ -90,7 +90,7 @@ plotscattertransect!(t)
 #
 # ```julia
 # using GEOTRACES
-# t = GEOTRACES.transects("Fe")[1] # the fisrt Fe transect is GA02
+# t = GEOTRACES.transects("Fe")[1] # the first Fe transect is GA02
 # plotscattertransect(t) # use a bang (!) to overlay on top of your model plot
 # ```
 #
