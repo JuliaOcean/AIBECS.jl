@@ -54,28 +54,27 @@ If you are new to AIBECS, head over to the [documentation](https://JuliaOcean.gi
 ## Concept
 
 This package was developed to exploit linear-algebra tools and algorithms in Julia to efficiently simulate marine tracers.
-AIBECS represents global biogeochemical cycles with a discretized system of nonlinear partial differential equations that takes the generic form
+AIBECS represents global biogeochemical cycles with a discretized system of nonlinear ordinary differential equations that takes the generic form
 
-(∂/∂𝑡 + 𝓣)*x* = *G*(*x*)
+∂***x***/∂*t* + **T*****x*** = ***G***(***x***)
 
-where *x* represents the model state variables, i.e., the marine tracer(s) concentration.
-For a single tracer, *x* can be interpreted as the 3D field of its concentration.
-In AIBECS, *x* is represented as a column vector.
+where ***x*** represents the model state variables, i.e., the marine tracer(s) concentration.
+For a single tracer, ***x*** can be interpreted as the 3D field of its concentration.
+In AIBECS, ***x*** is represented as a column vector (that's why it's **bold** and *italic*).
 
-The operator 𝓣 is a spatial differential operator that represents the transport of tracers.
+The operator **T** is a spatial differential operator that represents the transport of tracers.
 For example, for a single tracer transported by ocean circulation,
 
-𝓣 = ∇ ⋅ (***u*** + **K**∇)
+**T** = ∇⋅(***u*** - **K**∇)
 
 represents the effects of advection and eddy-diffusion.
-(***u*** is the 3D vector of the marine currents and **K** is a 3×3 diffusivity matrix.)
-Thus, 𝓣 *acts* on *x* such that 𝓣*x* is the flux divergence of that tracer.
-In AIBECS, 𝓣 is represented by matrices.
+(***u*** is the 3D vector of the marine currents and **K** is a 3×3 eddy-diffusivity matrix.)
+Thus, **T** "acts" on ***x*** such that **T*****x*** is the flux divergence of that tracer.
+In AIBECS, **T** is represented by a matrix (that's why it's **bold** and upstraight).
 
-Lastly, *G*(*x*) represents the local sources minus sinks of each tracer.
-In AIBECS, *G*(*x*) is represented by functions of the tracer(s).
+Lastly, the right-hand-side, ***G***(***x***), represents the local sources minus sinks of each tracer, whcih must be provided as functions of the tracer(s) ***x***.
 
-To simulate tracers using the AIBECS, you just need to define the transport operators 𝓣 and the net sources and sinks *G*.
+To simulate tracers using the AIBECS, you just need to define the transport operators ***T*** and the net sources and sinks ***G***.
 That's pretty much the whole concept!
 
 ## References

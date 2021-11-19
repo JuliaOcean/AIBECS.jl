@@ -6,25 +6,36 @@ using Unitful
 using DataDeps              # For storage location of data
 using NCDatasets
 using Distances
+using Downloads
 
 function fallback_download(remotepath, localdir)
     @assert(isdir(localdir))
     filename = basename(remotepath)  # only works for URLs with filename as last part of name
     localpath = joinpath(localdir, filename)
-    Base.download(remotepath, localpath)
+    Downloads.download(remotepath, localpath)
     return localpath
 end
 
+const DATA_FILE_NAME = Dict(
+    :bedrock => "ETOPO1_Bed_g_gdal.grd",
+    :ice => "ETOPO1_Ice_g_gdal.grd"
+)
+
+const URL = Dict(
+    :bedrock => "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/netcdf/ETOPO1_Bed_g_gdal.grd.gz",
+    :ice => "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/ice_surface/grid_registered/netcdf/ETOPO1_Ice_g_gdal.grd.gz"
+)
+
 # Create registry entry for ETOPO
-function register_ETOPO()
+function register_ETOPO(data=:bedrock)
     register(
         DataDep(
-            "ETOPO",
+            string("ETOPO_", data),
             """
             Reference:
             $(citation()) [accessed $(Dates.today())]
             """,
-            "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/netcdf/ETOPO1_Bed_g_gdal.grd.gz",
+            URL[data],
             sha2_256,
             fetch_method = fallback_download,
             post_fetch_method = unpack
@@ -33,17 +44,25 @@ function register_ETOPO()
     return nothing
 end
 
+
 """
-    Z, lats, lons = load()
+    Z, lats, lons = ETOPO.load()
 
 Returns the fine resolution topography from ETOPO.
+
+It is the same as
+
+    Z, lats, lons = ETOPO.load(:bedrock)
+
+If you want the ice elevation, use
+
+    Z, lats, lons = ETOPO.load(:ice)
 """
-function load()
-    register_ETOPO()
-    nc_file = @datadep_str string("ETOPO/ETOPO1_Bed_g_gdal.grd")
+function load(data=:bedrock)
+    register_ETOPO(data)
+    nc_file = @datadep_str joinpath(string("ETOPO_", data), DATA_FILE_NAME[data])
     ds = Dataset(nc_file)
-    Z, lats, lons, dims =
-    Dataset(nc_file,"r") do ds
+    Z, lats, lons, dims = Dataset(nc_file,"r") do ds
         dims = Tuple(ds["dimension"][:])
         ds["z"][:], range(ds["y_range"]..., length=dims[2]),
         range(ds["x_range"]..., length=dims[1]), dims

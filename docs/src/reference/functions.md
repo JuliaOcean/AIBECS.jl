@@ -61,6 +61,15 @@ SteadyStateProblem
 solve
 ```
 
+## For particles
+
+```@docs
+transportoperator
+PFDO
+DIVO
+FATO
+```
+
 ## For optimization
 
 ```@docs

@@ -86,11 +86,12 @@ plottransect(dummy, grd, ct=ct)
 
 plotscattertransect!(t)
 
-# If you have the GEOTRACESTools package installed and the GEOTRACES data installed at the right location, you can instead plot real data with something like
+# If you have the [GEOTRACES.jl](https://github.com/briochemc/GEOTRACES.jl) package installed and the GEOTRACES data installed at the right location, you can instead plot real data with something like
 #
 # ```julia
-# using GEOTRACESTools
-# zonalscattertransect(tracertransect("Fe", "GA02"))
+# using GEOTRACES
+# t = GEOTRACES.transects("Fe")[1] # the first Fe transect is GA02
+# plotscattertransect(t) # use a bang (!) to overlay on top of your model plot
 # ```
 #
 # However, this cannot be showcased online because GEOTRACES decided its data should "not be distributed to third parties".

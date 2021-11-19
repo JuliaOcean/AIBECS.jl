@@ -1,0 +1,35 @@
+{
+    "language": "eng",
+    "license": "MIT",
+    "upload_type": "software",
+    "title": "AIBECS.jl: The ideal tool for exploring global marine biogeochemical cycles",
+    "creators": [
+        {
+            "orcid": "0000-0002-3838-5976",
+            "affiliation": "previously UCI, now at USC",
+            "name": "Benoit Pasquier"
+        }
+    ],
+    "keywords": [
+        "julia",
+        "awesome",
+        "optimization",
+        "model",
+        "modeling",
+        "models",
+        "ocean",
+        "transport",
+        "oceanography",
+        "global",
+        "tracer",
+        "pathways",
+        "marine",
+        "biogeochemistry",
+        "inverse-model",
+        "biogeochemical-model",
+        "ocean-circulation",
+        "fluxes",
+        "biogeochemical",
+        "marine-tracer"
+    ]
+}

@@ -90,6 +90,8 @@ export directional_transport, directional_transports
 
 return a matrix of the same size and sparsity as `T` that smoothes data using
 a Gaussian Kernel for values, but conserving mass.
+
+This matrix can also likely be used as a covariance matrix for observations in a Bayesian framework.
 """
 function smooth_operator(grd, T; σs=(1.0, 1.0, 0.25))
     st = stencil(grd, T)
@@ -100,7 +102,7 @@ function smooth_operator(grd, T; σs=(1.0, 1.0, 0.25))
     # We add mass conservation to the Gaussian smoothing matrix
     # by modifying A column by column such that A conserves mass,
     # i.e., such that vᵀ A x = vᵀ x
-    v = depthvec(grd)
+    v = volumevec(grd)
     A * sparse(Diagonal(v ./ (A' * v)))
 end
 export smooth_operator
