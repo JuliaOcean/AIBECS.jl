@@ -28,10 +28,6 @@ function Base.:*(A::LinearOperators, u::AbstractArray) # has to be same type!
 end
 export LinearOperators
 
-# What would be the usage like
-# FUN = AIBECSfunction(...)
-# F = FUN.f
-# ∇ₓF = FUN.jac
 # AIBECSFunction creates an ODEFunction from the Ts and Gs
 AIBECSFunction(T::AbstractSparseArray, G::Function) = AIBECSFunction(p -> T, G, T.n)
 AIBECSFunction(T::Function, G::Function, nb::Int) = AIBECSFunction(T, (G,), nb)
@@ -57,7 +53,7 @@ function iipAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
         end
         du
     end
-    function f(du, u, p, t)
+    function f(du, u, p, t=0)
         G(du, u, p)
         for jT in eachindex(Ts)
             op = Ts[jT](p)
@@ -67,21 +63,20 @@ function iipAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
         end
         du
     end
-    f(u, p, t) = (du = copy(u); f(du, u, p, t); du)
     # Jacobian
     ∇ₓG(u, p) = inplace_local_jacobian(Gs, u, p, nt, nb)
     function T(p)
         uniqueTs = [Tⱼ(p) for Tⱼ in Ts]
         blockdiag([uniqueTs[Tidx[j]] for j in 1:nt]...)
     end
-    jac(u, p, t) = ∇ₓG(u, p) - T(p)
+    jac(u, p, t=0) = ∇ₓG(u, p) - T(p)
     return ODEFunction{true}(f, jac=jac)
 end
 function oopAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
     tracers(u) = state_to_tracers(u, nb, nt)
     tracer(u, i) = state_to_tracer(u, nb, nt, i)
     G(u, p) = reduce(vcat, Gⱼ(tracers(u)..., p) for Gⱼ in Gs)
-    function f(u, p, t)
+    function f(u, p, t=0)
         du = copy(G(u, p))
         for jT in eachindex(Ts)
             op = Ts[jT](p)
@@ -97,50 +92,54 @@ function oopAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
         uniqueTs = [Tⱼ(p) for Tⱼ in Ts]
         blockdiag([uniqueTs[Tidx[j]] for j in 1:nt]...)
     end
-    jac(u, p, t) = ∇ₓG(u, p) - T(p)
+    jac(u, p, t=0) = ∇ₓG(u, p) - T(p)
     return ODEFunction(f, jac=jac)
 end
-# This AIBECSFunction overloads F and ∇ₓF for λ instead of p
+# AIBECSFunction calls itself to allow for both λ::Vector and p::APar
 function AIBECSFunction(Ts, Gs, nb::Int, ::Type{P}) where {P <: APar}
     AIBECSFunction(AIBECSFunction(Ts, Gs, nb), P)
 end
 function AIBECSFunction(fun::ODEFunction{false}, ::Type{P}) where {P <: APar}
-    jac(u, p::P, t) = fun.jac(u, p, t)
-    jac(u, λ::Vector, t) = fun.jac(u, λ2p(P, λ), t)
-    f(u, p::P, t) = fun.f(u, p, t)
-    f(u, λ::Vector, t) = fun.f(u, λ2p(P, λ), t)
+    jac(u, p::P, t=0) = fun.jac(u, p, t)
+    jac(u, λ::Vector, t=0) = fun.jac(u, λ2p(P, λ), t)
+    f(u, p::P, t=0) = fun.f(u, p, t)
+    f(u, λ::Vector, t=0) = fun.f(u, λ2p(P, λ), t)
     return ODEFunction{false}(f, jac=jac)
 end
 function AIBECSFunction(fun::ODEFunction{true}, ::Type{P}) where {P <: APar}
-    jac(u, p::P, t) = fun.jac(u, p, t)
-    jac(u, λ::Vector, t) = fun.jac(u, λ2p(P, λ), t)
-    f(du, u, p::P, t) = fun.f(du, u, p, t)
-    f(u, p::P, t) = fun.f(u, p, t)
-    f(du, u, λ::Vector, t) = fun.f(du, u, λ2p(P, λ), t)
+    jac(u, p::P, t=0) = fun.jac(u, p, t)
+    jac(u, λ::Vector, t=0) = fun.jac(u, λ2p(P, λ), t)
+    f(du, u, p::P, t=0) = fun.f(du, u, p, t)
+    f(du, u, λ::Vector, t=0) = fun.f(du, u, λ2p(P, λ), t)
     return ODEFunction{true}(f, jac=jac)
 end
 
 export AIBECSFunction
 
 """
-    F, ∇ₓF = state_function_and_Jacobian(Ts, Gs, nb)
+    F, ∇ₓF = F_and_∇ₓF(Ts, Gs, nb)
 
-Returns the state function `F` and its jacobian, `∇ₓF`.
+Returns the state function `F` and its Jacobian, `∇ₓF`.
 
-    F, ∇ₓF = state_function_and_Jacobian(T, Gs, nb)
+    F, ∇ₓF = F_and_∇ₓF(T, Gs, nb)
 
-Returns the state function `F` and its jacobian, `∇ₓF` (with all tracers transported by single `T`).
+Returns the state function `F` and its Jacobian, `∇ₓF` (with all tracers transported by single `T`).
+
+This function is deprecated. Use
+
+    F = AIBECSFunction(Ts, Gs, nb)
+
+instead.
+You can then call `F(x,p)` for the tendencies, and `F(Val{:jac},x,p)` for the Jacobian.
 """
-function F_and_∇ₓF(fun::ODEFunction{false})
-    ∇ₓF(u, p) = fun.jac(u, p, 0)
-    F(u, p) = fun.f(u, p, 0)
-    F, ∇ₓF
-end
-function F_and_∇ₓF(fun::ODEFunction{true})
-    ∇ₓF(u, p) = fun.jac(u, p, 0)
-    F(du, u, p) = fun.f(du, u, p, 0)
-    F(u, p) = fun.f(u, p, 0)
-    F, ∇ₓF
+function F_and_∇ₓF(fun::ODEFunction)
+    Base.depwarn("""Deprecation:
+        F, ∇ₓF = F_and_∇ₓF(args...)
+    is deprecated. Use
+        F = AIBECSFunction(args...)
+    instead! (And then you can still call `F(x,p)`.)
+    """, :F_and_∇ₓF, force=true)
+    fun.f, fun.jac
 end
 F_and_∇ₓF(args...) = F_and_∇ₓF(AIBECSFunction(args...))
 export F_and_∇ₓF
@@ -175,9 +174,9 @@ perturb_tracer(xs, j, λ) = (xs[1:j - 1]..., xs[j] .+ λ, xs[j + 1:end]...)
 
 
 """
-    F, ∇ₓF = state_function_and_Jacobian(Ts, Gs, nb)
+    F, L, NL, ∇ₓF, ∇ₓL, ∇ₓNL, T = split_state_function_and_Jacobian(Ts, Ls, NLs, nb)
 
-Returns the state function `F` and its jacobian, `∇ₓF`.
+Returns the state function `F` and its jacobian, `∇ₓF`, as well as a collection of split operators. This is experimental. Use at your own risk!
 """
 function split_state_function_and_Jacobian(Ts::Tuple, Ls::Tuple, NLs::Tuple, nb)
     nt = length(Ts)

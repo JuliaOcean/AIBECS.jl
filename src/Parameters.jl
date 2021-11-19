@@ -397,7 +397,7 @@ Change of variables
 
 # using Bijectors and evaluating parameter mismatch in λ-space
 # Usage should look like this
-# F, ∇ₓF = generate_state_function(...)
+# F = AIBECSFunction(...)
 # f, ∇ₓf = generate_objective(...) # This requires to dispatch them like f(p::APar) = ... and f(λ::Vector) = ...
 # obj, grad, hess = F1Method(F, ∇ₓF, f, ∇ₓf, ...) # directly in λ-space
 # p2λ = bijector(MyParams) # just reexport bijector and inverse
@@ -422,14 +422,14 @@ bijector(::Type{T}, k) where {T<:APar} = bijector(prior(T, k))
 export bijector
 
 """
-p2λ(p::AbstractParameters)
+    p2λ(p::AbstractParameters)
 
 Converts `p` to a real-valued vector for optimization.
 (referred to as the λ space in AIBECS)
 """
 p2λ(p::T) where {T<:APar} = [bijector(T,k)(v) for (k,v) in zip(flattenable_symbols(p), flattenable_values(p))]
 """
-λ2p(T::Type{AbstractParameters}, λ::Vector)
+    λ2p(T::Type{AbstractParameters}, λ::Vector)
 
 Converts real-valued vector `λ` back to parameters object `p`.
 

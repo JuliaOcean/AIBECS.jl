@@ -72,16 +72,16 @@ Gs = (G_DIP!, G_DOP!, G_POP!)
 AIBECS F and ∇ₓF
 ===========================================#
 fun = AIBECSFunction(T_all, sms_all, nb)
-fun! = AIBECSFunction((T_D, T_POP), Gs, nb, 3, [1,1,2])
-F, ∇ₓF = F_and_∇ₓF(T_all, sms_all, nb)
-F!, ∇ₓF! = F_and_∇ₓF((T_D, T_POP), Gs, nb, 3, [1,1,2]) # <- faster because inplace and only one T_D
+fun! = AIBECSFunction((T_D, T_POP), Gs, nb, 3, [1, 1, 2])
+F, ∇ₓF = F_and_∇ₓF(T_all, sms_all, nb) # deprecated
+F!, ∇ₓF! = F_and_∇ₓF((T_D, T_POP), Gs, nb, 3, [1, 1, 2]) # deprecated
 
 #===========================================
 AIBECS split operators for CNLF
 ===========================================#
 
-NL_DIP(DIP, DOP, POP, p) = -uptake(DIP, p) + geores(0*DIP, p)
-L_DIP(DIP, DOP, POP, p) = remineralization(DOP, p) + geores(DIP, p) - geores(0*DIP, p)
+NL_DIP(DIP, DOP, POP, p) = -uptake(DIP, p) + geores(0 * DIP, p)
+L_DIP(DIP, DOP, POP, p) = remineralization(DOP, p) + geores(DIP, p) - geores(0 * DIP, p)
 
 function NL_DOP(DIP, DOP, POP, p)
     @unpack σ = p
@@ -111,18 +111,18 @@ Tests
     nt = length(T_all)
     n = nt * nb
     @unpack xgeo = p
-    x = xgeo * ones(n) .* exp.(cos.(collect(1:n))/10)
+    x = xgeo * ones(n) .* exp.(cos.(collect(1:n)) / 10)
     @testset "State function" begin
-        F₀ = F(x, p)
+        F₀ = fun(x, p)
         v_all = repeat(v, nt)
         @test F₀ isa Vector{Float64}
         @test size(F₀) == (n,)
         @test norm(v_all .* x) / norm(v_all' * F₀) > ustrip(upreferred(1u"Myr"))
     end
     @testset "Jacobian of the state function" begin
-        ∇ₓF₀ = ∇ₓF(x, p)
+        ∇ₓF₀ = fun(Val{:jac}, x, p)
         @test ∇ₓF₀ isa SparseMatrixCSC
-        @test size(∇ₓF₀) == (n,n)
+        @test size(∇ₓF₀) == (n, n)
     end
 end
 
@@ -131,14 +131,11 @@ end
     nt = length(T_all)
     n = nt * nb
     @unpack xgeo = p
-    x = xgeo * ones(n) .* exp.(cos.(collect(1:n))/10)
+    x = xgeo * ones(n) .* exp.(cos.(collect(1:n)) / 10)
     dx = similar(x)
-    @testset "F! ≈ F" begin
-        F₀ = F!(dx, x, p)
-        @test F₀ ≈ F(x,p) rtol=1e-10
-    end
-    @testset "∇ₓF! ≈ ∇ₓF" begin
-        @test ∇ₓF(x,p) ≈ ∇ₓF!(x,p) rtol=1e-10
+    @testset "in-place F ≈ out-of-place F" begin
+        @test fun(x, p) ≈ fun!(dx, x, p) rtol = 1e-10
+        @test fun(Val{:jac}, x, p) ≈ fun!(Val{:jac}, x, p) rtol = 1e-10
     end
 end
 
@@ -146,17 +143,17 @@ end
     nt = length(T_all)
     n = nt * nb
     @unpack xgeo = p
-    x = xgeo * ones(n) .* exp.(cos.(collect(1:n))/10)
+    x = xgeo * ones(n) .* exp.(cos.(collect(1:n)) / 10)
     @testset "split F ≈ F" begin
-        @test F2(x,p) ≈ F(x,p) rtol=1e-10
+        @test F2(x, p) ≈ fun(x, p) rtol = 1e-10
     end
     @testset "split F ≈ L + NL" begin
-        @test F2(x,p) ≈ L(x,p) + NL(x,p) - T(p) * x rtol=1e-10
+        @test F2(x, p) ≈ L(x, p) + NL(x, p) - T(p) * x rtol = 1e-10
     end
     @testset "split ∇ₓF ≈ ∇ₓF" begin
-        @test ∇ₓF(x,p) ≈ ∇ₓF2(x,p) rtol=1e-10
+        @test fun(Val{:jac}, x, p) ≈ ∇ₓF2(x, p) rtol = 1e-10
     end
     @testset "split ∇ₓF ≈ T + ∇ₓNL" begin
-        @test ∇ₓF2(x,p) ≈ ∇ₓL(p) + ∇ₓNL(x,p) - T(p) rtol=1e-10
+        @test ∇ₓF2(x, p) ≈ ∇ₓL(p) + ∇ₓNL(x, p) - T(p) rtol = 1e-10
     end
 end
