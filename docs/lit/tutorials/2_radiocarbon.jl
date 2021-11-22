@@ -89,11 +89,11 @@ p = RadiocarbonParameters(λ = 50u"m"/10u"yr",
 #nb # > The parameters are converted to SI units when unpacked.
 #nb # >  When you specify units for your parameters, you must supply their values in that unit.
 
-# We generate the state function and its Jacobian, generate the corresponding steady-state problem, and solve it, via
+# We build the state function `F` and the corresponding steady-state problem (and solve it) via
 
-F, ∇ₓF = F_and_∇ₓF(T_OCCA, G)
+F = AIBECSFunction(T_OCCA, G)
 x = zeros(length(z)) # an initial guess
-prob = SteadyStateProblem(F, ∇ₓF, x, p)
+prob = SteadyStateProblem(F, x, p)
 R = solve(prob, CTKAlg()).u
 
 # This should take a few seconds on a laptop.

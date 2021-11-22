@@ -104,15 +104,15 @@ end
 
 p = DustModelParameters()
 
-# We generate the state function `F` and its Jacobian `∇ₓF`,
+# We build the state function `F`,
 
 nb = count(iswet(grd))
-F, ∇ₓF = F_and_∇ₓF(T_dust, G_dust, nb)
+F = AIBECSFunction(T_dust, G_dust, nb)
 
-# generate the steady-state problem,
+# the steady-state problem,
 
 x = ones(nb) # initial guess
-prob = SteadyStateProblem(F, ∇ₓF, x, p)
+prob = SteadyStateProblem(F, x, p)
 
 # and solve it
 
@@ -149,7 +149,7 @@ profile_plot = plothorizontalmean(sol * u"g/m^3" .|> u"mg/m^3", grd)
 # For example, impose a larger fraction that stays in the bottom or change other parameters via
 
 p2 = DustModelParameters(w₀=0.1u"km/yr", w′=0.1u"km/yr/km", fsedremin=95.0u"percent")
-prob2 = SteadyStateProblem(F, ∇ₓF, x, p2)
+prob2 = SteadyStateProblem(F, x, p2)
 sol2 = solve(prob2, CTKAlg()).u
 plotverticalmean(sol2 * u"g/m^3", grd, color=cgrad(:turbid, rev=true, scale=:exp))
 

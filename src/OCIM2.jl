@@ -106,9 +106,14 @@ Returns the grid, the transport matrix, and the He fluxes (in that order).
     ```
     julia> grd, T = OCIM2.load(version="KiHIGH_noHe")
     ```
-    See *DeVries and Holzer* (2019) for more details
+
+    Add the `HeFluxes=true` keyword argument if you want the OCIM-produced He fields
+    with ³He and ⁴He as 3rd and 4th arguments.
+    (3rd and 4th output are returned as `nothing` for "noHe" versions).
+
+    See *DeVries and Holzer* (2019) for more details.
 """
-function load(; version="CTL_He")
+function load(; version="CTL_He", HeFluxes=false)
     register_OCIM2(version=version)
     jld2_file = @datadep_str string("AIBECS-OCIM2_$version/", "OCIM2_$version.jld2")
     @info """You are about to use the OCIM2_$version model.
@@ -120,8 +125,14 @@ function load(; version="CTL_He")
           at the root of the AIBECS.jl package repository.
           (Look for the "DeVries_Holzer_2019" key.)
           """
-    jldopen(jld2_file) do file
-        file["grid"], ustrip.(file["T"]), file["He3Flux"], file["He4Flux"]
+    if HeFluxes
+        jldopen(jld2_file) do file
+            file["grid"], ustrip.(file["T"]), file["He3Flux"], file["He4Flux"]
+        end
+    else
+        jldopen(jld2_file) do file
+            file["grid"], ustrip.(file["T"])
+        end
     end
 end
 

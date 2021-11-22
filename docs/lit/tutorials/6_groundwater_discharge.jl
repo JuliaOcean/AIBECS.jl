@@ -91,33 +91,33 @@ end
 
 p = GroundWatersParameters()
 
-# We generate the state function `F` and its Jacobian `∇ₓF`,
+# We build the state function `F`,
 
-F, ∇ₓF = F_and_∇ₓF(T_OCIM2, G_gw)
+F = AIBECSFunction(T_OCIM2, G_gw)
 
-# generate the steady-state problem `prob`,
+# the steady-state problem `prob`,
 
 nb = sum(iswet(grd))
 x = ones(nb) # initial guess
-prob = SteadyStateProblem(F, ∇ₓF, x, p)
+prob = SteadyStateProblem(F, x, p)
 
 # and solve it
 
-s = solve(prob, CTKAlg()).u * u"mol/m^3"
+sol = solve(prob, CTKAlg()).u * u"mol/m^3"
 
 # Let's now run some visualizations using the plot recipes.
 # Taking a horizontal slice of the 3D field at 200m gives
 
 cmap = :viridis
-plothorizontalslice(s, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,100))
+plothorizontalslice(sol, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,100))
 
 # and at 500m:
 
-plothorizontalslice(s, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,25))
+plothorizontalslice(sol, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,25))
 
 # Or we can increase the decay timescale (×10) and decrease the groundwater concentration (÷10) to get a different (more well-mixed) tracer distribution:
 
 p = GroundWatersParameters(τ = 200.0u"yr", C_gw = 0.1u"mol/m^3")
-prob = SteadyStateProblem(F, ∇ₓF, x, p)
-s_τ50 = solve(prob, CTKAlg()).u * u"mol/m^3"
-plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,25))
+prob = SteadyStateProblem(F, x, p)
+sol_τ50 = solve(prob, CTKAlg()).u * u"mol/m^3"
+plothorizontalslice(sol_τ50, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,25))

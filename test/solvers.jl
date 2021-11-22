@@ -21,7 +21,8 @@ algs = [CTKAlg]
             s = solve(iipprob, alg())
             @test s isa SteadyStateSolution
             @test iipprob isa SteadyStateProblem
-            @test norm(s.u) / norm(fun!.f(s.u, testp, 0)) > ustrip(upreferred(1e5u"Myr"))
+            ds = copy(s.u)
+            @test norm(s.u) / norm(fun!.f(ds, s.u, testp, 0)) > ustrip(upreferred(1e5u"Myr"))
         end
     end
 end
