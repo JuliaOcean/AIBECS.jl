@@ -93,42 +93,42 @@ end
 
 p = RadioRiversParameters()
 
-# We generate the state function `F` and its Jacobian `∇ₓF`,
+# We generate the state function `F` that gives the tendencies,
 
-F, ∇ₓF = F_and_∇ₓF(T_OCIM2, G_radiorivers)
+F = AIBECSFunction(T_OCIM2, G_radiorivers)
 
 # generate the steady-state problem `prob`,
 
 nb = sum(iswet(grd))
 x = ones(nb) # initial guess
-prob = SteadyStateProblem(F, ∇ₓF, x, p)
+prob = SteadyStateProblem(F, x, p)
 
 # and solve it
 
-s = solve(prob, CTKAlg()).u * u"mol/m^3"
+sol = solve(prob, CTKAlg()).u * u"mol/m^3"
 
 # Let's now run some visualizations using the plot recipes.
 # Taking a horizontal slice of the 3D field at 200m gives
 
 cmap = :viridis
-plothorizontalslice(s, grd, zunit=u"μmol/m^3", depth=200, color=cmap)
+plothorizontalslice(sol, grd, zunit=u"μmol/m^3", depth=200, color=cmap)
 
 # and at 500m:
 
-plothorizontalslice(s, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,0.05))
+plothorizontalslice(sol, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,0.05))
 
 # Or we can change the timescale and watch the tracer fill the oceans:
 
 p = RadioRiversParameters(τ = 50.0u"yr")
-prob = SteadyStateProblem(F, ∇ₓF, x, p)
-s_τ50 = solve(prob, CTKAlg()).u * u"mol/m^3"
-plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,1))
+prob = SteadyStateProblem(F, x, p)
+sol_τ50 = solve(prob, CTKAlg()).u * u"mol/m^3"
+plothorizontalslice(sol_τ50, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,1))
 
 # Point-wise sources like the rivers used here can be problematic numerically because these
 # can generate large gradients and numerical noise with the given spatial discretization:
 
 cmap = :RdYlBu_4
-plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=0, color=cmap, clim=(-10,10))
+plothorizontalslice(sol_τ50, grd, zunit=u"μmol/m^3", depth=0, color=cmap, clim=(-10,10))
 
 # Note, for an example of numerical noise, the negative values appearing in red.
 # Hence, it might be wise to smooth the 3D field of the river sources.
@@ -139,16 +139,17 @@ plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=0, color=cmap, clim=(
 
 S = smooth_operator(grd, T_OCIM2)
 s_0 = S * (S * s_0) # smooth river sources twice
-s_smooth = solve(prob, CTKAlg()).u * u"mol/m^3"
-plothorizontalslice(s_smooth, grd, zunit=u"μmol/m^3", depth=0, color=cmap, clim=(-10,10))
+sol_smooth = solve(prob, CTKAlg()).u * u"mol/m^3"
+plothorizontalslice(sol_smooth, grd, zunit=u"μmol/m^3", depth=0, color=cmap, clim=(-10,10))
 
 # Note that such numerical noise generally dampens out with distance and depth
 
 cmap = :viridis
 plot(
-    plothorizontalslice(s_τ50, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,2)),
-    plothorizontalslice(s_smooth, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,2)),
-    layout=(2,1)
+    plothorizontalslice(sol_τ50, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,2)),
+    plothorizontalslice(sol_smooth, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,2)),
+    layout=(2,1),
+    size=(600,600)
 )
 
-# Nevertheless, it is always good to reduce noise as much as possible!
+# Nevertheless, it can be good to reduce noise as much as possible!

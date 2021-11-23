@@ -33,8 +33,6 @@
 #
 # $$R(x_\mathsf{POP}) = \frac{x_\mathsf{POP}}{\tau_\mathsf{POP}}.$$
 
-
-
 # We start by telling Julia we want to use the AIBECS and the OCIM0.1 circulation for DIP.
 
 using AIBECS
@@ -116,16 +114,16 @@ end
 
 p = PmodelParameters()
 
-# We generate the state function `F` and its Jacobian `∇ₓF`,
+# We generate the state function `F`,
 
 nb = sum(iswet(grd))
-F, ∇ₓF = F_and_∇ₓF((T_DIP, T_POP), (G_DIP, G_POP), nb)
+F = AIBECSFunction((T_DIP, T_POP), (G_DIP, G_POP), nb)
 
 # generate the steady-state problem,
 
 @unpack DIP_geo = p
 x = DIP_geo * ones(2nb) # initial guess
-prob = SteadyStateProblem(F, ∇ₓF, x, p)
+prob = SteadyStateProblem(F, x, p)
 
 # and solve it
 
@@ -165,8 +163,8 @@ T_POP2(p) = transportoperator(grd, z -> w(z,p); frac_seafloor=f_topo)
 
 # With this new vertical transport for POP, we can recreate our problem, solve it again
 
-F2, ∇ₓF2 = F_and_∇ₓF((T_DIP, T_POP2), (G_DIP, G_POP), nb)
-prob2 = SteadyStateProblem(F2, ∇ₓF2, x, p)
+F2 = AIBECSFunction((T_DIP, T_POP2), (G_DIP, G_POP), nb)
+prob2 = SteadyStateProblem(F2, x, p)
 sol2 = solve(prob2, CTKAlg()).u
 DIP2, POP2 = state_to_tracers(sol2, grd) # unpack tracers
 

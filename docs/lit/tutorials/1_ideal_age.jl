@@ -82,13 +82,11 @@ p = IdealAgeParameters(1.0, 30.0)
 
 # We now use the AIBECS to generate the state function $\boldsymbol{F}$ (and its Jacobian) via
 
-F, ∇ₓF = F_and_∇ₓF(TOCIM2, G)
+F = AIBECSFunction(TOCIM2, G)
 
-# (`∇ₓF` is the **Jacobian** of the state function $\nabla_{\boldsymbol{x}}\boldsymbol{F}$, calculated automatically using dual numbers.)
-
-# Now that `F(x,p)`, and `p` are defined, we are going to solve for the steady-state.
-# But first, we must create a `SteadyStateProblem` object that contains `F`, `∇ₓF`, `p`, and an initial guess `x_init` for the age.
-# (`SteadyStateProblem` is specialized from [DiffEqBase](https://github.com/JuliaDiffEq/DiffEqBase.jl) for AIBECS models.)
+# Now that `F` and `p` are defined, we are going to solve for the steady-state.
+# But first, we must create a `SteadyStateProblem` object that contains `F`, `p`, and an initial guess `x_init` for the age.
+# (`SteadyStateProblem` comes from [DiffEqBase](https://github.com/JuliaDiffEq/DiffEqBase.jl).)
 
 # Let's make a vector of 0's for our initial guess.
 
@@ -97,7 +95,7 @@ x_init = zeros(nb)    # Start with age = 0 everywhere
 
 # Now we can create our `SteadyStateProblem` instance
 
-prob = SteadyStateProblem(F, ∇ₓF, x_init, p)
+prob = SteadyStateProblem(F, x_init, p)
 
 # And finally, we can `solve` this problem, using the AIBECS `CTKAlg()` algorithm,
 
