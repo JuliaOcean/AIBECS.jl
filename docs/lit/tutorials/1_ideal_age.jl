@@ -8,7 +8,8 @@
 
 #md # !!! note
 #md #     All the AIBECS tutorials and how-to guides are available as Jupyter notebooks.
-#md #     You can execute them online with [binder](https://mybinder.org/) or just view them with [nbviewer](https://nbviewer.jupyter.org/) by clicking on the badges above!
+#md #     You can view them with [nbviewer](https://nbviewer.jupyter.org/)or execute them online with [binder](https://mybinder.org/) by clicking on the badges above!
+#md #     (Note that binder can be slow to launch and its memory caps can be a problem when running.)
 
 # The tracer equation for the ideal age is
 #

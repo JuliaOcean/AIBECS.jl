@@ -222,7 +222,7 @@ Base.vec(p::T) where {T <: APar} = [UnPack.unpack(p, Val(s)) for s in flattenabl
 """
     length(p::AbstractParameter)
 
-Returns the length of the **flattened/optimzable** vector of `p`.
+Returns the length of the **flattened/optimizable** vector of `p`.
 
 May be different from the number of parameters.
 Can also be used directly on the type of `p`.
@@ -233,7 +233,7 @@ Base.length(::Type{T}) where {T <: APar} = sum(flattenable(T))
 """
     size(p::AbstractParameter)
 
-Returns the size of the **flattened/optimzable** vector of `p`.
+Returns the size of the **flattened/optimizable** vector of `p`.
 
 May be different from the number of parameters.
 Can also be used directly on the type of `p`.

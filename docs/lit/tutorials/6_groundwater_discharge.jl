@@ -7,6 +7,11 @@
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/6_groundwater_discharge.ipynb)
 
 #md # !!! note
+#md #     All the AIBECS tutorials and how-to guides are available as Jupyter notebooks.
+#md #     You can view them with [nbviewer](https://nbviewer.jupyter.org/)or execute them online with [binder](https://mybinder.org/) by clicking on the badges above!
+#md #     (Note that binder can be slow to launch and its memory caps can be a problem when running.)
+
+#md # !!! note
 #md #     This tutorial is very similar to the [river discharge notebook](@id river-discharge)
 
 # In this tutorial we will simulate a fictitious radioactive tracer that is injected into the ocean by groundwater discharge.
