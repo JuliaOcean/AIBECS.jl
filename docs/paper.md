@@ -8,7 +8,7 @@ tags:
 authors:
   - name: Benoît Pasquier^[corresponding author]
     orcid: 0000-0002-3838-5976
-    affiliation: "1" # (Multiple affiliations must be quoted)
+    affiliation: "1,3" # (Multiple affiliations must be quoted)
   - name: François W. Primeau
     orcid: 0000-0001-7452-9415
     affiliation: "2"
@@ -20,7 +20,9 @@ affiliations:
     index: 1
   - name: Department of Earth System Science, University of California, Irvine
     index: 2
-date: 19 Aug 2021
+  - name: (now at) School of Mathematics and Statistics, University of New South Wales, Sydney
+    index: 3
+date: 7 Dec 2021
 bibliography: paper.bib
 
 ---
