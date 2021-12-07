@@ -9,12 +9,12 @@ authors:
   - name: Benoît Pasquier^[corresponding author]
     orcid: 0000-0002-3838-5976
     affiliation: "1" # (Multiple affiliations must be quoted)
-  - name: Seth G. John
-    orcid: 0000-0002-8257-626X
-    affiliation: "1" # (Multiple affiliations must be quoted)
   - name: François W. Primeau
     orcid: 0000-0001-7452-9415
     affiliation: "2"
+  - name: Seth G. John
+    orcid: 0000-0002-8257-626X
+    affiliation: "1" # (Multiple affiliations must be quoted)
 affiliations:
   - name: Department of Earth Sciences, University of Southern California
     index: 1
