@@ -123,9 +123,9 @@ Continuous integration through GitHub actions also includes a fairly complete su
 
 
 Pioneered by @Schlitzer_JPO_1993 to study the ocean circulation using ventilation tracers such as radiocarbon [see also @Schlitzer_GeoMonoAGU_2000], the low computational costs of steady-state circulation models allow for efficient optimization and inference/estimation of biogeochemical parameters.
-Despite reduced resolution and steady-state assumption, data-constrained matrix-transport models such as the OCIM are at the forefront of oceanographic research.
-This is evidenced for example by the growing number of high-profile publications that use such models for parameter estimation in recent years [e.g., @DeVries_etal_Nature_2017; @DeVries_etal_Biogeosciences_2013; @DeVries_etal_GRL_2012; @Weber_Deutsch_Nature_2010; @DeVries_GBC_2014; @DeVries_Weber_GBC_2017; @Teng_etal_NatGeosci_2014; @DeVries_Deutsch_NatGeosci_2014; @Weber_etal_PNAS_2016; @Roshan_DeVries_NatCom_2017; @Wang_etal_Nature_2019].
-Although the steady-state assumption and matrix representation simplify the simulation of tracers compared to traditional Ocean General Circulation Models (OGCMs), most studies that employ a steady-state matrix representation of marine cycling remain difficult to reproduce without significant computer-science and modelling expertise because they are built on private implementations.
+Today, despite reduced resolution and steady-state assumption, data-constrained matrix-transport models such as the OCIM are at the forefront of oceanographic research.
+This is evidenced for example by the growing number of high-profile studies that use such models for parameter estimation published in recent years [e.g., @DeVries_etal_Nature_2017; @DeVries_etal_Biogeosciences_2013; @DeVries_etal_GRL_2012; @Weber_Deutsch_Nature_2010; @DeVries_GBC_2014; @DeVries_Weber_GBC_2017; @Teng_etal_NatGeosci_2014; @DeVries_Deutsch_NatGeosci_2014; @Weber_etal_PNAS_2016; @Roshan_DeVries_NatCom_2017; @Wang_etal_Nature_2019].
+However, although the steady-state assumption and matrix representation simplify the simulation of tracers compared to traditional Ocean General Circulation Models (OGCMs), most studies that employ a steady-state matrix representation of marine cycling remain difficult to reproduce without significant computer-science and modelling expertise because they are built on private implementations.
 Comparisons between different circulation models are moreover complicated by the lack of standardization across models.
 
 
