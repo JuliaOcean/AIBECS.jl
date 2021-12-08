@@ -8,7 +8,7 @@ algs = [CTKAlg]
     @unpack xgeo = p
     x = xgeo * ones(n)
     @testset "$(string(alg))" for alg in algs
-        @test alg <: DiffEqBase.AbstractSteadyStateAlgorithm
+        @test alg <: SciMLBase.AbstractSteadyStateAlgorithm
         @testset "$(nx)x, $(np)p" for nx in 1:2, np in 1:2
             testp = AIBECS.reconstruct(TestParameters, np * vec(p))
             oopprob = SteadyStateProblem(fun, nx * x, testp)

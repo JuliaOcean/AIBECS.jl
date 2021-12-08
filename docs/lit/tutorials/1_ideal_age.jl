@@ -87,7 +87,7 @@ F = AIBECSFunction(TOCIM2, G)
 
 # Now that `F` and `p` are defined, we are going to solve for the steady-state.
 # But first, we must create a `SteadyStateProblem` object that contains `F`, `p`, and an initial guess `x_init` for the age.
-# (`SteadyStateProblem` comes from [DiffEqBase](https://github.com/JuliaDiffEq/DiffEqBase.jl).)
+# (`SteadyStateProblem` comes from [SciMLBase](https://github.com/JuliaDiffEq/SciMLBase.jl).)
 
 # Let's make a vector of 0's for our initial guess.
 
