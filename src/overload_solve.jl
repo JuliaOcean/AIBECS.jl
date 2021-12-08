@@ -30,7 +30,7 @@ function DiffEqBase.solve(prob::DiffEqBase.AbstractSteadyStateProblem,
             prob.f(x, p)
         end
     end
-    ∇ₓF(x) = prob.f(Val{:jac}, x, p)
+    ∇ₓF(x) = prob.f.jac(x, p)
     # Compute `u_steady` and `resid` as per DiffEqBase using my algorithm
     x_steady = NewtonChordShamanskii(F, ∇ₓF, nrm, x0, τstop; preprint=preprint, maxItNewton=maxItNewton)
     resid = F(x_steady)
