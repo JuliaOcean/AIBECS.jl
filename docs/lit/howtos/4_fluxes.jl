@@ -5,6 +5,11 @@
 #md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/4_fluxes.ipynb)
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/4_fluxes.ipynb)
 
+#md # !!! note
+#md #     All the AIBECS tutorials and how-to guides are available as Jupyter notebooks.
+#md #     You can view them with [nbviewer](https://nbviewer.jupyter.org/)or execute them online with [binder](https://mybinder.org/) by clicking on the badges above!
+#md #     (Note that binder can be slow to launch and its memory caps can be a problem when running.)
+
 # This will take you through the process of extracting flux information from a given transport operator.
 # It is split into 3 parts
 # 1. [Figure out the stencil of the operator](@ref operatorstencil)

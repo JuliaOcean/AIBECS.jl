@@ -120,7 +120,7 @@ Tests
         @test norm(v_all .* x) / norm(v_all' * F₀) > ustrip(upreferred(1u"Myr"))
     end
     @testset "Jacobian of the state function" begin
-        ∇ₓF₀ = fun(Val{:jac}, x, p)
+        ∇ₓF₀ = fun.jac(x, p)
         @test ∇ₓF₀ isa SparseMatrixCSC
         @test size(∇ₓF₀) == (n, n)
     end
@@ -135,7 +135,7 @@ end
     dx = similar(x)
     @testset "in-place F ≈ out-of-place F" begin
         @test fun(x, p) ≈ fun!(dx, x, p) rtol = 1e-10
-        @test fun(Val{:jac}, x, p) ≈ fun!(Val{:jac}, x, p) rtol = 1e-10
+        @test fun.jac(x, p) ≈ fun!.jac(x, p) rtol = 1e-10
     end
 end
 
@@ -151,7 +151,7 @@ end
         @test F2(x, p) ≈ L(x, p) + NL(x, p) - T(p) * x rtol = 1e-10
     end
     @testset "split ∇ₓF ≈ ∇ₓF" begin
-        @test fun(Val{:jac}, x, p) ≈ ∇ₓF2(x, p) rtol = 1e-10
+        @test fun.jac(x, p) ≈ ∇ₓF2(x, p) rtol = 1e-10
     end
     @testset "split ∇ₓF ≈ T + ∇ₓNL" begin
         @test ∇ₓF2(x, p) ≈ ∇ₓL(p) + ∇ₓNL(x, p) - T(p) rtol = 1e-10

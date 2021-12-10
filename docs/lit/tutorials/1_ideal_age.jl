@@ -8,7 +8,8 @@
 
 #md # !!! note
 #md #     All the AIBECS tutorials and how-to guides are available as Jupyter notebooks.
-#md #     You can execute them online with [binder](https://mybinder.org/) or just view them with [nbviewer](https://nbviewer.jupyter.org/) by clicking on the badges above!
+#md #     You can view them with [nbviewer](https://nbviewer.jupyter.org/)or execute them online with [binder](https://mybinder.org/) by clicking on the badges above!
+#md #     (Note that binder can be slow to launch and its memory caps can be a problem when running.)
 
 # The tracer equation for the ideal age is
 #
@@ -86,7 +87,7 @@ F = AIBECSFunction(TOCIM2, G)
 
 # Now that `F` and `p` are defined, we are going to solve for the steady-state.
 # But first, we must create a `SteadyStateProblem` object that contains `F`, `p`, and an initial guess `x_init` for the age.
-# (`SteadyStateProblem` comes from [DiffEqBase](https://github.com/JuliaDiffEq/DiffEqBase.jl).)
+# (`SteadyStateProblem` comes from [SciMLBase](https://github.com/JuliaDiffEq/SciMLBase.jl).)
 
 # Let's make a vector of 0's for our initial guess.
 

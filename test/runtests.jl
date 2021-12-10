@@ -5,7 +5,7 @@ using SparseArrays, LinearAlgebra
 using Unitful
 using Unitful: °, m, km
 using WorldOceanAtlasTools
-using DiffEqBase
+using SciMLBase
 using ForwardDiff, DualNumbers
 using DataFrames
 using Distributions
