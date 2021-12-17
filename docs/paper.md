@@ -71,7 +71,7 @@ These currently include
 the Ocean Circulation Inverse Model (OCIM) v0.1 [@Primeau_etal_JGRO_2013],
 v1.0 [@DeVries_Primeau_JPO_2011; @DeVries_GBC_2014],
 and v2.0 [@DeVries_Holzer_JGRO_2019],
-and the MITgcm-built Ocean Comprehensible Atlas (OCCA) ocean-state estimate model [@Forget:2010], of which the downloads are handled by the [DataDeps.jl](https://github.com/oxinabox/DataDeps.jl) package [@DataDeps:2018; @White_etal:2019].
+and the MITgcm-built Ocean Comprehensible Atlas (OCCA) ocean-state estimate model [@Forget:2010], of which the downloads are handled by the [DataDeps.jl](https://github.com/oxinabox/DataDeps.jl) package [@White_etal:2019].
 AIBECS.jl also offers classic two-box and three-box models [@Sarmiento_Gruber:2006; @Archer_etal_GBC_2000].
 The [OceanGrids.jl](https://github.com/briochemc/OceanGrids.jl) package, on which AIBECS depends, provides the underlying grid configuration types as well as regridding and interpolating routines.
 Swapping the underlying circulation model and grid requires a single-line-of-code change, facilitating intercomparison projects.

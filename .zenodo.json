@@ -2,12 +2,22 @@
     "language": "eng",
     "license": "MIT",
     "upload_type": "software",
-    "title": "AIBECS.jl: The ideal tool for exploring global marine biogeochemical cycles",
+    "title": "AIBECS.jl: A tool for exploring global marine biogeochemical cycles",
     "creators": [
         {
             "orcid": "0000-0002-3838-5976",
-            "affiliation": "previously UCI, now at USC",
+            "affiliation": "Department of Earth Sciences, University of Southern California; (now at) School of Mathematics and Statistics, University of New South Wales, Sydney",
             "name": "Benoit Pasquier"
+        },
+        {
+            "orcid": "0000-0001-7452-9415",
+            "affiliation": "Department of Earth System Science, University of California, Irvine",
+            "name": "François W. Primeau"
+        },
+        {
+            "orcid": "0000-0002-8257-626X",
+            "affiliation": "Department of Earth Sciences, University of Southern California",
+            "name": "Seth G. John"
         }
     ],
     "keywords": [
