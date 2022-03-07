@@ -1,7 +1,7 @@
 name = "AIBECS"
 uuid = "ace601d6-714c-11e9-04e5-89b7fad23838"
 authors = ["Benoit Pasquier <briochemc@gmail.com>"]
-version = "0.11.2"
+version = "0.11.3"
 
 [deps]
 Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
