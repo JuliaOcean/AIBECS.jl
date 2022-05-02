@@ -75,7 +75,7 @@ represents the effects of advection and eddy-diffusion.
 Thus, **T** "acts" on ***x*** such that **T*****x*** is the flux divergence of that tracer.
 In AIBECS, **T** is represented by a matrix (that's why it's **bold** and upstraight).
 
-Lastly, the right-hand-side, ***G***(***x***), represents the local sources minus sinks of each tracer, whcih must be provided as functions of the tracer(s) ***x***.
+Lastly, the right-hand-side, ***G***(***x***), represents the local sources minus sinks of each tracer, which must be provided as functions of the tracer(s) ***x***.
 
 To simulate tracers using the AIBECS, you just need to define the transport operators ***T*** and the net sources and sinks ***G***.
 That's pretty much the whole concept!
