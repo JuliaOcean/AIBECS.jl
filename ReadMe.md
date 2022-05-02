@@ -77,7 +77,7 @@ In AIBECS, **T** is represented by a matrix (that's why it's **bold** and upstra
 
 Lastly, the right-hand-side, ***G***(***x***), represents the local sources minus sinks of each tracer, which must be provided as functions of the tracer(s) ***x***.
 
-To simulate tracers using the AIBECS, you just need to define the transport operators ***T*** and the net sources and sinks ***G***.
+To simulate tracers using the AIBECS, you just need to define the transport operators **T** and the net sources and sinks ***G***.
 That's pretty much the whole concept!
 
 ## References
