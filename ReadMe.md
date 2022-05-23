@@ -59,25 +59,25 @@ If you are new to AIBECS, head over to the [documentation](https://JuliaOcean.gi
 This package was developed to exploit linear-algebra tools and algorithms in Julia to efficiently simulate marine tracers.
 AIBECS represents global biogeochemical cycles with a discretized system of nonlinear ordinary differential equations that takes the generic form
 
-∂***x***/∂*t* + **T*****x*** = ***G***(***x***)
+$$\frac{∂\boldsymbol{x}}{∂t} + \mathbf{T} \boldsymbol{x} = \boldsymbol{G}(\boldsymbol{x})$$
 
-where ***x*** represents the model state variables, i.e., the marine tracer(s) concentration.
-For a single tracer, ***x*** can be interpreted as the 3D field of its concentration.
-In AIBECS, ***x*** is represented as a column vector (that's why it's **bold** and *italic*).
+where $\boldsymbol{x}$ represents the model state variables, i.e., the marine tracer(s) concentration.
+For a single tracer, $\boldsymbol{x}$ can be interpreted as the 3D field of its concentration.
+In AIBECS, $\boldsymbol{x}$ is represented as a column vector (that's why it's **bold** and *italic*).
 
-The operator **T** is a spatial differential operator that represents the transport of tracers.
+The operator $\mathbf{T}$ is a spatial differential operator that represents the transport of tracers.
 For example, for a single tracer transported by ocean circulation,
 
-**T** = ∇⋅(***u*** - **K**∇)
+$$\mathbf{T} = \nabla \cdot(\boldsymbol{u} - \mathbf{K}\nabla)$$
 
 represents the effects of advection and eddy-diffusion.
-(***u*** is the 3D vector of the marine currents and **K** is a 3×3 eddy-diffusivity matrix.)
-Thus, **T** "acts" on ***x*** such that **T*****x*** is the flux divergence of that tracer.
-In AIBECS, **T** is represented by a matrix (that's why it's **bold** and upstraight).
+($\boldsymbol{u}$ is the 3D vector of the marine currents and $\mathbf{K}$ is a 3×3 eddy-diffusivity matrix.)
+Thus, $\mathbf{T}$ "acts" on $\boldsymbol{x}$ such that $\mathbf{T}\boldsymbol{x}$ is the flux divergence of that tracer.
+In AIBECS, $\mathbf{T}$ is represented by a matrix (that's why it's **bold** and upstraight).
 
-Lastly, the right-hand-side, ***G***(***x***), represents the local sources minus sinks of each tracer, which must be provided as functions of the tracer(s) ***x***.
+Lastly, the right-hand-side, $\boldsymbol{G}(\boldsymbol{x}$), represents the local sources minus sinks of each tracer, which must be provided as functions of the tracer(s) $\boldsymbol{x}$.
 
-To simulate tracers using the AIBECS, you just need to define the transport operators **T** and the net sources and sinks ***G***.
+To simulate tracers using the AIBECS, you just need to define the transport operators $\mathbf{T}$ and the net sources and sinks $\boldsymbol{G}$.
 That's pretty much the whole concept!
 
 ## References
