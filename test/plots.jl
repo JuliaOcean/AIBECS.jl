@@ -24,6 +24,8 @@ end
     end
     @testset "plotdepthprofile lonlat=$lonlat" for x in xs, lonlat in lonlats
         @test plotdepthprofile(x, grd, lonlat=lonlat) isa Plots.Plot
+        plt = plotdepthprofile(x, grd, lonlat=lonlat)
+        @test plotdepthprofile!(plt, x, grd, lonlat=lonlats[2]) isa Plots.Plot
     end
 end
 

@@ -200,8 +200,10 @@ Plots a horizontal integral of tracer `x`.
 plot∫dxdy(x, grd; mask=1, kwargs...) = zplot(∫dxdy(x, grd, mask), grd.depth; kwargs...)
 plot∫dxdy!(x, grd; mask=1, kwargs...) = zplot!(∫dxdy(x, grd, mask), grd.depth; kwargs...)
 plot∫dxdy!(plt, x, grd; mask=1, kwargs...) = zplot!(plt, ∫dxdy(x, grd, mask), grd.depth; kwargs...)
+export plot∫dxdy, plot∫dxdy!
 plothorizontalintegral = plot∫dxdy
 plothorizontalintegral! = plot∫dxdy!
+export plothorizontalintegral, plothorizontalintegral!
 """
     plothorizontalaverage(x, grd; mask=1)
 
@@ -212,13 +214,15 @@ plothorizontalmean!(x, grd; mask=1, kwargs...) = zplot!(horizontalmean(x, grd, m
 plothorizontalmean!(plt, x, grd; mask=1, kwargs...) = zplot!(plt, horizontalmean(x, grd, mask), grd.depth; kwargs...)
 plothorizontalaverage = plothorizontalmean
 plothorizontalaverage! = plothorizontalmean!
+export plothorizontalmean, plothorizontalmean!, plothorizontalaverage, plothorizontalaverage!
 """
     plotdepthprofile(x, grd; lonlat)
 
 Plots the profile of tracer `x` interpolated at `lonlat=(x,y)` coordinates.
 """
 plotdepthprofile(x, grd; lonlat=nothing, kwargs...) = zplot(depthprofile(x, grd; lonlat=lonlat), grd.depth; kwargs...)
-export plot∫dxdy, plot∫dxdy!, plothorizontalintegral, plothorizontalintegral!, plothorizontalmean, plothorizontalmean!, plothorizontalaverage, plothorizontalaverage!, plotdepthprofile
+plotdepthprofile!(plt, x, grd; lonlat=nothing, kwargs...) = zplot!(plt, depthprofile(x, grd; lonlat=lonlat), grd.depth; kwargs...)
+export plotdepthprofile, plotdepthprofile!
 
 #======================================================
 Vertical / (dist,z) plots (for transect/section slices)
