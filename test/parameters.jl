@@ -27,7 +27,7 @@ function prior(::Type{T}, s::Symbol) where {T<:AbstractParameters}
             σ = 10.0 # Assumes that a sensible unit is chosen (i.e., that within 10.0 * U)
             return Normal(μ, σ)
         else
-            return LocationScale(lb, ub-lb, LogitNormal()) # <- The LogitNormal works well for Optim?
+            return lb + (ub-lb) * LogitNormal() # <- The LogitNormal works well for Optim?
         end
     else
         return nothing

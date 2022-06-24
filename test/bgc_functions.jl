@@ -50,31 +50,9 @@ end
 sms_all = (sms_DIP, sms_DOP, sms_POP) # bundles all the source-sink functions in a tuple
 
 #===========================================
-In-place sources minus sinks
-===========================================#
-
-function G_DIP!(dx, DIP, DOP, POP, p)
-    @unpack τgeo, xgeo, τDIP, k, τDOP = p
-    @. dx = (xgeo - DIP) / τgeo - (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (ztop == 0) + DOP / τDOP
-end
-function G_DOP!(dx, DIP, DOP, POP, p)
-    @unpack τgeo, xgeo, τDIP, k, τDOP, τPOP, σ = p
-    @. dx = σ * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (ztop == 0) - DOP / τDOP + POP / τPOP
-end
-function G_POP!(dx, DIP, DOP, POP, p)
-    @unpack τgeo, xgeo, τDIP, k, τDOP, τPOP, σ = p
-    @. dx = (1 - σ) * (DIP ≥ 0) / τDIP * DIP^2 / (DIP + k) * (ztop == 0) - POP / τPOP
-end
-Gs = (G_DIP!, G_DOP!, G_POP!)
-
-
-#===========================================
 AIBECS F and ∇ₓF
 ===========================================#
 fun = AIBECSFunction(T_all, sms_all, nb)
-fun! = AIBECSFunction((T_D, T_POP), Gs, nb, 3, [1, 1, 2])
-F, ∇ₓF = F_and_∇ₓF(T_all, sms_all, nb) # deprecated
-F!, ∇ₓF! = F_and_∇ₓF((T_D, T_POP), Gs, nb, 3, [1, 1, 2]) # deprecated
 
 #===========================================
 AIBECS split operators for CNLF
@@ -123,19 +101,6 @@ Tests
         ∇ₓF₀ = fun.jac(x, p)
         @test ∇ₓF₀ isa SparseMatrixCSC
         @test size(∇ₓF₀) == (n, n)
-    end
-end
-
-
-@testset "In-place functions" begin
-    nt = length(T_all)
-    n = nt * nb
-    @unpack xgeo = p
-    x = xgeo * ones(n) .* exp.(cos.(collect(1:n)) / 10)
-    dx = similar(x)
-    @testset "in-place F ≈ out-of-place F" begin
-        @test fun(x, p) ≈ fun!(dx, x, p) rtol = 1e-10
-        @test fun.jac(x, p) ≈ fun!.jac(x, p) rtol = 1e-10
     end
 end
 

@@ -37,42 +37,6 @@ function AIBECSFunction(T::Function, Gs::Tuple, nb::Int)
     AIBECSFunction((T,), Gs, nb, nt, Tidx)
 end
 function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int=length(Ts), Tidx::AbstractVector=1:nt)
-    if all(isinplace(G, nt + 2) for G in Gs) # +2 to account for dx and p
-        iipAIBECSFunction(Ts, Gs, nb, nt, Tidx)
-    else
-        oopAIBECSFunction(Ts, Gs, nb, nt, Tidx)
-    end
-end
-
-function iipAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
-    tracers(u) = state_to_tracers(u, nb, nt)
-    tracer(u, i) = state_to_tracer(u, nb, nt, i)
-    function G(du, u, p)
-        for j in 1:nt
-            Gs[j](tracer(du, j), tracers(u)..., p)
-        end
-        du
-    end
-    function f(du, u, p, t=0)
-        G(du, u, p)
-        for jT in eachindex(Ts)
-            op = Ts[jT](p)
-            for j in findall(Tidx .== jT)
-                mul!(tracer(du, j), op, tracer(u, j), -1, 1)
-            end
-        end
-        du
-    end
-    # Jacobian
-    ∇ₓG(u, p) = inplace_local_jacobian(Gs, u, p, nt, nb)
-    function T(p)
-        uniqueTs = [Tⱼ(p) for Tⱼ in Ts]
-        blockdiag([uniqueTs[Tidx[j]] for j in 1:nt]...)
-    end
-    jac(u, p, t=0) = ∇ₓG(u, p) - T(p)
-    return ODEFunction{true}(f, jac=jac)
-end
-function oopAIBECSFunction(Ts, Gs, nb, nt=length(Ts), Tidx=1:nt)
     tracers(u) = state_to_tracers(u, nb, nt)
     tracer(u, i) = state_to_tracer(u, nb, nt, i)
     G(u, p) = reduce(vcat, Gⱼ(tracers(u)..., p) for Gⱼ in Gs)
@@ -99,53 +63,15 @@ end
 function AIBECSFunction(Ts, Gs, nb::Int, ::Type{P}) where {P <: APar}
     AIBECSFunction(AIBECSFunction(Ts, Gs, nb), P)
 end
-function AIBECSFunction(fun::ODEFunction{false}, ::Type{P}) where {P <: APar}
+function AIBECSFunction(fun::ODEFunction, ::Type{P}) where {P <: APar}
     jac(u, p::P, t=0) = fun.jac(u, p, t)
     jac(u, λ::Vector, t=0) = fun.jac(u, λ2p(P, λ), t)
     f(u, p::P, t=0) = fun.f(u, p, t)
     f(u, λ::Vector, t=0) = fun.f(u, λ2p(P, λ), t)
     return ODEFunction{false}(f, jac=jac)
 end
-function AIBECSFunction(fun::ODEFunction{true}, ::Type{P}) where {P <: APar}
-    jac(u, p::P, t=0) = fun.jac(u, p, t)
-    jac(u, λ::Vector, t=0) = fun.jac(u, λ2p(P, λ), t)
-    f(du, u, p::P, t=0) = fun.f(du, u, p, t)
-    f(du, u, λ::Vector, t=0) = fun.f(du, u, λ2p(P, λ), t)
-    return ODEFunction{true}(f, jac=jac)
-end
 
 export AIBECSFunction
-
-"""
-    F, ∇ₓF = F_and_∇ₓF(Ts, Gs, nb)
-
-Returns the state function `F` and its Jacobian, `∇ₓF`.
-
-    F, ∇ₓF = F_and_∇ₓF(T, Gs, nb)
-
-Returns the state function `F` and its Jacobian, `∇ₓF` (with all tracers transported by single `T`).
-
-This function is deprecated. Use
-
-    F = AIBECSFunction(Ts, Gs, nb)
-
-instead.
-You can then call `F(x,p)` for the tendencies, and `F(Val{:jac},x,p)` for the Jacobian.
-"""
-function F_and_∇ₓF(fun::ODEFunction)
-    Base.depwarn("""Deprecation:
-        F, ∇ₓF = F_and_∇ₓF(args...)
-    is deprecated. Use
-        F = AIBECSFunction(args...)
-    instead! (And then you can still call `F(x,p)`.)
-    """, :F_and_∇ₓF, force=true)
-    fun.f, fun.jac
-end
-F_and_∇ₓF(args...) = F_and_∇ₓF(AIBECSFunction(args...))
-export F_and_∇ₓF
-
-
-
 
 """
     localderivative(G, x, p)
@@ -165,9 +91,6 @@ function localderivative(G, x, p) # for single tracer
 end
 function localderivative(Gᵢ, xs, j, p) # for multiple tracers
     return ForwardDiff.derivative(λ -> Gᵢ(perturb_tracer(xs, j, λ)..., p), 0.0)
-end
-function localderivative(Gᵢ!, dx, xs, j, p) # if Gᵢ are in-place
-    return ForwardDiff.derivative((dx, λ) -> Gᵢ!(dx, perturb_tracer(xs, j, λ)..., p), dx, 0.0)
 end
 perturb_tracer(xs, j, λ) = (xs[1:j - 1]..., xs[j] .+ λ, xs[j + 1:end]...)
 
@@ -202,18 +125,10 @@ export split_state_function_and_Jacobian
 function local_jacobian(Gs, x, p, nt, nb)
     return reduce(vcat, local_jacobian_row(Gⱼ, x, p, nt, nb) for Gⱼ in Gs)
 end
-function inplace_local_jacobian(Gs, x, p, nt, nb)
-    return reduce(vcat, inplace_local_jacobian_row(Gⱼ!, x, p, nt, nb) for Gⱼ! in Gs)
-end
 
 function local_jacobian_row(Gᵢ, x, p, nt, nb)
     tracers(x) = state_to_tracers(x, nb, nt)
     return reduce(hcat, sparse(Diagonal(localderivative(Gᵢ, tracers(x), j, p))) for j in 1:nt)
-end
-function inplace_local_jacobian_row(Gᵢ!, x, p, nt, nb)
-    tracers(x) = state_to_tracers(x, nb, nt)
-    dx = Vector{Float64}(undef, nb)
-    return reduce(hcat, sparse(Diagonal(localderivative(Gᵢ!, dx, tracers(x), j, p))) for j in 1:nt)
 end
 
 #= ============================================
