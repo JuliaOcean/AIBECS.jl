@@ -1,7 +1,7 @@
 name = "AIBECS"
 uuid = "ace601d6-714c-11e9-04e5-89b7fad23838"
 authors = ["Benoit Pasquier <briochemc@gmail.com>"]
-version = "0.13.0"
+version = "0.13.1"
 
 [deps]
 Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
@@ -47,7 +47,7 @@ FieldMetadata = "0.3"
 Flatten = "0.3, 0.4"
 ForwardDiff = "0.10"
 ImageFiltering = "0.6, 0.7"
-Interpolations = "0.12, 0.13"
+Interpolations = "0.12, 0.13, 0.14"
 JLD2 = "0.4"
 MAT = "0.10"
 MetadataArrays = "0.1"
