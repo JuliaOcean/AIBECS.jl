@@ -19,7 +19,6 @@ using NCDatasets
 @reexport using Unitful
 using Unitful: °
 using RecipesBase
-using UnitfulRecipes
 using Interpolations
 using Distances
 using NearestNeighbors
