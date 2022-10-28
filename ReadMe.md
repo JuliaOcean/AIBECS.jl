@@ -70,8 +70,8 @@ For example, for a single tracer transported by ocean circulation,
 
 $$\mathbf{T} = \nabla \cdot(\boldsymbol{u} - \mathbf{K}\nabla)$$
 
-represents the effects of advection and eddy-diffusion.
-($\boldsymbol{u}$ is the 3D vector of the marine currents and $\mathbf{K}$ is a 3×3 eddy-diffusivity matrix.)
+represents the effects of advection and eddy-diffusion
+(where $\boldsymbol{u}$ is the 3D vector of the marine currents and $\mathbf{K}$ is a 3×3 eddy-diffusivity matrix).
 Thus, $\mathbf{T}$ "acts" on $\boldsymbol{x}$ such that $\mathbf{T}\boldsymbol{x}$ is the flux divergence of that tracer.
 In AIBECS, $\mathbf{T}$ is represented by a matrix (that's why it's **bold** and upstraight).
 
