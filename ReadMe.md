@@ -8,7 +8,7 @@
 
 <p>
   <a href="https://JuliaOcean.github.io/AIBECS.jl/stable/">
-    <img src="https://img.shields.io/github/workflow/status/JuliaOcean/AIBECS.jl/Documentation?style=for-the-badge&label=Documentation&logo=Read%20the%20Docs&logoColor=white">
+    <img src="https://img.shields.io/github/actions/workflow/status/JuliaOcean/AIBECS.jl/docs.yml?style=for-the-badge&label=Documentation&logo=Read%20the%20Docs&logoColor=white">
   </a>
   <a href="https://doi.org/10.21105/joss.03814">
     <img src="https://img.shields.io/static/v1?label=JOSS&message=10.21105/joss.03814&color=9cf&style=flat-square" alt="DOI badge">
@@ -29,13 +29,13 @@
 
 <p>
   <a href="https://github.com/JuliaOcean/AIBECS.jl/actions">
-    <img src="https://img.shields.io/github/workflow/status/JuliaOcean/AIBECS.jl/Mac%20OS%20X?label=OSX&logo=Apple&logoColor=white&style=flat-square">
+    <img src="https://img.shields.io/github/actions/workflow/status/JuliaOcean/AIBECS.jl/mac.yml?label=OSX&logo=Apple&logoColor=white&style=flat-square">
   </a>
   <a href="https://github.com/JuliaOcean/AIBECS.jl/actions">
-    <img src="https://img.shields.io/github/workflow/status/JuliaOcean/AIBECS.jl/Linux?label=Linux&logo=Linux&logoColor=white&style=flat-square">
+    <img src="https://img.shields.io/github/actions/workflow/status/JuliaOcean/AIBECS.jl/linux.yml?label=Linux&logo=Linux&logoColor=white&style=flat-square">
   </a>
   <a href="https://github.com/JuliaOcean/AIBECS.jl/actions">
-    <img src="https://img.shields.io/github/workflow/status/JuliaOcean/AIBECS.jl/Windows?label=Windows&logo=Windows&logoColor=white&style=flat-square">
+    <img src="https://img.shields.io/github/actions/workflow/status/JuliaOcean/AIBECS.jl/windows.yml?label=Windows&logo=Windows&logoColor=white&style=flat-square">
   </a>
   <a href="https://codecov.io/gh/JuliaOcean/AIBECS.jl">
     <img src="https://img.shields.io/codecov/c/github/JuliaOcean/AIBECS.jl/master?label=Codecov&logo=codecov&logoColor=white&style=flat-square">
