@@ -9,6 +9,7 @@ using SciMLBase
 using ForwardDiff, DualNumbers
 using DataFrames
 using Distributions
+using Bijectors
 using DataDeps
 using Plots
 

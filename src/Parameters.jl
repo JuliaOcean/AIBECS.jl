@@ -437,7 +437,7 @@ Note that the instance of your parameters type `T` is required here because
 it contains information on non-optimizable parameters and priors of optimizable parameters
 """
 function λ2p(::Type{T}, λs) where {T<:APar}
-    ps = [inv(bijector(T,k))(λ) for (k,λ) in zip(flattenable_symbols(T), λs)]
+    ps = [inverse(bijector(T,k))(λ) for (k,λ) in zip(flattenable_symbols(T), λs)]
     reconstruct(T, ps)
 end
 export p2λ, λ2p

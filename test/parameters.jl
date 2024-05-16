@@ -81,7 +81,7 @@ p = TestParameters()
             b = bijector(D)
             @test b(lb) == -Inf
             @test b(ub) == +Inf
-            b⁻¹ = inv(b)
+            b⁻¹ = inverse(b)
             @test b⁻¹(-Inf) == lb
             @test b⁻¹(+Inf) == ub
         end
