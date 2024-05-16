@@ -34,7 +34,7 @@ renamelong(s) = DATASET_LONGNAMES[rename(s)]
 # Aeolian source URLs
 const URLs = Dict(
     "Chien" => "http://www.geo.cornell.edu/eas/PeoplePlaces/Faculty/mahowald/dust/Chienetal2016/post.aerosols.2x2.seasonal.nc",
-    "Kok" => "https://dustcomm.atmos.ucla.edu/data/K21b/DustCOMM_source_region_wetdep_annual_PM20_abs.nc"
+    "Kok" => "https://research.aos.ucla.edu/dustcomm/K21b/DustCOMM_source_region_wetdep_annual_PM20_abs.nc"
 )
 url(s) = URLs[rename(s)]
 
