@@ -1,12 +1,13 @@
 module AO
 
 using DataDeps              # For storage location of data
+using Downloads
 
 function fallback_download(remotepath, localdir)
     @assert(isdir(localdir))
     filename = basename(remotepath)  # only works for URLs with filename as last part of name
     localpath = joinpath(localdir, filename)
-    Base.download(remotepath, localpath)
+    Downloads.download(remotepath, localpath)
     return localpath
 end
 
@@ -48,14 +49,14 @@ function download_and_unpack()
 
           (in shell mode) to check its contents.
 
-          Please check with Seth John (sethjohn@usc.edu) for references 
+          Please check with Seth John (sethjohn@usc.edu) for references
           to cite if you use the other data contained in the AO files,
           e.g., GEOTRACES, WOA, Weber and John, and so on.
 
-          Also note that downloading files like this from GitHub is 
-          probably not very robust. However, some of the data files in 
+          Also note that downloading files like this from GitHub is
+          probably not very robust. However, some of the data files in
           the AO repository do not exist anywhere else officially,
-          therefore this seems like the best solution at this stage. 
+          therefore this seems like the best solution at this stage.
           PRs welcome to improve this!
           """
     return AO_path

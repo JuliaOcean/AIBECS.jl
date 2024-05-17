@@ -4,6 +4,7 @@ using OceanGrids
 using Unitful
 using Unitful: m, yr
 using DataDeps              # For storage location of data
+using Downloads
 using Shapefile
 using DataFrames
 import OceanGrids: regrid
@@ -18,7 +19,7 @@ function fallback_download(remotepath, localdir)
     @assert(isdir(localdir))
     filename = basename(remotepath)  # only works for URLs with filename as last part of name
     localpath = joinpath(localdir, filename)
-    Base.download(remotepath, localpath)
+    Downloads.download(remotepath, localpath)
     return localpath
 end
 
