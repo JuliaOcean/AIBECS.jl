@@ -3,14 +3,6 @@
 # # [A coupled PO₄–POP model](@id P-model)
 #---------------------------------------------------------
 
-#md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/3_Pmodel.ipynb)
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/3_Pmodel.ipynb)
-
-#md # !!! note
-#md #     All the AIBECS tutorials and how-to guides are available as Jupyter notebooks.
-#md #     You can view them with [nbviewer](https://nbviewer.jupyter.org/)or execute them online with [binder](https://mybinder.org/) by clicking on the badges above!
-#md #     (Note that binder can be slow to launch and its memory caps can be a problem when running.)
-
 # In this tutorial we will explicitly simulate 2 tracers whose distributions control and feed back on each other.
 
 # We consider a simple model for the cycling of phosphorus with 2 state variables consisting of phosphate (PO₄) AKA dissolved inorganic phosphorus (DIP) and particulate organic phosphorus (POP).

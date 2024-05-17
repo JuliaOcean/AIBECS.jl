@@ -9,14 +9,14 @@ struct CTKAlg <: SciMLBase.AbstractSteadyStateAlgorithm end
           preprint="",
           maxItNewton=50)
 
-Solves `prob` using the modified C.T.Kelley Shamanskii algorithm.
+Solves `prob` using an AIBECS-customized version of C.T.Kelley Shamanskii-method algorithm.
 """
 function SciMLBase.solve(prob::SciMLBase.AbstractSteadyStateProblem,
-                          alg::CTKAlg;
-                          nrm=norm,
-                          τstop=ustrip(u"s", 1e6u"Myr"),
-                          preprint="",
-                          maxItNewton=50)
+                         alg::CTKAlg;
+                         nrm=norm,
+                         τstop=ustrip(u"s", 1e6u"Myr"),
+                         preprint="",
+                         maxItNewton=50)
     # Define the functions according to SciMLBase.SteadyStateProblem type
     p = prob.p
     x0 = copy(prob.u0)

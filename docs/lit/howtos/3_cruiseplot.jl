@@ -2,14 +2,6 @@
 # # [Plot transect/cruise data](@id cruiseplots)
 #---------------------------------------------------------
 
-#md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/3_cruiseplot.ipynb)
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/3_cruiseplot.ipynb)
-
-#md # !!! note
-#md #     All the AIBECS tutorials and how-to guides are available as Jupyter notebooks.
-#md #     You can view them with [nbviewer](https://nbviewer.jupyter.org/)or execute them online with [binder](https://mybinder.org/) by clicking on the badges above!
-#md #     (Note that binder can be slow to launch and its memory caps can be a problem when running.)
-
 # This guide follows the [basic plotting guide](@ref plots) and its goal is to plot data related to oceanographic observations from cruise expeditions.
 # In this walkthrough, we will
 # [1. Create a ficitious cruise track](@ref fictitiouscruise) with profile data

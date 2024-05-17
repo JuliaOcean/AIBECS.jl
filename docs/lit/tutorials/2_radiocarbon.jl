@@ -3,14 +3,6 @@
 # # [Radiocarbon](@id radiocarbon)
 #---------------------------------------------------------
 
-#md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__/notebooks/2_radiocarbon.ipynb)
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/notebooks/2_radiocarbon.ipynb)
-
-#md # !!! note
-#md #     All the AIBECS tutorials and how-to guides are available as Jupyter notebooks.
-#md #     You can view them with [nbviewer](https://nbviewer.jupyter.org/)or execute them online with [binder](https://mybinder.org/) by clicking on the badges above!
-#md #     (Note that binder can be slow to launch and its memory caps can be a problem when running.)
-
 # In this tutorial, we will simulate the radiocarbon age using the AIBECS by
 # 1. defining the transport `T(p)` and the sources and sinks `G(x,p)`,
 # 1. defining the parameters `p`,
@@ -19,12 +11,12 @@
 
 
 #md # !!! note
-#md #     Although this tutorial is self-contained, it is slightly more complicated than [the first tutorial for simulating the ideal age](@ref ideal-age).
-#md #     (So do not hesitate to start with the ideal-age tutorial if you wish.)
+#md #     Although this tutorial is self-contained, it is slightly more complicated than [the first tutorial for simulating the ideal age](@ref idealage).
+#md #     (So do not hesitate to start with the idealage tutorial if you wish.)
 
 #nb # > *Note*
-#nb # > Although this tutorial is self-contained, it is slightly more complicated than [the first tutorial for simulating the ideal age](@ref ideal-age).
-#nb # > (So do not hesitate to start with the ideal-age tutorial if you wish.)
+#nb # > Although this tutorial is self-contained, it is slightly more complicated than [the first tutorial for simulating the ideal age](@ref idealage).
+#nb # > (So do not hesitate to start with the idealage tutorial if you wish.)
 
 # The tracer equation for radiocarbon is
 #
