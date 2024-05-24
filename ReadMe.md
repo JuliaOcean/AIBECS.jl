@@ -80,6 +80,12 @@ Lastly, the right-hand-side, $\boldsymbol{G}(\boldsymbol{x}$), represents the lo
 To simulate tracers using the AIBECS, you just need to define the transport operators $\mathbf{T}$ and the net sources and sinks $\boldsymbol{G}$.
 That's pretty much the whole concept!
 
+## Note on maintenance and development
+
+Note that AIBECS is essentially in maintenance-only mode, and might remain so for a little while.
+Although it works (the software has been published and has been used in publications), I consider AIBECS still in development, with a bunch of features and fixes that are currently missing, but I do not have enough time to work on it unfortunately.
+Please get in touch if you have some bandwidth and/or funding and are interested in collaborating or developing AIBECS!
+
 ## References
 
 If you use this package, please cite it.
