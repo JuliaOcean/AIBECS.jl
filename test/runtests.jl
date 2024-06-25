@@ -16,7 +16,7 @@ using Plots
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 
-test_setup_only = [:OCIM1, :OCIM0, :OCCA]
+test_setup_only = [:OCIM2_48L, :OCIM1, :OCIM0, :OCCA]
 # Using `include` evaluates at global scope,
 # so `Circulation` must be changed at the global scope too.
 # This is why there is an `eval` in the for loop(s) below
