@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Radiocarbon · AIBECS.jl</title><meta name="title" content="Radiocarbon · AIBECS.jl"/><meta property="og:title" content="Radiocarbon · AIBECS.jl"/><meta property="twitter:title" content="Radiocarbon · AIBECS.jl"/><meta name="description" content="Documentation for AIBECS.jl."/><meta property="og:description" content="Documentation for AIBECS.jl."/><meta property="twitter:description" content="Documentation for AIBECS.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.png" alt="AIBECS.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AIBECS.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../1_ideal_age/">Ideal age</a></li><li class="is-active"><a class="tocitem" href>Radiocarbon</a></li><li><a class="tocitem" href="../3_Pmodel/">A coupled PO₄–POP model</a></li><li><a class="tocitem" href="../4_dustmodel/">A dust model</a></li><li><a class="tocitem" href="../5_river_discharge/">River discharge</a></li><li><a class="tocitem" href="../6_groundwater_discharge/">Groundwater discharge</a></li></ul></li><li><span class="tocitem">How-to guides</span><ul><li><a class="tocitem" href="../../howtos/1_parameters/">Parameters guide</a></li><li><a class="tocitem" href="../../howtos/2_plot/">Plot basic things</a></li><li><a class="tocitem" href="../../howtos/3_cruiseplot/">Plot transect/cruise data</a></li><li><a class="tocitem" href="../../howtos/4_fluxes/">Estimate fluxes</a></li></ul></li><li><span class="tocitem">Explanation</span><ul><li><a class="tocitem" href="../../explanation/1_concept/">Concept</a></li><li><a class="tocitem" href="../../explanation/2_tracer_transport_operators/">Tracer transport</a></li></ul></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../../reference/functions/">AIBECS interface (functions and types)</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Radiocarbon</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Radiocarbon</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="radiocarbon"><a class="docs-heading-anchor" href="#radiocarbon">Radiocarbon</a><a id="radiocarbon-1"></a><a class="docs-heading-anchor-permalink" href="#radiocarbon" title="Permalink"></a></h1><p>In this tutorial, we will simulate the radiocarbon age using the AIBECS by</p><ol><li>defining the transport <code>T(p)</code> and the sources and sinks <code>G(x,p)</code>,</li><li>defining the parameters <code>p</code>,</li><li>generating the state function <code>F(x,p)</code> and solving the associated steady-state problem,</li><li>and finally making a plot of our simulated radiocarbon age.</li></ol><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>Although this tutorial is self-contained, it is slightly more complicated than <a href="../1_ideal_age/#idealage">the first tutorial for simulating the ideal age</a>. (So do not hesitate to start with the idealage tutorial if you wish.)</p></div></div><p>The tracer equation for radiocarbon is</p><p class="math-container">\[\big(\partial_t + \mathbf{T} \big) \boldsymbol{R} = \frac{\lambda}{h} (\overline{\boldsymbol{R}}_\mathsf{atm} - \boldsymbol{R}) (\boldsymbol{z} ≤ h) - \boldsymbol{R} / \tau.\]</p><p>where the first term on the right of the equal sign represents the air–sea gas exchange with a piston velocity <span>$λ$</span> over a depth <span>$h$</span> and the second term represents the radioactive decay of radiocarbon with timescale <span>$\tau$</span>.</p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>We need not specify the value of the atmospheric radiocarbon concentration because it is not important for determining the age of a water parcel — only the relative concentration <span>$\boldsymbol{R}/\overline{\boldsymbol{R}}_\mathsf{atm}$</span> matters.</p></div></div><p>We start by selecting the circulation for Radiocarbon. .) (And this time, we are using the OCCA matrix by <em>Forget</em> <sup class="footnote-reference"><a id="citeref-1" href="#footnote-1">[1]</a></sup>.)</p><pre><code class="language-julia hljs">using AIBECS
+grd, T_OCCA = OCCA.load()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(, sparse([1, 2, 9551, 9606, 1, 2, 3, 57, 9552, 9607  …  79928, 84632, 84659, 84660, 84661, 79891, 79929, 84633, 84660, 84661], [1, 1, 1, 1, 2, 2, 2, 2, 2, 2  …  84660, 84660, 84660, 84660, 84660, 84661, 84661, 84661, 84661, 84661], [2.2827161967151829e-7, 1.8030621712982388e-10, -2.202759122121374e-7, -1.669794081839543e-8, -8.32821319857397e-8, 3.645587487556812e-7, -2.4345873581518986e-8, 2.346272528650749e-8, -3.294980961099172e-7, 6.798120022902578e-9  …  -2.337773104642457e-8, -1.0853897038905248e-8, -2.4801404742669764e-8, 7.658935248883193e-8, -2.49410804832536e-8, -2.2788300189327118e-9, -3.386139290468414e-8, -2.0539768803799346e-8, -1.8193948479846445e-8, 5.86467452504204e-8], 84661, 84661))</code></pre><p>The local sources and sinks are simply given by</p><pre><code class="language-julia hljs">function G(R,p)
+    @unpack λ, h, Ratm, τ = p
+    return @. λ / h * (Ratm - R) * (z ≤ h) - R / τ
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">G (generic function with 1 method)</code></pre><p>We can define <code>z</code> via</p><pre><code class="language-julia hljs">z = depthvec(grd)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">84661-element Vector{Float64}:
+   25.0
+   25.0
+   25.0
+   25.0
+   25.0
+   25.0
+   25.0
+   25.0
+   25.0
+   25.0
+    ⋮
+ 5062.25
+ 5062.25
+ 5062.25
+ 5062.25
+ 5062.25
+ 5062.25
+ 5062.25
+ 5062.25
+ 5062.25</code></pre><p>In this tutorial we will specify some units for the parameters. Such features <strong>must</strong> be imported to be used</p><pre><code class="language-julia hljs">import AIBECS: @units, units</code></pre><p>We define the parameters using the dedicated API from the AIBECS, including keyword arguments and units this time</p><pre><code class="language-julia hljs">@units struct RadiocarbonParameters{U} &lt;: AbstractParameters{U}
+    λ::U    | u&quot;m/yr&quot;
+    h::U    | u&quot;m&quot;
+    τ::U    | u&quot;yr&quot;
+    Ratm::U | u&quot;M&quot;
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">units (generic function with 20 methods)</code></pre><p>For the air–sea gas exchange, we use a constant piston velocity <span>$\lambda$</span> of 50m / 10years. And for the radioactive decay we use a timescale <span>$\tau$</span> of 5730/log(2) years.</p><pre><code class="language-julia hljs">p = RadiocarbonParameters(λ = 50u&quot;m&quot;/10u&quot;yr&quot;,
+                          h = grd.δdepth[1],
+                          τ = 5730u&quot;yr&quot;/log(2),
+                          Ratm = 42.0u&quot;nM&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr1"> Row │ Symbol  Value      Unit
+     │<span class="sgr90"> Symbol  Float64    FreeUnit…
+─────┼──────────────────────────────
+   1 │ λ          5.0     m yr⁻¹
+   2 │ h         50.0     m
+   3 │ τ       8266.64    yr
+   4 │ Ratm       4.2e-8  M</span></span></code></pre><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>The parameters are converted to SI units when unpacked. When you specify units for your parameters, you must either supply their values in that unit.</p></div></div><p>We build the state function <code>F</code> and the corresponding steady-state problem (and solve it) via</p><pre><code class="language-julia hljs">F = AIBECSFunction(T_OCCA, G)
+x = zeros(length(z)) # an initial guess
+prob = SteadyStateProblem(F, x, p)
+R = solve(prob, CTKAlg()).u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">84661-element Vector{Float64}:
+ 3.781368293693168e-5
+ 3.775789970720427e-5
+ 3.660570790298637e-5
+ 3.707009029891958e-5
+ 3.715744797475277e-5
+ 3.715839927278402e-5
+ 3.707936439247625e-5
+ 3.714928379900502e-5
+ 3.723285923778939e-5
+ 3.7354960954899924e-5
+ ⋮
+ 3.638493414383268e-5
+ 3.638153292381217e-5
+ 3.637308898919878e-5
+ 3.638148729939535e-5
+ 3.641671381562705e-5
+ 3.645599798864716e-5
+ 3.650695782714274e-5
+ 3.652218255431691e-5
+ 3.653588409566982e-5</code></pre><p>This should take a few seconds on a laptop. Once the radiocarbon concentration is computed, we can convert it into the corresponding age in years, via</p><pre><code class="language-julia hljs">@unpack τ, Ratm = p
+C14age = @. log(Ratm / R) * τ * u&quot;s&quot; |&gt; u&quot;yr&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">84661-element Vector{Quantity{Float64, 𝐓, Unitful.FreeUnits{(yr,), 𝐓, nothing}}}:
+  867.9858872976511 yr
+  880.1899484003243 yr
+ 1136.3776304296644 yr
+ 1032.1660922537947 yr
+ 1012.7082189815559 yr
+ 1012.4965806538729 yr
+ 1030.0982249324456 yr
+ 1014.5247521963137 yr
+  995.9480200993227 yr
+  968.8826854823855 yr
+                     ⋮
+ 1186.3857759512357 yr
+  1187.158567909223 yr
+  1189.077428537788 yr
+   1187.16893473418 yr
+ 1179.1685985323024 yr
+  1170.255845294655 yr
+ 1158.7084282585547 yr
+  1155.261656759995 yr
+  1152.160952026347 yr</code></pre><p>and plot it at 700 m using the <code>horizontalslice</code> Plots recipe</p><pre><code class="language-julia hljs">using Plots
+plothorizontalslice(C14age, grd, depth=700u&quot;m&quot;, color=:viridis)</code></pre><img src="4f76031f.svg" alt="Example block output"/><p>look at a zonal average using the <code>zonalaverage</code> plot recipe</p><pre><code class="language-julia hljs">plotzonalaverage(C14age, grd; color=:viridis)</code></pre><img src="baf1ba88.svg" alt="Example block output"/><p>or look at a meridional slice through the Atlantic at 30°W using the <code>meridionalslice</code> plot recipe</p><pre><code class="language-julia hljs">plotmeridionalslice(C14age, grd, lon=-30, color=:viridis)</code></pre><img src="af28b23e.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-1"><a class="tag is-link" href="#citeref-1">1</a>Forget, G., 2010: Mapping Ocean Observations in a Dynamical Framework: A 2004–06 Ocean Atlas. J. Phys. Oceanogr., 40, 1201–1221, doi:<a href="https://doi.org/10.1175/2009JPO4043.1">10.1175/2009JPO4043.1)</a></li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../1_ideal_age/">« Ideal age</a><a class="docs-footer-nextpage" href="../3_Pmodel/">A coupled PO₄–POP model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Tuesday 25 June 2024 05:29">Tuesday 25 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
