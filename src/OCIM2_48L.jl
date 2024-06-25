@@ -94,17 +94,17 @@ function load()
     # Create grid object from NetCDF file variables
     # TODO: Add Hyrothermal He fluxes as for the OCIM2 load function
     grid = Dataset(joinpath(files_path, "OCIM2_48L_base_data.nc"), "r") do ds
-        wet3D = ds["ocnmask"][:] .== 1
+        wet3D = Array(ds["ocnmask"]) .== 1
         nlat, nlon, ndepth = size(wet3D)
-        lat_3D = ds["tlat"][:]°
-        lon_3D = ds["tlon"][:]°
-        depth_3D = ds["tz"][:]m
+        lat_3D = Array(ds["tlat"])°
+        lon_3D = Array(ds["tlon"])°
+        depth_3D = Array(ds["tz"])m
         lat = unique(lat_3D)
         lon = unique(lon_3D)
         depth = unique(depth_3D)
-        ulat = unique(ds["ulon"][:])° # ulat↔ulon in OCIM2-48L original files
-        ulon = unique(ds["ulat"][:])° # ulat↔ulon in OCIM2-48L original files
-        depth_top_3D = ds["wz"][:]m
+        ulat = unique(Array(ds["ulon"]))° # ulat↔ulon in OCIM2-48L original files
+        ulon = unique(Array(ds["ulat"]))° # ulat↔ulon in OCIM2-48L original files
+        depth_top_3D = Array(ds["wz"])m
         depth_top = unique(depth_top_3D)
         δlat = 2(ulat - lat)
         δlon = 2(ulon - lon)
@@ -112,9 +112,9 @@ function load()
         R = 6371.0km
         δy = R * δlat ./ 360°
         δy_3D = repeat(reshape(δy, (nlat,1,1)), outer=(1,nlon,ndepth))
-        A_3D = ds["area"][:]m^2
+        A_3D = Array(ds["area"])m^2
         δx_3D = A_3D ./ δy_3D
-        volume_3D = ds["vol"]m^3
+        volume_3D = Array(ds["vol"])m^3
         δz_3D = volume_3D ./ A_3D
         A_2D = A_3D[:,:,1]
         nboxes = count(wet3D)
