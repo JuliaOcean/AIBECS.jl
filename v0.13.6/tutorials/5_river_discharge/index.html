@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>River discharge · AIBECS.jl</title><meta name="title" content="River discharge · AIBECS.jl"/><meta property="og:title" content="River discharge · AIBECS.jl"/><meta property="twitter:title" content="River discharge · AIBECS.jl"/><meta name="description" content="Documentation for AIBECS.jl."/><meta property="og:description" content="Documentation for AIBECS.jl."/><meta property="twitter:description" content="Documentation for AIBECS.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.png" alt="AIBECS.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AIBECS.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../1_ideal_age/">Ideal age</a></li><li><a class="tocitem" href="../2_radiocarbon/">Radiocarbon</a></li><li><a class="tocitem" href="../3_Pmodel/">A coupled PO₄–POP model</a></li><li><a class="tocitem" href="../4_dustmodel/">A dust model</a></li><li class="is-active"><a class="tocitem" href>River discharge</a></li><li><a class="tocitem" href="../6_groundwater_discharge/">Groundwater discharge</a></li></ul></li><li><span class="tocitem">How-to guides</span><ul><li><a class="tocitem" href="../../howtos/1_parameters/">Parameters guide</a></li><li><a class="tocitem" href="../../howtos/2_plot/">Plot basic things</a></li><li><a class="tocitem" href="../../howtos/3_cruiseplot/">Plot transect/cruise data</a></li><li><a class="tocitem" href="../../howtos/4_fluxes/">Estimate fluxes</a></li></ul></li><li><span class="tocitem">Explanation</span><ul><li><a class="tocitem" href="../../explanation/1_concept/">Concept</a></li><li><a class="tocitem" href="../../explanation/2_tracer_transport_operators/">Tracer transport</a></li></ul></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../../reference/functions/">AIBECS interface (functions and types)</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>River discharge</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>River discharge</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="riverdischarge"><a class="docs-heading-anchor" href="#riverdischarge">River discharge</a><a id="riverdischarge-1"></a><a class="docs-heading-anchor-permalink" href="#riverdischarge" title="Permalink"></a></h1><p>In this tutorial we will simulate a fictitious radioactive tracer that is injected into the ocean by the 200 largest rivers (by estimated discharge). The 200 major rivers dataset from <a href="https://rda.ucar.edu/datasets/ds551.0/"><em>Dai and Trenberth</em> (2002)</a> is available from within the AIBECS. Once &quot;born&quot;, our ficitious tracer decays with a parameter timescale <span>$\tau$</span> as it flows through ocean basins.</p><p>The 3D tracer equation is:</p><p class="math-container">\[\left[\frac{\partial}{\partial t} + \nabla \cdot (\boldsymbol{u} + \mathbf{K}\nabla)\right] x = s_\mathsf{rivers} - x / \tau\]</p><p>where <span>$\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \nabla \right]$</span> represents the ocean circulation transport. (<a href="../../explanation/2_tracer_transport_operators/#tracer-transport-operators">Tracer transport operators are described in the documentation</a>.) The riverine source of the tracer is <span>$s_\mathsf{rivers}$</span>, and <span>$x / \tau$</span> is the decay rate.</p><p>In AIBECS, we must recast this equation in the generic form</p><p class="math-container">\[\left[\frac{\partial}{\partial t} + \mathbf{T}(\boldsymbol{p})\right] \boldsymbol{x} = \boldsymbol{G}(\boldsymbol{x},\boldsymbol{p}).\]</p><p>We start by telling Julia that we want to use the AIBECS and the OCIM2 transport matrix for the ocean circulation.</p><pre><code class="language-julia hljs">using AIBECS
+grd, T_OCIM2 = OCIM2.load()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(, sparse([1, 2, 10384, 10442, 10443, 20825, 20883, 1, 2, 3  …  200160, 197886, 199766, 199777, 199778, 199779, 199790, 200156, 200159, 200160], [1, 1, 1, 1, 1, 1, 1, 2, 2, 2  …  200159, 200160, 200160, 200160, 200160, 200160, 200160, 200160, 200160, 200160], [0.00019778421518954799, 2.3427916742722093e-9, -1.9599474163829085e-7, -0.00019161212648881556, 4.8096149072091506e-9, -1.830592653460076e-9, 5.007679174162751e-9, -5.025164843241415e-8, 0.00018753126417941492, 4.264266869682882e-8  …  -2.196560075226544e-8, 1.0819937104262028e-10, 6.709812718407374e-9, -1.263521554746615e-9, -3.3927920410468295e-9, 7.593163378667893e-9, -7.410175543096161e-9, -3.441057669604186e-8, -2.0030251520181335e-8, 5.2794476107904204e-8], 200160, 200160))</code></pre><p>For the radioactive decay, we simply use</p><pre><code class="language-julia hljs">function decay(x, p)
+    @unpack τ = p
+    return x / τ
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">decay (generic function with 1 method)</code></pre><p>To build the river sources, we will load the geographic locations and discharge (in m³ s⁻¹) from the <a href="https://rda.ucar.edu/datasets/ds551.0/index.html#!description"><em>Dai and Trenberth</em> (2017) dataset</a>.</p><pre><code class="language-julia hljs">RIVERS = Rivers.load()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">200-element Vector{AIBECS.Rivers.River{Quantity{Float64, 𝐋³ 𝐓⁻¹, Unitful.FreeUnits{(m³, s⁻¹), 𝐋³ 𝐓⁻¹, nothing}}}}:
+ Amazon (-2.0, -55.5) 210472 m³ s⁻¹
+ Congo (-4.3, 15.3) 41448 m³ s⁻¹
+ Orinoco (8.1, -63.6) 35776 m³ s⁻¹
+ Changjiang (30.8, 117.6) 29914 m³ s⁻¹
+ Brahmaputra (25.2, 89.7) 19900 m³ s⁻¹
+ Mississippi (32.3, -90.9) 19330 m³ s⁻¹
+ Yenisey (67.4, 86.5) 18981 m³ s⁻¹
+ Paraná (-32.7, -60.7) 17999 m³ s⁻¹
+ Lena (70.7, 127.4) 16826 m³ s⁻¹
+ Mekong (15.1, 105.8) 16636 m³ s⁻¹
+ ⋮
+ Guadalquivir (37.5, -6.0) 105 m³ s⁻¹
+ Yaqui (29.2, -109.5) 105 m³ s⁻¹
+ Colorado-TX (29.3, -96.1) 82 m³ s⁻¹
+ Rio Grande (25.9, -97.4) 48 m³ s⁻¹
+ de Grey (-20.3, 119.2) 44 m³ s⁻¹
+ Gascoyne (-24.8, 113.8) 22 m³ s⁻¹
+ Avon (-31.8, 116.1) 22 m³ s⁻¹
+ Fortescue (-21.3, 116.2) 10 m³ s⁻¹
+ Murchison (-27.9, 114.5) 6 m³ s⁻¹</code></pre><p>This is an array of rivers, for which the type <code>River{T}</code> contains the river&#39;s name, lat–lon coordinates, and discharge in m³ s⁻¹. For example, the first river is the Amazon</p><pre><code class="language-julia hljs">r = RIVERS[1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Amazon (-2.0, -55.5) 210472 m³ s⁻¹</code></pre><p>We can check the locations with</p><pre><code class="language-julia hljs">using Plots
+scatter([r.lon for r in RIVERS], [r.lat for r in RIVERS],
+        zcolor=log10.(uconvert.(NoUnits, [r.VFR for r in RIVERS] / u&quot;m^3/s&quot;)),
+        colorbartitle=&quot;log₁₀(discharge / (1 m³ s⁻¹))&quot;)</code></pre><img src="b9308ad2.svg" alt="Example block output"/><p>We can regrid these into the OCIM2 grid and return the corresponding vector with</p><pre><code class="language-julia hljs">rivers = regrid(RIVERS, grd)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">200160-element Vector{Quantity{Float64, 𝐋³ 𝐓⁻¹, Unitful.FreeUnits{(m³, s⁻¹), 𝐋³ 𝐓⁻¹, nothing}}}:
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+          ⋮
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹
+ 0.0 m³ s⁻¹</code></pre><p>(Note this regridding uses <a href="https://github.com/KristofferC/NearestNeighbors.jl">NearestNeighbors.jl</a> to assign a wet box as the mouth of each river, which sometimes is not exactly the real location of the river mouth.)</p><p>We control the global magnitude of the river discharge, <span>$\sigma$</span> (in mol s⁻¹), by making it a parameter of our model. For that, we separate the river source</p><p class="math-container">\[s_\mathsf{rivers} = \sigma s_0\]</p><p>into global magnitude (<span>$\sigma$</span>) and spatial pattern (<span>$s_0$</span>).</p><p>Since <span>$\int s_0 \mathrm{d}V = 1$</span>, <code>s_0</code> can be computed by normalizing <code>rivers</code>. In Julia/AIBECS, this can be done by dividing <code>rivers</code> by the dot product <code>v ⋅ rivers</code> (or <code>v&#39;rivers</code> in matrix form). (<code>v ⋅ x</code> is the discrete equivalent of the volume integral <span>$\int x \mathrm{d}V$</span>.)</p><pre><code class="language-julia hljs">v = vector_of_volumes(grd)
+s_0 = rivers / (v&#39;rivers)
+function s_rivers(p)
+    @unpack σ = p
+    return σ * ustrip.(s_0) # we must remove the units in AIBECS here :(
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">s_rivers (generic function with 1 method)</code></pre><p>We then write the generic <span>$\boldsymbol{G}$</span> function, which is</p><pre><code class="language-julia hljs">G_radiorivers(x,p) = s_rivers(p) - decay(x,p)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">G_radiorivers (generic function with 1 method)</code></pre><h5 id="Parameters"><a class="docs-heading-anchor" href="#Parameters">Parameters</a><a id="Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Parameters" title="Permalink"></a></h5><p>We specify some initial values for the parameters and also include units.</p><pre><code class="language-julia hljs">import AIBECS: @units, units
+import AIBECS: @initial_value, initial_value
+@initial_value @units struct RadioRiversParameters{U} &lt;: AbstractParameters{U}
+    τ::U | 5.0 | u&quot;yr&quot;
+    σ::U | 1.0 | u&quot;Gmol/yr&quot;
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">initial_value (generic function with 29 methods)</code></pre><p>Finally, thanks to the initial values we provided, we can instantiate the parameter vector succinctly as</p><pre><code class="language-julia hljs">p = RadioRiversParameters()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr1"> Row │ Symbol  Value    Initial value  Unit
+     │<span class="sgr90"> Symbol  Float64  Float64        FreeUnit…
+─────┼───────────────────────────────────────────
+   1 │ τ           5.0            5.0  yr
+   2 │ σ           1.0            1.0  Gmol yr⁻¹</span></span></code></pre><p>We generate the state function <code>F</code> that gives the tendencies,</p><pre><code class="language-julia hljs">F = AIBECSFunction(T_OCIM2, G_radiorivers)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::SciMLBase.ODEFunction{false, SciMLBase.FullSpecialize, AIBECS.var&quot;#f#58&quot;{Tuple{AIBECS.var&quot;#49#50&quot;{SparseMatrixCSC{Float64, Int64}}}, Vector{Int64}, AIBECS.var&quot;#G#56&quot;{Tuple{typeof(Main.G_radiorivers)}, AIBECS.var&quot;#tracers#54&quot;{Int64, Int64}}, AIBECS.var&quot;#tracer#55&quot;{Int64, Int64}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, AIBECS.var&quot;#jac#63&quot;{AIBECS.var&quot;#T#60&quot;{Tuple{AIBECS.var&quot;#49#50&quot;{SparseMatrixCSC{Float64, Int64}}}, Int64, Vector{Int64}}, AIBECS.var&quot;#∇ₓG#59&quot;{Tuple{typeof(Main.G_radiorivers)}, Int64, Int64}}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}) (generic function with 1 method)</code></pre><p>generate the steady-state problem <code>prob</code>,</p><pre><code class="language-julia hljs">nb = sum(iswet(grd))
+x = ones(nb) # initial guess
+prob = SteadyStateProblem(F, x, p)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr38_2" style="color:#56b6c2">SteadyStateProblem</span> with uType <span class="sgr38_2" style="color:#56b6c2">Vector{Float64}</span>. In-place: <span class="sgr38_2" style="color:#56b6c2">false</span>
+u0: 200160-element Vector{Float64}:
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ ⋮
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0</code></pre><p>and solve it</p><pre><code class="language-julia hljs">sol = solve(prob, CTKAlg()).u * u&quot;mol/m^3&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">200160-element Vector{Quantity{Float64, 𝐍 𝐋⁻³, Unitful.FreeUnits{(m⁻³, mol), 𝐍 𝐋⁻³, nothing}}}:
+  -3.597832067856325e-12 mol m⁻³
+  -5.353871365615146e-12 mol m⁻³
+  -6.483485194146805e-12 mol m⁻³
+  -7.823908119439834e-12 mol m⁻³
+  -9.790442371144794e-12 mol m⁻³
+  -9.770934123556993e-12 mol m⁻³
+ -2.4448173185333864e-11 mol m⁻³
+   -6.73839200383298e-11 mol m⁻³
+  -6.510837450818958e-11 mol m⁻³
+  -7.890402312090798e-11 mol m⁻³
+                               ⋮
+ -3.8760741626615057e-13 mol m⁻³
+ -1.3409356343222192e-13 mol m⁻³
+  -7.257906578904606e-13 mol m⁻³
+  -6.182255119626215e-13 mol m⁻³
+  -3.400187261168933e-13 mol m⁻³
+   6.192396794418235e-13 mol m⁻³
+  -5.257895087043207e-13 mol m⁻³
+  -6.838780987222193e-13 mol m⁻³
+  -4.278816669049497e-13 mol m⁻³</code></pre><p>Let&#39;s now run some visualizations using the plot recipes. Taking a horizontal slice of the 3D field at 200m gives</p><pre><code class="language-julia hljs">cmap = :viridis
+plothorizontalslice(sol, grd, zunit=u&quot;μmol/m^3&quot;, depth=200, color=cmap)</code></pre><img src="8297201e.svg" alt="Example block output"/><p>and at 500m:</p><pre><code class="language-julia hljs">plothorizontalslice(sol, grd, zunit=u&quot;μmol/m^3&quot;, depth=500, color=cmap, clim=(0,0.05))</code></pre><img src="decbf893.svg" alt="Example block output"/><p>Or we can change the timescale and watch the tracer fill the oceans:</p><pre><code class="language-julia hljs">p = RadioRiversParameters(τ = 50.0u&quot;yr&quot;)
+prob = SteadyStateProblem(F, x, p)
+sol_τ50 = solve(prob, CTKAlg()).u * u&quot;mol/m^3&quot;
+plothorizontalslice(sol_τ50, grd, zunit=u&quot;μmol/m^3&quot;, depth=500, color=cmap, clim=(0,1))</code></pre><img src="d6274332.svg" alt="Example block output"/><p>Point-wise sources like the rivers used here can be problematic numerically because these can generate large gradients and numerical noise with the given spatial discretization:</p><pre><code class="language-julia hljs">cmap = :RdYlBu_4
+plothorizontalslice(sol_τ50, grd, zunit=u&quot;μmol/m^3&quot;, depth=0, color=cmap, clim=(-10,10))</code></pre><img src="606bb397.svg" alt="Example block output"/><p>Note, for an example of numerical noise, the negative values appearing in red. Hence, it might be wise to smooth the 3D field of the river sources. We can do this using the <code>smooth_operator</code> function (<code>smooth_operator</code> creates an operator that can be applied to smooth the AIBECS vector along the stencil of the given transport matrix and in a volume-conservative way). And we can check that the negative values disappear after smoothing of the sources:</p><pre><code class="language-julia hljs">S = smooth_operator(grd, T_OCIM2)
+s_0 = S * (S * s_0) # smooth river sources twice
+sol_smooth = solve(prob, CTKAlg()).u * u&quot;mol/m^3&quot;
+plothorizontalslice(sol_smooth, grd, zunit=u&quot;μmol/m^3&quot;, depth=0, color=cmap, clim=(-10,10))</code></pre><img src="d618e44e.svg" alt="Example block output"/><p>Note that such numerical noise generally dampens out with distance and depth</p><pre><code class="language-julia hljs">cmap = :viridis
+plot(
+    plothorizontalslice(sol_τ50, grd, zunit=u&quot;μmol/m^3&quot;, depth=200, color=cmap, clim=(0,2)),
+    plothorizontalslice(sol_smooth, grd, zunit=u&quot;μmol/m^3&quot;, depth=200, color=cmap, clim=(0,2)),
+    layout=(2,1),
+    size=(600,600)
+)</code></pre><img src="a0117ec2.svg" alt="Example block output"/><p>Nevertheless, it can be good to reduce noise as much as possible!</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../4_dustmodel/">« A dust model</a><a class="docs-footer-nextpage" href="../6_groundwater_discharge/">Groundwater discharge »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Friday 29 November 2024 04:14">Friday 29 November 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
