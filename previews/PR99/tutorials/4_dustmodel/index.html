@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>A dust model · AIBECS.jl</title><meta name="title" content="A dust model · AIBECS.jl"/><meta property="og:title" content="A dust model · AIBECS.jl"/><meta property="twitter:title" content="A dust model · AIBECS.jl"/><meta name="description" content="Documentation for AIBECS.jl."/><meta property="og:description" content="Documentation for AIBECS.jl."/><meta property="twitter:description" content="Documentation for AIBECS.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.png" alt="AIBECS.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AIBECS.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../1_ideal_age/">Ideal age</a></li><li><a class="tocitem" href="../2_radiocarbon/">Radiocarbon</a></li><li><a class="tocitem" href="../3_Pmodel/">A coupled PO₄–POP model</a></li><li class="is-active"><a class="tocitem" href>A dust model</a></li><li><a class="tocitem" href="../5_river_discharge/">River discharge</a></li><li><a class="tocitem" href="../6_groundwater_discharge/">Groundwater discharge</a></li></ul></li><li><span class="tocitem">How-to guides</span><ul><li><a class="tocitem" href="../../howtos/1_parameters/">Parameters guide</a></li><li><a class="tocitem" href="../../howtos/2_plot/">Plot basic things</a></li><li><a class="tocitem" href="../../howtos/3_cruiseplot/">Plot transect/cruise data</a></li><li><a class="tocitem" href="../../howtos/4_fluxes/">Estimate fluxes</a></li></ul></li><li><span class="tocitem">Explanation</span><ul><li><a class="tocitem" href="../../explanation/1_concept/">Concept</a></li><li><a class="tocitem" href="../../explanation/2_tracer_transport_operators/">Tracer transport</a></li></ul></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../../reference/functions/">AIBECS interface (functions and types)</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>A dust model</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>A dust model</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="dust-model"><a class="docs-heading-anchor" href="#dust-model">A dust model</a><a id="dust-model-1"></a><a class="docs-heading-anchor-permalink" href="#dust-model" title="Permalink"></a></h1><p>In this tutorial we will simulate particles of dust that graviationally settle. 2D maps of dust deposition are available from within the AIBECS. To use these, we will convert them into sources in the top layer of the model grid. Once &quot;born&quot;, depending on the settling velocity, these dust particles can spread horizontally until they eventually reach the sea floor and are buried in the sediments.</p><p>The governing equation of the 3D concentration field of dust, denoted <span>$x_\mathsf{dust}$</span>, is:</p><p class="math-container">\[\left[\frac{\partial}{\partial t} + \nabla \cdot (\boldsymbol{u} + \boldsymbol{w} + \mathbf{K}\nabla)\right] x_\mathsf{dust} = s_\mathsf{dust}\]</p><p>where <span>$\nabla \cdot \left[ \boldsymbol{u} - \mathbf{K} \nabla \right]$</span> and <span>$\nabla \cdot \boldsymbol{w}$</span> represent the ocean circulation transport and the vertical settling of dust particles, respectively. (<a href="../../explanation/2_tracer_transport_operators/#tracer-transport-operators">Tracer transport operators are described in the documentation</a>.) The only source term, <span>$s_\mathsf{dust}$</span>, is the dust deposition.</p><p>In AIBECS, we must recast this equation in the generic form</p><p class="math-container">\[\left[\frac{\partial}{\partial t} + \mathbf{T}(\boldsymbol{p})\right] \boldsymbol{x} = \boldsymbol{G}(\boldsymbol{x},\boldsymbol{p}).\]</p><p>We start by telling Julia we want to use the AIBECS and the OCIM0.1 transport matrix for the ocean circulation.</p><pre><code class="language-julia hljs">using AIBECS
+grd, T_OCIM = OCIM0.load()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(, sparse([1, 2, 57, 10172, 10229, 1, 2, 3, 58, 10173  …  191168, 190655, 191165, 191167, 191168, 191169, 190656, 191166, 191168, 191169], [1, 1, 1, 1, 1, 2, 2, 2, 2, 2  …  191167, 191168, 191168, 191168, 191168, 191168, 191169, 191169, 191169, 191169], [3.4355389417142345e-7, 6.157619696306188e-8, -2.61541451353055e-7, -7.123747549591164e-7, 5.461579111836965e-7, -1.0940833534352636e-7, 3.1285031065724247e-7, 1.9807440791995236e-9, -2.4207715692543693e-8, -2.3441757104252792e-7  …  -1.815611679276709e-7, -2.3262536747686192e-8, -1.0813061941848588e-7, 1.421122420594373e-7, 6.118547004578337e-8, -7.254164692789022e-8, -1.8087448238776243e-9, -7.125518535170859e-8, 3.2353843704816876e-8, 4.072334915760755e-8], 191169, 191169))</code></pre><p>The transport of dust is the sum of the ocean circulation and a settling-transport:</p><pre><code class="language-julia hljs">function T_dust(p)
+    @unpack fsedremin = p
+    return LinearOperators((T_OCIM, transportoperator(grd, z -&gt; w(z,p), fsedremin=fsedremin)))
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">T_dust (generic function with 1 method)</code></pre><p>For the settling transport of dust particles, we have used the <code>transportoperator</code> function for which we need to define the settling velocity <code>w(z,p)</code> as a function of depth <code>z</code> and of the parameters <code>p</code>.</p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>We have imposed a <code>fsedremin</code> remineralization at the sediment with its keyword argument. (Default is <code>fsedremin=1.0</code>.) This turns the settling transport into a sink that removes all the dust reaching the sea floor.</p></div></div><p>Following the assumption that <span>$w(z) = w_0 + w&#39; z$</span> increases linearly with depth, we write it as</p><pre><code class="language-julia hljs">function w(z,p)
+    @unpack w₀, w′ = p
+    return w₀ + w′ * z
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">w (generic function with 1 method)</code></pre><p>The parameters <code>fsedremin</code>, <code>w₀</code>, and <code>w′</code> will be defined shortly.</p><h5 id="Dust-depositon"><a class="docs-heading-anchor" href="#Dust-depositon">Dust depositon</a><a id="Dust-depositon-1"></a><a class="docs-heading-anchor-permalink" href="#Dust-depositon" title="Permalink"></a></h5><p>The AIBECS allows you to use climatological dust deposition fields from the Mahowald lab.</p><pre><code class="language-julia hljs">s_A_2D = AeolianSources.load()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Symbol, Array{Float64}} with 9 entries:
+  :dust =&gt; [8.77097e-16 1.16976e-15 … 1.42237e-12 1.01189e-12; 8.71268e-16 1.12…
+  :fire =&gt; [2.52328e-17 5.75708e-17 … 6.04506e-16 1.57569e-16; 2.51184e-17 5.38…
+  :volc =&gt; [8.11113e-18 1.92487e-17 … 3.27646e-15 2.57447e-15; 8.06487e-18 1.79…
+  :lat  =&gt; [-90.0, -88.1053, -86.2105, -84.3158, -82.4211, -80.5263, -78.6316, …
+  :bioF =&gt; [6.68909e-18 1.52997e-17 … 3.27548e-15 2.10729e-15; 6.65695e-18 1.43…
+  :salt =&gt; [4.40596e-13 5.79443e-13 … 1.83619e-11 9.72046e-12; 4.37885e-13 5.75…
+  :FF   =&gt; [3.44167e-17 7.07536e-17 … 2.465e-14 1.64434e-14; 3.4266e-17 6.68044…
+  :lon  =&gt; [0.0, 2.5, 5.0, 7.5, 10.0, 12.5, 15.0, 17.5, 20.0, 22.5  …  335.0, 3…
+  :bioP =&gt; [2.69616e-15 4.09648e-15 … 1.1505e-12 1.02498e-12; 2.67617e-15 3.944…</code></pre><p>First, we must regrid these 2D maps onto the surface layer of <code>grd</code>, the 3D grid of the ocean circulation. To do that, we interpolate the 2D map of dust deposition onto the ocean grid&#39;s lat and lon:</p><pre><code class="language-julia hljs">s_dust_2D_monthly = s_A_2D[:dust] # kg m⁻² s⁻¹
+s_dust_2D_annual = permutedims(dropdims(sum(s_dust_2D_monthly, dims=3), dims=3), (2,1)) / 12
+s_dust_2D = regrid(s_dust_2D_annual, s_A_2D[:lat], s_A_2D[:lon], grd)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">90×180 Matrix{Float64}:
+ 4.0861e-14   4.02723e-14  3.92638e-14  …  4.23192e-14  4.14034e-14
+ 5.58523e-14  5.28017e-14  4.9783e-14      6.29739e-14  5.93423e-14
+ 5.58088e-14  5.2256e-14   4.86971e-14     6.61204e-14  6.0421e-14
+ 4.4301e-14   3.99454e-14  3.605e-14       4.99711e-14  4.73808e-14
+ 3.14211e-14  2.86422e-14  2.65818e-14     3.76665e-14  3.42194e-14
+ 3.3941e-14   3.02657e-14  2.6606e-14   …  4.51644e-14  3.8863e-14
+ 4.53696e-14  4.2776e-14   3.72113e-14     5.3644e-14   4.83879e-14
+ 5.31449e-14  4.80786e-14  4.30237e-14     5.9285e-14   5.59273e-14
+ 1.4441e-13   1.42862e-13  1.41995e-13     1.67321e-13  1.51856e-13
+ 1.34627e-13  1.33476e-13  1.34818e-13     1.66875e-13  1.4447e-13
+ ⋮                                      ⋱               
+ 3.74026e-12  4.02252e-12  4.5013e-12      3.60454e-12  3.61945e-12
+ 4.24891e-12  4.45213e-12  4.66692e-12     3.80302e-12  4.02533e-12
+ 4.11568e-12  4.54572e-12  4.8539e-12      3.36415e-12  3.72062e-12
+ 3.47995e-12  3.84901e-12  3.92341e-12     2.71971e-12  3.05456e-12
+ 2.67713e-12  2.84816e-12  2.96605e-12  …  2.28933e-12  2.47973e-12
+ 2.26981e-12  2.34474e-12  2.41625e-12     2.07681e-12  2.17852e-12
+ 2.17696e-12  2.22869e-12  2.27043e-12     2.09304e-12  2.13253e-12
+ 2.46303e-12  2.4854e-12   2.46811e-12     2.3863e-12   2.42223e-12
+ 2.3294e-12   2.32015e-12  2.32332e-12     2.29825e-12  2.32053e-12</code></pre><p>(This required a bit of work to reshape <code>s_dust_2D_annual</code> before using <code>regrid</code>.)</p><p>Then we create a blank 3D array of zeros, of which we paint the top layer:</p><pre><code class="language-julia hljs">s_dust_3D = zeros(size(grd)...)
+s_dust_3D[:,:,1] .= s_dust_2D</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">90×180 view(::Array{Float64, 3}, :, :, 1) with eltype Float64:
+ 4.0861e-14   4.02723e-14  3.92638e-14  …  4.23192e-14  4.14034e-14
+ 5.58523e-14  5.28017e-14  4.9783e-14      6.29739e-14  5.93423e-14
+ 5.58088e-14  5.2256e-14   4.86971e-14     6.61204e-14  6.0421e-14
+ 4.4301e-14   3.99454e-14  3.605e-14       4.99711e-14  4.73808e-14
+ 3.14211e-14  2.86422e-14  2.65818e-14     3.76665e-14  3.42194e-14
+ 3.3941e-14   3.02657e-14  2.6606e-14   …  4.51644e-14  3.8863e-14
+ 4.53696e-14  4.2776e-14   3.72113e-14     5.3644e-14   4.83879e-14
+ 5.31449e-14  4.80786e-14  4.30237e-14     5.9285e-14   5.59273e-14
+ 1.4441e-13   1.42862e-13  1.41995e-13     1.67321e-13  1.51856e-13
+ 1.34627e-13  1.33476e-13  1.34818e-13     1.66875e-13  1.4447e-13
+ ⋮                                      ⋱               
+ 3.74026e-12  4.02252e-12  4.5013e-12      3.60454e-12  3.61945e-12
+ 4.24891e-12  4.45213e-12  4.66692e-12     3.80302e-12  4.02533e-12
+ 4.11568e-12  4.54572e-12  4.8539e-12      3.36415e-12  3.72062e-12
+ 3.47995e-12  3.84901e-12  3.92341e-12     2.71971e-12  3.05456e-12
+ 2.67713e-12  2.84816e-12  2.96605e-12  …  2.28933e-12  2.47973e-12
+ 2.26981e-12  2.34474e-12  2.41625e-12     2.07681e-12  2.17852e-12
+ 2.17696e-12  2.22869e-12  2.27043e-12     2.09304e-12  2.13253e-12
+ 2.46303e-12  2.4854e-12   2.46811e-12     2.3863e-12   2.42223e-12
+ 2.3294e-12   2.32015e-12  2.32332e-12     2.29825e-12  2.32053e-12</code></pre><p>we convert it to a SI volumetric unit (i.e., in g m⁻³)</p><pre><code class="language-julia hljs">s_dust_3D = ustrip.(upreferred.(s_dust_3D * u&quot;kg/m^2/s&quot; ./ grd.δz_3D))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">90×180×24 Array{Float64, 3}:
+[:, :, 1] =
+ 1.13078e-15  1.11449e-15  1.08658e-15  …  1.17114e-15  1.14579e-15
+ 1.54565e-15  1.46123e-15  1.37769e-15     1.74273e-15  1.64223e-15
+ 1.54445e-15  1.44613e-15  1.34764e-15     1.82981e-15  1.67208e-15
+ 1.22598e-15  1.10544e-15  9.97645e-16     1.3829e-15   1.31121e-15
+ 8.69544e-16  7.92642e-16  7.35623e-16     1.04238e-15  9.46985e-16
+ 9.3928e-16   8.3757e-16   7.36293e-16  …  1.24988e-15  1.07549e-15
+ 1.25556e-15  1.18378e-15  1.02978e-15     1.48454e-15  1.33908e-15
+ 1.47073e-15  1.33052e-15  1.19063e-15     1.64065e-15  1.54773e-15
+ 3.99639e-15  3.95355e-15  3.92957e-15     4.63042e-15  4.20245e-15
+ 3.72566e-15  3.6938e-15   3.73094e-15     4.61808e-15  3.99804e-15
+ ⋮                                      ⋱               
+ 1.03508e-13  1.11319e-13  1.24568e-13     9.97516e-14  1.00164e-13
+ 1.17584e-13  1.23208e-13  1.29152e-13     1.05244e-13  1.11397e-13
+ 1.13897e-13  1.25798e-13  1.34327e-13     9.30992e-14  1.02964e-13
+ 9.63039e-14  1.06517e-13  1.08576e-13     7.5265e-14   8.45318e-14
+ 7.40866e-14  7.88196e-14  8.20823e-14  …  6.33547e-14  6.86238e-14
+ 6.28146e-14  6.48882e-14  6.68671e-14     5.74734e-14  6.02881e-14
+ 6.02451e-14  6.16767e-14  6.28316e-14     5.79226e-14  5.90154e-14
+ 6.81616e-14  6.87808e-14  6.83021e-14     6.60383e-14  6.70327e-14
+ 6.44636e-14  6.42077e-14  6.42953e-14     6.36017e-14  6.42183e-14
+
+[:, :, 2] =
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ ⋮                        ⋮              ⋱            ⋮                   
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+
+[:, :, 3] =
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ ⋮                        ⋮              ⋱            ⋮                   
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+
+;;; … 
+
+[:, :, 22] =
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ ⋮                        ⋮              ⋱            ⋮                   
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+
+[:, :, 23] =
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ ⋮                        ⋮              ⋱            ⋮                   
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+
+[:, :, 24] =
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ ⋮                        ⋮              ⋱            ⋮                   
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  …  0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0     0.0  0.0  0.0  0.0  0.0  0.0  0.0</code></pre><p>Finally, we vectorize it via</p><pre><code class="language-julia hljs">s_dust = vectorize(s_dust_3D, grd) # which is the same as `s_dust_3D[iswet(grd)]`</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">191169-element Vector{Float64}:
+ 6.515217452663623e-15
+ 1.0037390136081203e-14
+ 1.3316895913883588e-14
+ 1.8044310609691748e-14
+ 2.370608487073876e-14
+ 3.547814503526649e-14
+ 4.6476312590025904e-14
+ 4.506642014822272e-14
+ 4.729787498081552e-14
+ 4.9123644835055455e-14
+ ⋮
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0</code></pre><p>We then write the generic <span>$\boldsymbol{G}$</span> function, which is simply the constant dust source:</p><pre><code class="language-julia hljs">G_dust(x, p) = s_dust</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">G_dust (generic function with 1 method)</code></pre><h5 id="Parameters"><a class="docs-heading-anchor" href="#Parameters">Parameters</a><a id="Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Parameters" title="Permalink"></a></h5><p>We specify some initial values for the parameters and also include units.</p><pre><code class="language-julia hljs">import AIBECS: @units, units
+import AIBECS: @initial_value, initial_value
+@initial_value @units struct DustModelParameters{U} &lt;: AbstractParameters{U}
+    w₀::U        | 0.1 | u&quot;km/yr&quot;
+    w′::U        | 0.1 | u&quot;km/yr/km&quot;
+    fsedremin::U | 5.0 | u&quot;percent&quot;
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">initial_value (generic function with 27 methods)</code></pre><p>Finally, thanks to the initial values we provided, we can instantiate the parameter vector succintly as</p><pre><code class="language-julia hljs">p = DustModelParameters()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr1"> Row │ Symbol     Value    Initial value  Unit
+     │<span class="sgr90"> Symbol     Float64  Float64        FreeUnit…
+─────┼──────────────────────────────────────────────
+   1 │ w₀             0.1            0.1  km yr⁻¹
+   2 │ w′             0.1            0.1  yr⁻¹
+   3 │ fsedremin      5.0            5.0  %</span></span></code></pre><p>We build the state function <code>F</code>,</p><pre><code class="language-julia hljs">nb = count(iswet(grd))
+F = AIBECSFunction(T_dust, G_dust, nb)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::SciMLBase.ODEFunction{false, SciMLBase.FullSpecialize, AIBECS.var&quot;#f#58&quot;{Tuple{typeof(Main.T_dust)}, Vector{Int64}, AIBECS.var&quot;#G#56&quot;{Tuple{typeof(Main.G_dust)}, AIBECS.var&quot;#tracers#54&quot;{Int64, Int64}}, AIBECS.var&quot;#tracer#55&quot;{Int64, Int64}}, LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, AIBECS.var&quot;#jac#63&quot;{AIBECS.var&quot;#T#60&quot;{Tuple{typeof(Main.T_dust)}, Int64, Vector{Int64}}, AIBECS.var&quot;#∇ₓG#59&quot;{Tuple{typeof(Main.G_dust)}, Int64, Int64}}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}) (generic function with 1 method)</code></pre><p>the steady-state problem,</p><pre><code class="language-julia hljs">x = ones(nb) # initial guess
+prob = SteadyStateProblem(F, x, p)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr38_2" style="color:#56b6c2">SteadyStateProblem</span> with uType <span class="sgr38_2" style="color:#56b6c2">Vector{Float64}</span>. In-place: <span class="sgr38_2" style="color:#56b6c2">false</span>
+u0: 191169-element Vector{Float64}:
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ ⋮
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0
+ 1.0</code></pre><p>and solve it</p><pre><code class="language-julia hljs">sol = solve(prob, CTKAlg()).u</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">191169-element Vector{Float64}:
+ 1.2200651544363118e-7
+ 1.5330849234670112e-7
+ 1.7141351057258831e-7
+ 1.5349199665977283e-7
+ 2.7257866494781546e-7
+ 3.856189318667499e-7
+ 4.903249051708794e-7
+ 5.897990764299552e-7
+ 6.009599609290184e-7
+ 7.529330612744083e-7
+ ⋮
+ 1.1485079770939731e-5
+ 1.4445383282368463e-5
+ 1.462177099169627e-5
+ 6.933810375744733e-6
+ 7.122336427235378e-6
+ 7.0081239853637e-6
+ 7.0638445985525105e-6
+ 6.9683554906536335e-6
+ 7.038666482342048e-6</code></pre><p>Let&#39;s now run some vizualizations using the Plots.jl recipes.</p><pre><code class="language-julia hljs">using Plots</code></pre><p>Let&#39;s have a look at a map of the mean dust concentration:</p><pre><code class="language-julia hljs">plotverticalmean(sol * u&quot;g/m^3&quot;, grd, color=cgrad(:turbid, rev=true, scale=:exp))</code></pre><img src="839b17b9.svg" alt="Example block output"/><p>compared to the original source</p><pre><code class="language-julia hljs">plotverticalintegral(s_dust * u&quot;g/m^3/s&quot;, xlabel=&quot;&quot;, ylabel=&quot;&quot;, grd, color=cgrad(:starrynight, scale=:exp), title=&quot;Surface flux&quot;, zunit=u&quot;mg/m^2/yr&quot;)</code></pre><img src="59547abf.svg" alt="Example block output"/><p>Huh? This is odd isn&#39;t it? What is happening? It seems that dust settles slowly enough to actually explore the ocean basins a little bit. This is of course dependent on our choice of model parameters.</p><p>Let&#39;s look at what is exported below 500 m to compare:</p><pre><code class="language-julia hljs">wflux = map(z -&gt; w(z,p), depthvec(grd)) * u&quot;m/s&quot;
+plothorizontalslice(sol * u&quot;g/m^3&quot; .* wflux, grd, depth=500u&quot;m&quot;, color=cgrad(:starrynight, scale=:exp), xlabel=&quot;&quot;, ylabel=&quot;&quot;, title=&quot;Flux at 500m&quot;, zunit=u&quot;mg/yr/m^2&quot;)</code></pre><img src="2a814957.svg" alt="Example block output"/><p>We can also take a look at the global mean profile (the horizontal average)</p><pre><code class="language-julia hljs">profile_plot = plothorizontalmean(sol * u&quot;g/m^3&quot; .|&gt; u&quot;mg/m^3&quot;, grd)</code></pre><img src="2dbc76c6.svg" alt="Example block output"/><p>As you may see, it also seems that with this model, dust (here with a 1% fraction allowed to stay in the system when it reaches the seafloor) accumulates a little bit in the deepest boxes of the model grid.</p><p>Don&#39;t hesitate to play around with the parameters and see how things change! For example, impose a larger fraction that stays in the bottom or change other parameters via</p><pre><code class="language-julia hljs">p2 = DustModelParameters(w₀=0.1u&quot;km/yr&quot;, w′=0.1u&quot;km/yr/km&quot;, fsedremin=95.0u&quot;percent&quot;)
+prob2 = SteadyStateProblem(F, x, p2)
+sol2 = solve(prob2, CTKAlg()).u
+plotverticalmean(sol2 * u&quot;g/m^3&quot;, grd, color=cgrad(:turbid, rev=true, scale=:exp))</code></pre><img src="71aa551b.svg" alt="Example block output"/><p>And watch how all the dust accumulates in the deepest holes of the ocean basins!</p><p>Indeed, this dust tracer penetrates much deeper in the ocean:</p><pre><code class="language-julia hljs">plothorizontalmean!(profile_plot, sol2 * u&quot;g/m^3&quot; .|&gt; u&quot;mg/m^3&quot;, grd)</code></pre><img src="538157fd.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../3_Pmodel/">« A coupled PO₄–POP model</a><a class="docs-footer-nextpage" href="../5_river_discharge/">River discharge »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Friday 29 November 2024 01:32">Friday 29 November 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
