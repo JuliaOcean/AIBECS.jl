@@ -36,7 +36,7 @@ UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
-Bijectors = "0.14"
+Bijectors = "0.14, 0.15"
 CodecZlib = "0.7"
 DataDeps = "0.7"
 DataFrames = "1"
