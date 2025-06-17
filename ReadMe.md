@@ -88,11 +88,21 @@ Please get in touch if you have some bandwidth and/or funding and are interested
 
 ## References
 
-If you use this package, please cite it.
+This code is © Benoît Pasquier (2024) and contributors, and it is made available under the MIT license enclosed with the software.
+
+Over and above the legal restrictions imposed by this license, if you use this software for an academic publication then you are obliged to provide proper attribution.
+This can be to this code directly,
+
+> Benoît Pasquier, François W. Primeau, and Seth G. John (2024). AIBECS.jl: A tool for exploring global marine biogeochemical cycles. Zenodo. doi: [10.5281/zenodo.2864051](https://doi.org/10.5281/zenodo.2864051).
+
+or to the paper that describes it,
+
+>  Benoît Pasquier, François W. Primeau, and Seth G. John (2022). AIBECS.jl: A tool for exploring global marine biogeochemical cycles. doi: [10.21105/joss.03814](https://doi.org/10.21105/joss.03814)
+
+or (ideally) both.
+You can also find the citation(s) in BibTeX format in the [CITATION.bib](./CITATION.bib) file.
 
 If you use data provided by this package (like the ocean circulation from the OCIM), please cite them as well.
-
-For convenience, all the references are available in [BibTeX](https://en.wikipedia.org/wiki/BibTeX) format in the [CITATION.bib](./CITATION.bib) file.
 
 Also, if you want to do research using the AIBECS, and you think I could help, do not hesitate to contact me directly (contacts on my [website](www.bpasquier.com)), I would be happy to contribute and collaborate!
 
