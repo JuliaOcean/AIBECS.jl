@@ -24,7 +24,7 @@ using Reexport
 using MD5                   # for hash checking (MD5 is what is used in FigShare)
 @reexport using OceanGrids  # To store the grid
 
-# OCCA URL
+# OCCA URLs
 const OCCA_URL = "https://ndownloader.figshare.com/files/28336173"
 
 # OCCA Hashes

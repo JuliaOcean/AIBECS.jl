@@ -26,12 +26,11 @@ using MD5                   # for hash checking (MD5 is what is used in FigShare
 
 const VERSIONS = ["CTL"] # TODO add different OCIM1 versions
 
-# OCIM1 URL
+# URLs
 const OCIM1_URL = "https://ndownloader.figshare.com/files/28335882"
 
 # OCIM1 Hashes
 const OCIM1_MD5 = "eaa57b42e7edec0fe965575e9938c66d"
-
 
 const CITATION = """
 - DeVries, T., 2014: The oceanic anthropogenic CO2 sink: Storage, air‐sea fluxes, and transports over the industrial era, Global Biogeochem. Cycles, 28, 631–647, doi:10.1002/2013GB004739.

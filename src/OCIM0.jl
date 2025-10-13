@@ -24,7 +24,7 @@ using Reexport
 using MD5                   # for hash checking (MD5 is what is used in FigShare)
 @reexport using OceanGrids  # To store the grid
 
-# OCIM0 URL
+# OCIM0 URLs
 const OCIM0_URL = "https://figshare.com/ndownloader/files/28336086"
 
 # OCIM0 Hashes
