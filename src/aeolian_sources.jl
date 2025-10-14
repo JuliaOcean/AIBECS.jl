@@ -10,7 +10,6 @@ using NCDatasets
 using Unitful               # for units
 using Reexport
 using Interpolations
-using StringDistances
 @reexport using OceanGrids            # To store the grid
 
 function fallback_download(remotepath, localdir)
@@ -21,44 +20,36 @@ function fallback_download(remotepath, localdir)
     return localpath
 end
 
-
-# Fuzzy name matching
 const DATASET_NAMES = ("Chien", "Kok")
 const DATASET_LONGNAMES = Dict(
     "Chien" => "Chien_etal_2016",
     "Kok"   => "Kok_etal_2021"
 )
-rename(s) = findnearest(s, DATASET_NAMES, Levenshtein())[1]
-renamelong(s) = DATASET_LONGNAMES[rename(s)]
 
 # Aeolian source URLs
 const URLs = Dict(
     "Chien" => "http://www.geo.cornell.edu/eas/PeoplePlaces/Faculty/mahowald/dust/Chienetal2016/post.aerosols.2x2.seasonal.nc",
     "Kok" => "https://research.aos.ucla.edu/dustcomm/K21b/DustCOMM_source_region_wetdep_annual_PM20_abs.nc"
 )
-url(s) = URLs[rename(s)]
 
 # Hashes
 const SHAs = Dict(
     "Chien" => "33b0036bcca87019e0636ec2d59e910be989693819a2d57f2e4ab053a564101f", # On  2 Jun 2020
     "Kok"   => "65fec31419f75064a22a2c65247afc48e1f72218753605b463447a9933c378aa"  # On 14 Jul 2021
 )
-sha(s) = SHAs[rename(s)]
-
-datadepname(s) = string("AIBECS-", renamelong(s))
 
 # Create registry entry
 function register_AeolianSource(s="Chien")
     register(
         DataDep(
-            datadepname(s),
+            "AIBECS-$(DATASET_LONGNAMES[s])",
             """
             References:
 
-            $(citations(s))
+            $(CITATIONS[s])
             """,
-            url(s),
-            sha(s),
+            URLs[s],
+            SHAs[s],
             fetch_method = fallback_download
         )
     )
@@ -73,14 +64,14 @@ Returns the 2D aeolian deposition fields from Chien et al. (2016).
 You can specify a different dataset via, e.g.,
 
 ```julia
-load("Kok")
+julia> AeolianSources.load("Kok")
 ```
 
 At this stage, only two datasets are available:
 - `"Chien"` (default) for different dust types (fires, biofuels, dust, ...)
 - `"Kok"` for dust from different regions of origin
 """
-load(s="Chien") = rename(s) == "Chien" ? load_Chien() : load_Kok()
+load(s="Chien") = s == "Chien" ? load_Chien() : load_Kok()
 
 
 
@@ -99,7 +90,7 @@ const Chien_AEROSOLTYPE_NAMES = (
 function load_Chien()
     s = "Chien"
     register_AeolianSource(s)
-    nc_file = @datadep_str joinpath(datadepname(s), "post.aerosols.2x2.seasonal.nc")
+    nc_file = @datadep_str joinpath("AIBECS-$(DATASET_LONGNAMES[s])", "post.aerosols.2x2.seasonal.nc")
     s_A_2D = Dataset(nc_file, "r") do ds
         Dict(
             :lat => ds["lat"][:],
@@ -110,11 +101,11 @@ function load_Chien()
     @info """You are about to use the Chien et al. (2016) data for aeolian deposition.
           If you use it for research, please cite:
 
-          $(citations(s))
+          $(CITATIONS[s])
 
           You can find the corresponding BibTeX entries in the CITATION.bib file
           at the root of the AIBECS.jl package repository.
-          (Look for the $(renamelong(s)) key.)
+          (Look for the $(DATASET_LONGNAMES[s]) key.)
           """
     return s_A_2D
 end
@@ -139,8 +130,8 @@ const Kok_REGIONS_NAMES = (
 function load_Kok()
     s = "Kok"
     register_AeolianSource(s)
-    nc_file = @datadep_str joinpath(datadepname(s), "DustCOMM_source_region_wetdep_annual_PM20_abs.nc")
-# Units                = Total deposition (kg/m2/year)
+    nc_file = @datadep_str joinpath("AIBECS-$(DATASET_LONGNAMES[s])", "DustCOMM_source_region_wetdep_annual_PM20_abs.nc")
+    # Units = Total deposition (kg/m2/year)
     s_A_2D = Dataset(nc_file, "r") do ds
         Dict(
             :lat => ds["lat"][:],
@@ -151,11 +142,11 @@ function load_Kok()
     @info """You are about to use the Kok et al. (2021) data for aeolian deposition.
           If you use it for research, please cite:
 
-          $(citations(s))
+          $(CITATIONS[s])
 
           You can find the corresponding BibTeX entries in the CITATION.bib file
           at the root of the AIBECS.jl package repository.
-          (Look for the $(renamelong(s)) key.)
+          (Look for the $(DATASET_LONGNAMES[s]) key.)
           """
     return s_A_2D
 end
@@ -174,7 +165,6 @@ const CITATIONS = Dict(
     - Climate model used: Scanza, R. A., Hamilton, D. S., Perez Garcia-Pando, C., Buck, C., Baker, A., and Mahowald, N. M.: Atmospheric processing of iron in mineral and combustion aerosols: development of an intermediate-complexity mechanism suitable for Earth system models, Atmos. Chem. Phys., 18, 14175–14196, https://doi.org/10.5194/acp-18-14175-2018, 2018.
     """
 )
-citations(s="Chien") = CITATIONS[rename(s)]
 
 end # end module
 

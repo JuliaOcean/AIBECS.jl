@@ -15,14 +15,6 @@ struct GroundWaterSource{T}
     VFR::T # volumetric flow rate
 end
 
-function fallback_download(remotepath, localdir)
-    @assert(isdir(localdir))
-    filename = basename(remotepath)  # only works for URLs with filename as last part of name
-    localpath = joinpath(localdir, filename)
-    Downloads.download(remotepath, localpath)
-    return localpath
-end
-
 # Create registry entry for ETOPO
 function register_groundwater_discharge()
     register(
@@ -33,8 +25,7 @@ function register_groundwater_discharge()
             $(citation())
             """,
             "https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-020-15064-8/MediaObjects/41467_2020_15064_MOESM8_ESM.zip",
-            "aed5141cf00cfd6c2f7f70d4a18582b4613de571737661287ca09785c16f7e05",
-            fetch_method = fallback_download,
+            "aed5141cf00cfd6c2f7f70d4a18582b4613de571737661287ca09785c16f7e05";
             post_fetch_method = unpack
         )
     )

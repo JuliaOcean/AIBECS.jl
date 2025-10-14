@@ -8,14 +8,6 @@ using NCDatasets
 using Distances
 using Downloads
 
-function fallback_download(remotepath, localdir)
-    @assert(isdir(localdir))
-    filename = basename(remotepath)  # only works for URLs with filename as last part of name
-    localpath = joinpath(localdir, filename)
-    Downloads.download(remotepath, localpath)
-    return localpath
-end
-
 const DATA_FILE_NAME = Dict(
     :bedrock => "ETOPO1_Bed_g_gdal.grd",
     :ice => "ETOPO1_Ice_g_gdal.grd"
@@ -36,8 +28,7 @@ function register_ETOPO(data=:bedrock)
             $(citation()) [accessed $(Dates.today())]
             """,
             URL[data],
-            sha2_256,
-            fetch_method = fallback_download,
+            sha2_256;
             post_fetch_method = unpack
         )
     )
