@@ -33,7 +33,7 @@
 #md #     DeVries, T., & Holzer, M. (2019). Radiocarbon and helium isotope constraints on deep ocean ventilation and mantle‐³He sources. Journal of Geophysical Research: Oceans, 124, 3036–3057. doi:[10.1029/2018JC014716](https://doi.org/10.1029/2018JC014716)
 
 using AIBECS
-grd, TOCIM2_48L = OCIM2_48L.load()
+grd, TOCIM2 = OCIM2.load()
 
 #md # !!! note
 #md #     If it's your first time, Julia will ask you to download the OCIM2, in which case you should accept (i.e., type `y` and "return").
@@ -42,7 +42,7 @@ grd, TOCIM2_48L = OCIM2_48L.load()
 #nb # > If it's your first time, Julia will ask you to download the OCIM2, in which case you should accept (i.e., type `y` and "return").
 #nb # > Once downloaded, AIBECS will remember where it downloaded the file and it will only load it from your laptop.
 
-# `grd` is an `OceanGrid` object containing information about the 3D grid of the OCIM2 circulation and `TOCIM2_48L` is the transport matrix representing advection and diffusion.
+# `grd` is an `OceanGrid` object containing information about the 3D grid of the OCIM2 circulation and `TOCIM2` is the transport matrix representing advection and diffusion.
 
 # The local sources and sinks for the age take the form
 
@@ -75,7 +75,7 @@ p = IdealAgeParameters(1.0, 30.0)
 
 # We now use the AIBECS to generate the state function $\boldsymbol{F}$ (and its Jacobian) via
 
-F = AIBECSFunction(TOCIM2_48L, G)
+F = AIBECSFunction(TOCIM2, G)
 
 # Now that `F` and `p` are defined, we are going to solve for the steady-state.
 # But first, we must create a `SteadyStateProblem` object that contains `F`, `p`, and an initial guess `x_init` for the age.
