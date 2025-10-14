@@ -44,7 +44,7 @@ const VERSIONS =[
 ]
 
 # URLs
-const OCIM1_URLs = Dict(
+const OCIM2_URLs = Dict(
     "CTL_He" => "https://ndownloader.figshare.com/files/28336284",
     "CTL_noHe" => "https://ndownloader.figshare.com/files/28336299",
     "KiHIGH_He" => "https://ndownloader.figshare.com/files/28336302",
@@ -58,7 +58,7 @@ const OCIM1_URLs = Dict(
     "KvHIGH_noHe" => "https://ndownloader.figshare.com/files/28336353"
 )
 
-# OCIM1 Hashes
+# OCIM2 Hashes
 const OCIM2_MD5 = Dict(
     "CTL_He" => "da15192381ef04e9f7cce7c886eb4833",
     "CTL_noHe" => "abede7e16b75cb3f9b7d25367772455e",
@@ -88,7 +88,7 @@ function register_OCIM2(; version=VERSIONS[1])
             $CITATION
             """,
             OCIM2_URLs[version],
-            (md5, OCIM1_MD5[version]),
+            (md5, OCIM2_MD5[version]),
         )
     )
     return nothing

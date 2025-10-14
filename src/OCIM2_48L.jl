@@ -1,5 +1,5 @@
 """
-This `OCIM2_48L` module is used to load the OCIM2-48L matrices and grid for use in AIBECS.
+The `OCIM2_48L` module is used to load the OCIM2-48L matrices and grid for use in AIBECS.
 
 !!! tip
     To load the default OCIM2_48L matrix and grid, do
