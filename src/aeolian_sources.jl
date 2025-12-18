@@ -28,7 +28,7 @@ const DATASET_LONGNAMES = Dict(
 
 # Aeolian source URLs
 const URLs = Dict(
-    "Chien" => "http://www.geo.cornell.edu/eas/PeoplePlaces/Faculty/mahowald/dust/Chienetal2016/post.aerosols.2x2.seasonal.nc",
+    "Chien" => "https://zenodo.org/records/17869479/files/post.aerosols.2x2.seasonal.nc",
     "Kok" => "https://research.aos.ucla.edu/dustcomm/K21b/DustCOMM_source_region_wetdep_annual_PM20_abs.nc"
 )
 
@@ -95,7 +95,7 @@ function load_Chien()
         Dict(
             :lat => ds["lat"][:],
             :lon => ds["lon"][:],
-            (t => ds["dep"][:,:,:,i] for (i,t) in enumerate(Chien_AEROSOLTYPE_NAMES))...
+            (t => ds["dep"][:,:,i] for (i,t) in enumerate(Chien_AEROSOLTYPE_NAMES))...
         )
     end # ds is closed
     @info """You are about to use the Chien et al. (2016) data for aeolian deposition.
