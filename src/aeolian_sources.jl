@@ -34,7 +34,7 @@ const URLs = Dict(
 
 # Hashes
 const SHAs = Dict(
-    "Chien" => "33b0036bcca87019e0636ec2d59e910be989693819a2d57f2e4ab053a564101f", # On  2 Jun 2020
+    "Chien" => "56a681098d9bda8db85bfe3e588f35c4744ec9308b6fed3aaee68597909904e8", # On 18 Dec 2025
     "Kok"   => "65fec31419f75064a22a2c65247afc48e1f72218753605b463447a9933c378aa"  # On 14 Jul 2021
 )
 
