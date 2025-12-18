@@ -8,9 +8,6 @@ using DataDeps              # For storage location of data
 using Downloads
 using NCDatasets
 using Unitful               # for units
-using Reexport
-using Interpolations
-@reexport using OceanGrids            # To store the grid
 
 function fallback_download(remotepath, localdir)
     @assert(isdir(localdir))
