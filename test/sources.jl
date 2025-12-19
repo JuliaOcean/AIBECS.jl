@@ -2,12 +2,13 @@
 
 @testset "Aeolian sources" begin
     @testset "$dataset" for dataset in AeolianSources.DATASET_NAMES
+        dataset == "Kok" && continue # Skip Kok dataset for now due UCLA SLS certificate
         s_A_2D = AeolianSources.load(dataset)
         @testset "$k" for k in keys(s_A_2D)
             v = s_A_2D[k]
             v isa Vector && continue # skip if v is lat/lon
             # Take annual mean if Chien dataset
-            v_annual = permutedims(dataset == "Chien" ? dropdims(mean(v, dims=3), dims=3) : v, (2,1))
+            v_annual = permutedims(v, (2,1))
             # Regrid to OCIM2 grid
             v_regridded = regrid(v_annual, s_A_2D[:lat], s_A_2D[:lon], grd)
             # Paint the top layer
