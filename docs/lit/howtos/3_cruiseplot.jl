@@ -11,6 +11,8 @@
 # As in the [basic plotting guide](@ref plots), throughout this guide we will use the OCIM2 grid and we will create a `dummy` modelled tracer.
 
 using AIBECS, Plots
+using JLD2          # required by `OCIM2.load`
+using Interpolations # required by `RatioAtStation` / cruise-profile recipe
 grd, _ = OCIM2.load()
 fdummy(lat, lon, depth) = @. cosd(lat) * sind(lon) + sqrt(depth) / 30
 dummy = fdummy(latlondepthvecs(grd)...)

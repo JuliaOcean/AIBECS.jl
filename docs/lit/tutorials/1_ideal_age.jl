@@ -33,6 +33,7 @@
 #md #     DeVries, T., & Holzer, M. (2019). Radiocarbon and helium isotope constraints on deep ocean ventilation and mantle‐³He sources. Journal of Geophysical Research: Oceans, 124, 3036–3057. doi:[10.1029/2018JC014716](https://doi.org/10.1029/2018JC014716)
 
 using AIBECS
+using JLD2 # required by `OCIM2.load`
 grd, TOCIM2 = OCIM2.load()
 
 #md # !!! note

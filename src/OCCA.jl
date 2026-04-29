@@ -17,8 +17,6 @@ module OCCA
 using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
 using Downloads
-using JLD2                  # For saving circulation as JLD2 format
-using CodecZlib             # for JLD2 compression JLD2
 using Unitful               # for units
 using Reexport
 using MD5                   # for hash checking (MD5 is what is used in FigShare)
@@ -49,32 +47,16 @@ function register_OCCA()
 end
 
 """
-    load
+    grd, T = load()
 
 Returns the grid and the transport matrix.
 
-!!! tip
-    To load the OCCA matrix and grid, do
-    ```
-    julia> grd, T = OCCA.load()
-    ```
-    See *Forget* (2010) for more details
+Requires `using JLD2` so that the `AIBECSJLD2Ext` extension is activated.
+
+See *Forget* (2010) for more details.
 """
-function load()
-    register_OCCA()
-    jld2_file = @datadep_str string("AIBECS-OCCA/", "OCCA.jld2")
-    @info """You are about to use the OCCA model.
-          If you use it for research, please cite:
-
-          - $CITATION
-
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the "Forget_2010" key.)
-          """
-    jldopen(jld2_file) do file
-        file["grid"], ustrip.(file["T"])
-    end
+function load(args...; kwargs...)
+    error("AIBECS.OCCA.load requires `using JLD2`. Add it to your environment, then retry.")
 end
 
 end # end module

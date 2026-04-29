@@ -12,6 +12,15 @@ using Distributions
 using Bijectors
 using DataDeps
 using Plots
+# Extension trigger packages — load them so every AIBECS extension
+# activates and the data-loader stubs are replaced by real methods.
+using JLD2          # AIBECSJLD2Ext (OCIM0/1/2/OCCA)
+using NCDatasets    # AIBECSNCDatasetsExt (AeolianSources) + AIBECSETOPOExt + AIBECSOCIM2_48LExt
+using Distances     # AIBECSETOPOExt
+using MAT           # AIBECSOCIM2_48LExt
+using Shapefile     # AIBECSShapefileExt (GroundWaters)
+using Interpolations # AIBECSRecipesBaseExt (RatioAtStation recipe)
+using RecipesBase   # plotting recipes
 
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
