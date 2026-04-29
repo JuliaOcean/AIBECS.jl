@@ -6,7 +6,6 @@ module AeolianSources
 using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
 using Downloads
-using NCDatasets
 using Unitful               # for units
 
 function fallback_download(remotepath, localdir)
@@ -84,27 +83,9 @@ const Chien_AEROSOLTYPE_NAMES = (
     :bioP,    # PrimaryBiogenicParticles
     :volc,    # Volcanoes
 )
-function load_Chien()
-    s = "Chien"
-    register_AeolianSource(s)
-    nc_file = @datadep_str joinpath("AIBECS-$(DATASET_LONGNAMES[s])", "post.aerosols.2x2.seasonal.nc")
-    s_A_2D = Dataset(nc_file, "r") do ds
-        Dict(
-            :lat => ds["lat"][:],
-            :lon => ds["lon"][:],
-            (t => ds["dep"][:,:,i] for (i,t) in enumerate(Chien_AEROSOLTYPE_NAMES))...
-        )
-    end # ds is closed
-    @info """You are about to use the Chien et al. (2016) data for aeolian deposition.
-          If you use it for research, please cite:
-
-          $(CITATIONS[s])
-
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the $(DATASET_LONGNAMES[s]) key.)
-          """
-    return s_A_2D
+function load_Chien(args...; kwargs...)
+    error("AIBECS.AeolianSources.load(\"Chien\") requires `using NCDatasets`. " *
+          "Add it to your environment, then retry.")
 end
 
 
@@ -124,28 +105,9 @@ const Kok_REGIONS_NAMES = (
     :SAf,     # southern Africa
 )
 
-function load_Kok()
-    s = "Kok"
-    register_AeolianSource(s)
-    nc_file = @datadep_str joinpath("AIBECS-$(DATASET_LONGNAMES[s])", "DustCOMM_source_region_wetdep_annual_PM20_abs.nc")
-    # Units = Total deposition (kg/m2/year)
-    s_A_2D = Dataset(nc_file, "r") do ds
-        Dict(
-            :lat => ds["lat"][:],
-            :lon => ds["lon"][:],
-            (r => ds["Mean"][i,:,:] for (i,r) in enumerate(Kok_REGIONS_NAMES))...
-        )
-    end # ds is closed
-    @info """You are about to use the Kok et al. (2021) data for aeolian deposition.
-          If you use it for research, please cite:
-
-          $(CITATIONS[s])
-
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the $(DATASET_LONGNAMES[s]) key.)
-          """
-    return s_A_2D
+function load_Kok(args...; kwargs...)
+    error("AIBECS.AeolianSources.load(\"Kok\") requires `using NCDatasets`. " *
+          "Add it to your environment, then retry.")
 end
 
 

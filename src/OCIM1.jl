@@ -17,7 +17,6 @@ module OCIM1
 using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
 using Downloads
-using JLD2                  # For saving circulation as JLD2 format
 using Unitful               # for units
 using Reexport
 using MD5                   # for hash checking (MD5 is what is used in FigShare)
@@ -53,32 +52,16 @@ function register_OCIM1(; version=VERSIONS[1])
 end
 
 """
-    load
+    grd, T = load(; version=VERSIONS[1])
 
 Returns the grid and the transport matrix.
 
-!!! tip
-    To load the OCIM1 matrix and grid, do
-    ```
-    julia> grd, T = OCIM1.load()
-    ```
-    See *DeVries and Primeau* (2011) and *DeVries* (2014) for more details.
+Requires `using JLD2` so that the `AIBECSJLD2Ext` extension is activated.
+
+See *DeVries and Primeau* (2011) and *DeVries* (2014) for more details.
 """
-function load(; version=VERSIONS[1])
-    register_OCIM1(; version)
-    jld2_file = @datadep_str string("AIBECS-OCIM1_$version/", "OCIM1_$version.jld2")
-    @info """You are about to use the OCIM1_$version model.
-          If you use it for research, please cite:
-
-          $CITATION
-
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the "DeVries_Primeau_2011" and "DeVries_2014" keys.)
-          """
-    jldopen(jld2_file) do file
-        file["grid"], ustrip.(file["T"])
-    end
+function load(args...; kwargs...)
+    error("AIBECS.OCIM1.load requires `using JLD2`. Add it to your environment, then retry.")
 end
 
 end # end module

@@ -4,8 +4,6 @@ using OceanGrids
 using Dates
 using Unitful
 using DataDeps              # For storage location of data
-using NCDatasets
-using Distances
 using Downloads
 
 const DATA_FILE_NAME = Dict(
@@ -38,36 +36,17 @@ end
 
 """
     Z, lats, lons = ETOPO.load()
+    Z, lats, lons = ETOPO.load(:bedrock)
+    Z, lats, lons = ETOPO.load(:ice)
 
 Returns the fine resolution topography from ETOPO.
 
-It is the same as
-
-    Z, lats, lons = ETOPO.load(:bedrock)
-
-If you want the ice elevation, use
-
-    Z, lats, lons = ETOPO.load(:ice)
+Requires `using Distances, NCDatasets` so that the `AIBECSETOPOExt`
+extension is activated.
 """
-function load(data=:bedrock)
-    register_ETOPO(data)
-    nc_file = @datadep_str joinpath(string("ETOPO_", data), DATA_FILE_NAME[data])
-    ds = Dataset(nc_file)
-    Z, lats, lons, dims = Dataset(nc_file,"r") do ds
-        dims = Tuple(ds["dimension"][:])
-        ds["z"][:], range(ds["y_range"]..., length=dims[2]),
-        range(ds["x_range"]..., length=dims[1]), dims
-    end # ds is closed
-    @info """You are about to use the ETOPO data set.
-          If you use it for research, please cite:
-
-          - $(citation())
-
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the "Amante_Eakins_2009" key.)
-          """
-    return reverse(reshape(Z, dims), dims=2), lats, lons # TODO
+function load(args...; kwargs...)
+    error("AIBECS.ETOPO.load requires `using Distances, NCDatasets`. " *
+          "Add them to your environment, then retry.")
 end
 
 citation() = "Amante, C. and B.W. Eakins, 2009. ETOPO1 1 Arc-Minute Global Relief Model: Procedures, Data Sources and Analysis. NOAA Technical Memorandum NESDIS NGDC-24. National Geophysical Data Center, NOAA. doi:10.7289/V5C8276M [access date]."
@@ -103,34 +82,26 @@ end
 
 Returns the fraction of subgrid sediments in each wet box of grd.
 
-Note that (i) points located above sea level are counted in the top layer,
-and (ii) points located in a dry box or below are counted in the deepest
-wet box.
+Requires `using Distances, NCDatasets` so that the `AIBECSETOPOExt`
+extension is activated. Note that (i) points located above sea level
+are counted in the top layer, and (ii) points located in a dry box or
+below are counted in the deepest wet box.
 """
-function fractiontopo(grd)
-    @warn "Binning ETOPO to grd. This may take a few seconds"
-    Z, lats, lons = load()
-    return fractiontopo(bintopo(Z, lats, lons, grd), grd)
-end
+function fractiontopo end
+# Pure-math helper: takes the binned ETOPO array and returns the fraction
+# per wet box. No NCDatasets/Distances dependency, so it stays in main.
 fractiontopo(bin3D, grd) = vectorize(bin3D ./ repeat(sum(bin3D, dims=3), outer=(1, 1, size(grd)[3])), grd)
 export fractiontopo
 
-function roughnesstopo(grd)
-    @warn "Estimating roughness from ETOPO. This may take a few seconds"
-    Z, lats, lons = load()
-    R_earth = ustrip(u"m", 6371.0u"km")
-    δlon = step(lons)
-    δlat = step(lons)
-    midlats = 0.5(lats[1:end-1] + lats[2:end])
-    midlons = 0.5(lons[1:end-1] + lons[2:end])
-    δxs = [Haversine(R_earth)((0.0, lat), (δlon, lat)) for lat in midlats]
-    δy = Haversine(R_earth)((lons[1], 0.0), (lons[1], δlat))
-    A_lon = abs.(diff(Z, dims=1)) .* δy
-    Z_lon = 0.5(Z[1:end-1,:] + Z[2:end,:])
-    A_lat = abs.(diff(Z, dims=2)) .* repeat(reshape(δxs, (1, length(δxs))), outer=(size(Z,1), 1))
-    Z_lat = 0.5(Z[:,1:end-1] + Z[:,2:end])
-    return sumroughness(A_lon, Z_lon, lats, midlons, grd) + sumroughness(A_lat, Z_lat, midlats, lons, grd)
-end
+"""
+    roughnesstopo(grd)
+
+Estimates topographic roughness from ETOPO.
+
+Requires `using Distances, NCDatasets` so that the `AIBECSETOPOExt`
+extension is activated.
+"""
+function roughnesstopo end
 
 function sumroughness(A::AbstractArray{T,2}, Z, lats, lons, grd) where T
     roughness = zeros(size(grd))

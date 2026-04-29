@@ -22,7 +22,6 @@ module OCIM2
 using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
 using Downloads
-using JLD2                  # For saving circulation as JLD2 format
 using Unitful               # for units
 using Reexport
 using MD5                   # for hash checking (MD5 is what is used in FigShare)
@@ -119,27 +118,8 @@ Returns the grid, the transport matrix, and the He fluxes.
     julia> OCIM2.VERSIONS
     ```
 """
-function load(; version=VERSIONS[1], HeFluxes=false)
-    register_OCIM2(; version)
-    jld2_file = @datadep_str string("AIBECS-OCIM2_$version/", "OCIM2_$version.jld2")
-    @info """You are about to use the OCIM2_$version model.
-          If you use it for research, please cite:
-
-          $CITATION
-
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the "DeVries_Holzer_2019" key.)
-          """
-    if HeFluxes
-        jldopen(jld2_file) do file
-            file["grid"], ustrip.(file["T"]), file["He3Flux"], file["He4Flux"]
-        end
-    else
-        jldopen(jld2_file) do file
-            file["grid"], ustrip.(file["T"])
-        end
-    end
+function load(args...; kwargs...)
+    error("AIBECS.OCIM2.load requires `using JLD2`. Add it to your environment, then retry.")
 end
 
 end # end module
