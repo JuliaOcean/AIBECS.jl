@@ -242,44 +242,27 @@ Base.size(::T) where {T <: APar} = (length(T),)
 Base.size(::Type{T}) where {T <: APar} = (length(T),)
 
 function Base.show(io::IO, p::T) where T <: APar
-    print(T)
-    t = table(p)
-    show(io, t; summary=false)
-end
-function Base.show(io::IO, m::MIME"text/plain", p::T) where T <: APar
-    print(T)
-    t = table(p)
-    show(io, m, t; summary=false)
-end
-
-function table(p::T, nf::NamedTuple) where {T <: APar}
-    t = DataFrame(Symbol = collect(symbols(p)), Value = values(p))
-    for (n,f) in zip(keys(nf), nf)
-        setproperty!(t, n, collect(f(p)))
+    print(io, T)
+    println(io)
+    for s in symbols(p)
+        v = getfield(p, s)
+        u = units(T, s)
+        println(io, "  ", s, " = ", v, isequal(u, 1) ? "" : " ($u)")
     end
-    return t
+end
+function Base.show(io::IO, ::MIME"text/plain", p::T) where T <: APar
+    show(io, p)
 end
 
 """
     table(p)
 
-Returns a `DataFrame` (a table) of `p`.
-Useful for printing and saving into an actual text/latex table.
+Returns a `DataFrame` representation of `p`. Useful for printing and
+saving as a text/LaTeX table. Requires `using DataFrames` so the
+`AIBECSDataFramesExt` extension is activated.
 """
-function table(p::APar)
-    ks, vs = Symbol[], Function[]
-    all(isnothing, initial_value(p)) || (push!(ks, Symbol("Initial value")); push!(vs, initial_value))
-    all(isequal(1), units(p)) || (push!(ks, :Unit); push!(vs, units))
-    all(isnothing, prior(p)) || (push!(ks, Symbol("Prior")); push!(vs, prior))
-    all(isnothing, limits(p)) || (push!(ks, Symbol("Limits")); push!(vs, limits))
-    all(isempty, description(p)) || (push!(ks, Symbol("Description")); push!(vs, description))
-    all(isnothing, bounds(p)) || (push!(ks, Symbol("Bounds")); push!(vs, bounds))
-    any(logscaled(p)) && (push!(ks, Symbol("Logscaled")); push!(vs, logscaled))
-    all(flattenable(p)) || (push!(ks, Symbol("Optimizable")); push!(vs, flattenable))
-    all(isnothing, reference(p)) || (push!(ks, Symbol("Reference")); push!(vs, reference))
-    nf = (; zip(ks, vs)...)
-    t = table(p, nf)
-end
+function table end
+
 # These line prevent the default (0.0, 1.0) value
 limits(::T) where {T<:APar} = limits(T)
 limits(::Type{T}) where {T<:APar} = Tuple(nothing for _ in 1:fieldcount(T))
@@ -288,8 +271,10 @@ limits(::Type{T}) where {T<:APar} = Tuple(nothing for _ in 1:fieldcount(T))
     latex(p)
 
 Returns a LaTeX-formatted table of the parameters.
+
+Requires `using DataFrames`.
 """
-latex(p::APar) = show(stdout, MIME("text/latex"), table(p))
+function latex end
 
 """
     unpack(p <: AbstractParameters, s)
@@ -369,15 +354,24 @@ end
 mismatch of parameters
 =====================#
 
-# in p space (should not be needed except for checking/testing)
-mismatch(p::T, k::Symbol) where {T<:APar} = mismatch(T, bijector(T, k)(p))
-mismatch(p::T) where {T<:APar} = mismatch(T, p2λ(p))
-mismatch(::Type{T}, p::Tp) where {T<:APar, Tp<:APar} = mismatch(p)
+"""
+    mismatch(p [, k])
+    mismatch(::Type{T}, λ)
+    mismatch(d::Distribution, λ)
 
-# in λ space
+Parameter-space and λ-space mismatch (negative log prior).
+
+The methods that touch a `Distribution` or `Bijector` are added by the
+`AIBECSDistributionsExt` and `AIBECSBijectorsExt` extensions
+(activated by `using Distributions, Bijectors`).
+"""
+function mismatch end
+# in λ space — generic dispatchers (always available)
 mismatch(::Type{T}, λ) where {T<:APar} = sum(mismatch(T, k, λᵢ) for (k, λᵢ) in zip(flattenable_symbols(T), λ))
 mismatch(::Type{T}, k, λ) where {T<:APar} = mismatch(prior(T, k), λ)
-mismatch(d::ContinuousUnivariateDistribution, λ) = -logpdf(transformed(d), λ)
+# `mismatch(p::T, k)`, `mismatch(p::T)`, and `mismatch(d::Distribution, λ)`
+# are added by the Bijectors / Distributions extensions.
+export mismatch
 
 # TODO check if I need that below:
 # The functions below is just for ForwardDiff to work with vectors instead of p
@@ -394,53 +388,31 @@ end
 Change of variables
 ==================#
 
-
-# using Bijectors and evaluating parameter mismatch in λ-space
-# Usage should look like this
-# F = AIBECSFunction(...)
-# f, ∇ₓf = generate_objective(...) # This requires to dispatch them like f(p::APar) = ... and f(λ::Vector) = ...
-# obj, grad, hess = F1Method(F, ∇ₓF, f, ∇ₓf, ...) # directly in λ-space
-# p2λ = bijector(MyParams) # just reexport bijector and inverse
-# λ2p = inverse(p2λ)
-# λ₀ = p2λ(p₀)
-# results = optimize(obj, grad, hess, λ₀, ...)
-# λ_opt = results.minimizer
-# p_opt = λ2p(λ_opt) # and done and dusted...
-# some actual code that I should write and test
-import Bijectors: bijector
-"""
-    bijector(T::AbstractParameters [, k::Symbol])
-
-Returns the function for the change of variables of the parameters.
-
-The function is a bijection from the supports/domains of the priors to ℝⁿ,
-from the Bijectors.jl package.
-You can specify the parameter symbol to get the bijector of that parameter.
-"""
-bijector(::Type{T}) where {T<:APar} = bijector.([p for p in prior(T) if !isnothing(p)])
-bijector(::Type{T}, k) where {T<:APar} = bijector(prior(T, k))
-export bijector
+# `p2λ` and `λ2p` use `Bijectors.jl` and live in the AIBECSBijectorsExt
+# extension. The stubs below are filled in when `using Bijectors`
+# activates the extension. `bijector` itself is not stubbed here — the
+# extension adds methods directly to `Bijectors.bijector`, so users do
+# `using Bijectors; bijector(MyParams)` (Bijectors's exported symbol).
 
 """
     p2λ(p::AbstractParameters)
 
-Converts `p` to a real-valued vector for optimization.
-(referred to as the λ space in AIBECS)
+Converts `p` to a real-valued vector for optimization
+(referred to as the λ space in AIBECS).
+
+Requires `using Bijectors`.
 """
-p2λ(p::T) where {T<:APar} = [bijector(T,k)(v) for (k,v) in zip(flattenable_symbols(p), flattenable_values(p))]
+function p2λ end
+
 """
     λ2p(T::Type{AbstractParameters}, λ::Vector)
 
-Converts real-valued vector `λ` back to parameters object `p`.
+Converts real-valued vector `λ` back to a parameters object `p`.
 
-Note that the instance of your parameters type `T` is required here because
-it contains information on non-optimizable parameters and priors of optimizable parameters
+Requires `using Bijectors`.
 """
-function λ2p(::Type{T}, λs) where {T<:APar}
-    ps = [inverse(bijector(T,k))(λ) for (k,λ) in zip(flattenable_symbols(T), λs)]
-    reconstruct(T, ps)
-end
-export p2λ, λ2p
+function λ2p end
 
-export AbstractParameters, latex
+export p2λ, λ2p
+export AbstractParameters, latex, table
 
