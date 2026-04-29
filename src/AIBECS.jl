@@ -48,6 +48,7 @@ include("OCCA.jl")
 include("Archer_etal_2000.jl")
 include("TwoBoxModel.jl")
 include("Primeau_2x2x2.jl")
+include("Haine_and_Hall_2025.jl")
 
 # AWESOME OCIM data
 include("AO.jl") # TODO talk about it to Seth

@@ -44,7 +44,8 @@ end
 
 
 include("parameters.jl")
-test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000]
+
+test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000, :Haine_and_Hall_2025]
 @testset "test everything" for C in test_everything
     @testset "$C" begin
         eval(:(Circulation = $C))
