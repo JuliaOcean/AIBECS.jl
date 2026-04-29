@@ -23,7 +23,6 @@ using SparseArrays          # For sparse matrix
 using DataDeps              # For storage location of data
 using Downloads
 using JLD2                  # For saving circulation as JLD2 format
-using CodecZlib             # for JLD2 compression JLD2
 using Unitful               # for units
 using Reexport
 using MD5                   # for hash checking (MD5 is what is used in FigShare)

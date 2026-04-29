@@ -13,19 +13,15 @@ using Flatten
 using DataFrames
 using Distributions
 using JLD2
-using CodecZlib
 using NCDatasets
 @reexport using OceanGrids
 @reexport using Unitful
 using Unitful: °
 using RecipesBase
 using Interpolations
-using Distances
-using NearestNeighbors
 @reexport using MetadataArrays
 using Shapefile
 using Bijectors
-using ImageFiltering
 using SciMLBase
 
 

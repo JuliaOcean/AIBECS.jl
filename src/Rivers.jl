@@ -3,8 +3,6 @@ module Rivers
 using Unitful
 using Unitful: m, s, km, yr
 import Unitful: uconvert
-using Distances: Haversine
-using NearestNeighbors: BruteTree, knn
 using OceanGrids
 import OceanGrids: regrid
 
