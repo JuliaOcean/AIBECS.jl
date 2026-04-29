@@ -23,6 +23,8 @@
 # We start by telling Julia we want to use the AIBECS and the OCIM0.1 transport matrix for the ocean circulation.
 
 using AIBECS
+using JLD2       # required by `OCIM0.load`
+using NCDatasets # required by `AeolianSources.load`
 grd, T_OCIM = OCIM0.load()
 
 # The transport of dust is the sum of the ocean circulation and a settling-transport:

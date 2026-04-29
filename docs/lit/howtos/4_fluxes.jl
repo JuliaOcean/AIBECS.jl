@@ -11,6 +11,7 @@
 # Let's start telling Julia we will be using AIBECS and Plots.
 
 using AIBECS, Plots
+using JLD2 # required by `OCCA.load` / `Circulation.load`
 
 #-----------------------------------------------
 # ## [1. Operator stencil](@id operatorstencil)

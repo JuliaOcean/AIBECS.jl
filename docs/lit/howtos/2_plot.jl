@@ -15,6 +15,7 @@
 
 using Plots
 using AIBECS
+using JLD2 # required by `OCIM2.load`
 grd, _ = OCIM2.load()
 dummy = cosd.(latvec(grd))
 

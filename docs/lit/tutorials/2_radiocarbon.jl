@@ -42,6 +42,7 @@
 
 
 using AIBECS
+using JLD2 # required by `OCCA.load`
 grd, T_OCCA = OCCA.load()
 
 # The local sources and sinks are simply given by

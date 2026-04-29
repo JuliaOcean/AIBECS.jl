@@ -22,6 +22,8 @@
 # We start by telling Julia that we want to use the AIBECS and the OCIM2 transport matrix for the ocean circulation.
 
 using AIBECS
+using JLD2                  # required by `OCIM2.load`
+using Shapefile, DataFrames # required by `GroundWaters.load`
 grd, T_OCIM2 = OCIM2.load()
 
 # For the radioactive decay, we simply use

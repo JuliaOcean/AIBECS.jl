@@ -73,10 +73,35 @@ Unitful = "1"
 julia = "1.10"
 
 [extras]
+Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DualNumbers = "fa6b7ba4-c1ee-5f82-b5fc-ecf0adba8f74"
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+Shapefile = "8e980c4a-a4fe-5da2-b3a7-4b4b0353a2f4"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WorldOceanAtlasTools = "04f20302-f1b9-11e8-29d9-7d841cb0a64a"
 
 [targets]
-test = ["Test", "DualNumbers", "WorldOceanAtlasTools", "Plots"]
+test = [
+    "Bijectors",
+    "DataFrames",
+    "Distances",
+    "Distributions",
+    "DualNumbers",
+    "Interpolations",
+    "JLD2",
+    "MAT",
+    "NCDatasets",
+    "Plots",
+    "RecipesBase",
+    "Shapefile",
+    "Test",
+    "WorldOceanAtlasTools",
+]

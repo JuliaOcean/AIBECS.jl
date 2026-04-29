@@ -33,6 +33,7 @@
 # We start by telling Julia we want to use the AIBECS and the OCIM0.1 circulation for DIP.
 
 using AIBECS
+using JLD2 # required by `OCIM0.load`
 grd, T_OCIM = OCIM0.load()
 T_DIP(p) = T_OCIM
 
