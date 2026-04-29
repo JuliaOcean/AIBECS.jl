@@ -14,23 +14,31 @@ Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 FieldMetadata = "bf96fef3-21d2-5d20-8afa-0e7d4c32a885"
 Flatten = "4c728ea3-d9ee-5c9a-9642-b6f7d7dc04fa"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
-Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 MD5 = "6ac74813-4b46-53a4-afec-0b5dc9d7885c"
 MetadataArrays = "49441bc9-da82-574f-b07c-a0d10dd4ac13"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 OceanGrids = "cfe838f4-859f-11e9-2ea1-df7d4e7c3537"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-Shapefile = "8e980c4a-a4fe-5da2-b3a7-4b4b0353a2f4"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SuiteSparse = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[weakdeps]
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+Shapefile = "8e980c4a-a4fe-5da2-b3a7-4b4b0353a2f4"
+
+[extensions]
+AIBECSOCIM2_48LExt = ["MAT", "NCDatasets"]
+AIBECSRecipesBaseExt = ["RecipesBase", "Interpolations"]
+AIBECSRecipesParametersExt = ["RecipesBase", "Distributions"]
+AIBECSShapefileExt = ["Shapefile", "DataFrames"]
 
 [compat]
 Bijectors = "0.14, 0.15"

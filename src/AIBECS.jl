@@ -17,10 +17,7 @@ using NCDatasets
 @reexport using OceanGrids
 @reexport using Unitful
 using Unitful: °
-using RecipesBase
-using Interpolations
 @reexport using MetadataArrays
-using Shapefile
 using Bijectors
 using SciMLBase
 

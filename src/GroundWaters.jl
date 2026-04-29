@@ -5,8 +5,6 @@ using Unitful
 using Unitful: m, yr
 using DataDeps              # For storage location of data
 using Downloads
-using Shapefile
-using DataFrames
 import OceanGrids: regrid
 
 struct GroundWaterSource{T}
@@ -33,26 +31,16 @@ function register_groundwater_discharge()
 end
 
 """
-    Z, lats, lons = load()
+    gws = load()
 
-Returns the fine resolution topography from ETOPO.
+Returns the coastal groundwater discharge dataset.
+
+Requires `using Shapefile, DataFrames` so that the `AIBECSShapefileExt`
+extension is activated.
 """
-function load()
-    register_groundwater_discharge()
-    shp_file = @datadep_str string("groundwater_discharge/Supplementary_data_3/coastal_gw_discharge.shp")
-    df = DataFrame(Shapefile.Table(shp_file))
-    gws = GroundWaterSource.(df[:, :ws_cent_x], df[:, :ws_cent_y], df[:, :cgd3_best] * m^3/yr)
-    gws = [x for x in gws if x.VFR ≥ 0m^3/yr]
-    @info """You are about to use the groundwater discharge data set.
-          If you use it for research, please cite:
-
-          $(citation())
-
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the "Luijendijk_etal_2019" and "Luijendijk_etal_2020" keys.)
-          """
-    return gws
+function load(args...; kwargs...)
+    error("AIBECS.GroundWaters.load requires `using Shapefile, DataFrames`. " *
+          "Add them to your environment, then retry.")
 end
 
 citation() = """
