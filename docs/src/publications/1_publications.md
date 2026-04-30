@@ -7,20 +7,17 @@ uses AIBECS and is missing here, please open a pull request (see
 
 ## Software citation
 
-If you use AIBECS in published research, please cite both the software
-and the JOSS paper:
+This code is © Benoît Pasquier (2026) and contributors, and it is made available under the MIT license enclosed with the software.
 
-- **Pasquier, B., Primeau, F. W., & John, S. G. (2024).** *AIBECS.jl:
-  A tool for exploring global marine biogeochemical cycles.* Zenodo.
-  [doi:10.5281/zenodo.2864051](https://doi.org/10.5281/zenodo.2864051)
-- **Pasquier, B., Primeau, F. W., & John, S. G. (2022).** *AIBECS.jl:
-  A tool for exploring global marine biogeochemical cycles.*
-  Journal of Open Source Software, 7(69), 3814.
-  [doi:10.21105/joss.03814](https://doi.org/10.21105/joss.03814)
+Over and above the legal restrictions imposed by this license, if you use AIBECS for an academic publication then you are obliged to provide proper attribution. This can be to this code directly,
 
-BibTeX entries for both citations live in
-[`CITATION.bib`](https://github.com/JuliaOcean/AIBECS.jl/blob/main/CITATION.bib)
-under the keys `AIBECS.jl` and `Pasquier_etal_JOSS_2022`.
+> Benoît Pasquier, François W. Primeau, and Seth G. John (2026). **AIBECS.jl: A tool for exploring global marine biogeochemical cycles**. _Zenodo_. doi: [10.5281/zenodo.2864051](https://doi.org/10.5281/zenodo.2864051).
+
+or to the paper that describes it,
+
+> Pasquier, B., Primeau, F. W., and John, S. G. (2022). **AIBECS.jl: A tool for exploring global marine biogeochemical cycles**. _Journal of Open Source Software_, 7(69), 3814. doi: [10.21105/joss.03814](https://doi.org/10.21105/joss.03814).
+
+but, ideally, both. BibTeX entries live in [`CITATION.bib`](https://github.com/JuliaOcean/AIBECS.jl/blob/main/CITATION.bib) under the keys `AIBECS.jl` and `Pasquier_etal_JOSS_2022`. If you also use data provided by AIBECS (such as the OCIM circulations), please cite those datasets as well.
 
 ## Papers using AIBECS
 
