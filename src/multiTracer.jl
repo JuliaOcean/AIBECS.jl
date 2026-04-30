@@ -238,6 +238,22 @@ function generate_∇ₓf(ωs, grd, modify::Function, obs)
 end
 
 
+"""
+    f_and_∇ₓf(ωs, μx, σ²x, v, ωp, ::Type{P})
+    f_and_∇ₓf(ωs, ωp, grd, obs, ::Type{P}; kwargs...)
+    f_and_∇ₓf(ωs, ωp, grd, modify, obs, ::Type{P})
+
+Build a `(f, ∇ₓf)` pair where `f(x, λorp)` is a volume-weighted mismatch
+objective combining tracer-vs-observation misfit with a parameter prior
+mismatch, and `∇ₓf` is its analytical state Jacobian.
+
+`ωs` weights each tracer in the sum, `ωp` weights the parameter-prior term,
+and `P <: AbstractParameters` is the parameter type. The first form takes
+volume-mean / variance / volume vectors directly; the second takes a grid
+plus observation tables; the third additionally lets the user transform
+tracers before the misfit is evaluated. Used as the model entry point for
+Newton-style optimisation (see [the parameter-optimisation how-to](@ref parameter-optimization)).
+"""
 function f_and_∇ₓf(ωs, μx, σ²x, v, ωp, ::Type{T}) where {T <: APar}
     generate_f(ωs, μx, σ²x, v, ωp, T), generate_∇ₓf(ωs, μx, σ²x, v)
 end

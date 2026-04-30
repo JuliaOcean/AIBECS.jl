@@ -89,5 +89,6 @@ plotverticalintegral(-T_West * x * u"mol/m^3/s" .|> u"μmol/m^3/s", grd, mask=de
 
 directional_transports(T, grd)
 
-#md # !!! warning
-#md #     This guide is still a work in progress and likely contains errors
+# See also: the [Sinking particles how-to](@ref sinking-particles) for
+# building flux operators from a settling-velocity profile rather than
+# decomposing an existing circulation.

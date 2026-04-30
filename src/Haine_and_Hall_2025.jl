@@ -6,9 +6,9 @@ Figure 6 of Haine, Griffies, Gebbie, and Jiang (2025), *A review of Green's
 function methods for tracer timescales and pathways in ocean models*. This
 implementation translates the reference Julia version in
 [OceanGreensFunctionMethods.jl](https://github.com/ggebbie/OceanGreensFunctionMethods.jl)
-(file `src/pedagogical_tracer_box_model.jl`) into AIBECS's
-[`T_advection`](@ref) / [`T_diffusion`](@ref) machinery. Use
-[`Haine_and_Hall_2025.load`](@ref) to obtain `(grd, T)`.
+(file `src/pedagogical_tracer_box_model.jl`) into AIBECS's `T_advection` /
+`T_diffusion` machinery. Use [`Haine_and_Hall_2025.load`](@ref) to obtain
+`(grd, T)`.
 """
 module Haine_and_Hall_2025
 #=
