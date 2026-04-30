@@ -65,7 +65,7 @@ NCDatasets = "0.14"
 OceanGrids = "0.4"
 RecipesBase = "1"
 Reexport = "1"
-SciMLBase = "2"
+SciMLBase = "2, 3"
 Shapefile = "0.13"
 SparseArrays = "1"
 UnPack = "1"
@@ -89,19 +89,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WorldOceanAtlasTools = "04f20302-f1b9-11e8-29d9-7d841cb0a64a"
 
 [targets]
-test = [
-    "Bijectors",
-    "DataFrames",
-    "Distances",
-    "Distributions",
-    "DualNumbers",
-    "Interpolations",
-    "JLD2",
-    "MAT",
-    "NCDatasets",
-    "Plots",
-    "RecipesBase",
-    "Shapefile",
-    "Test",
-    "WorldOceanAtlasTools",
-]
+test = ["Bijectors", "DataFrames", "Distances", "Distributions", "DualNumbers", "Interpolations", "JLD2", "MAT", "NCDatasets", "Plots", "RecipesBase", "Shapefile", "Test", "WorldOceanAtlasTools"]
