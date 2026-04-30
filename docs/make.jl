@@ -1,12 +1,10 @@
 using Documenter
+using DocumenterVitepress
 
 # Ensure that the DataDeps download work remotely
 ENV["JULIA_DEBUG"] = "Documenter"
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 ENV["GKSwstype"] = "100"
-
-deployconfig = Documenter.auto_detect_deploy_system()
-Documenter.post_status(deployconfig; type="pending", repo="github.com/JuliaOcean/AIBECS.jl.git")
 
 using Literate
 using AIBECS
@@ -34,6 +32,7 @@ pages(folder) = [joinpath(folder, f) for f in readdir(joinpath(src, folder)) if 
 makedocs(
     sitename="AIBECS.jl",
     doctest = false, # TODO guessing I should remove that when actually deploying?
+    draft = get(ENV, "DRAFT", "false") == "true", # DRAFT=true skips @example/@repl/@setup/@eval blocks for fast markdown iteration
     # options
     modules = [AIBECS],
     # organisation
@@ -44,23 +43,43 @@ makedocs(
         "Explanation" => pages("explanation"),
         "Reference" => pages("reference")
         ],
-    warnonly = true,
-    format = Documenter.HTML(prettyurls = true),
+    warnonly = false,
+    format = DocumenterVitepress.MarkdownVitepress(
+        repo = "https://github.com/JuliaOcean/AIBECS.jl",
+        devbranch = "main",
+        devurl = "dev",
+        build_vitepress = get(ENV, "CI", "false") == "true",
+    ),
     remotes = nothing
 )
 
-# Deploy
-deploydocs(
-    repo = "github.com/JuliaOcean/AIBECS.jl.git",
-    push_preview = true
-)
-
+# Deploy (only on CI — locally there is nothing to deploy to)
+if get(ENV, "CI", "false") == "true"
+    deploydocs(
+        repo = "github.com/JuliaOcean/AIBECS.jl.git",
+        push_preview = true,
+    )
+end
 
 #=
-To edit locally, make sure execute is set to false and run
+To render and preview the docs locally:
 
-using LiveServer
-servedocs(literate=joinpath("docs", "lit"), doc_env=true)
+Recommended — VitePress dev server with hot reload (DocumenterVitepress-native):
+    1. julia --project=docs -e 'include("docs/make.jl")'    # generates VitePress sources
+       (locally `build_vitepress` is automatically false — see the format above —
+       so this step skips the production build and just emits the sources.)
+    2. julia --project=docs -e 'using DocumenterVitepress; DocumenterVitepress.dev_docs("docs/build")'
+    Browser opens at http://localhost:5173 with hot module reload.
+    On any src/ edit: re-run step 1; the browser auto-refreshes.
 
-from the root of the package in development
+Fast markdown-only iteration (skip @example/@repl/@setup/@eval evaluation):
+    DRAFT=true julia --project=docs -e 'include("docs/make.jl")'
+    Code blocks render as plain code — useful when you only want to check
+    page structure, prose, layout, or link targets. Drop `DRAFT=true` to
+    evaluate code blocks again.
+
+Note on `LiveServer.servedocs`: it auto-rebuilds on src/ changes but cannot
+preview a VitePress site correctly (asset paths are absolute under
+/AIBECS.jl/, and servedocs serves docs/build/ rather than the rendered
+docs/build/final_site/). Use `dev_docs` instead for visual preview.
 =#

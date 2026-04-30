@@ -43,6 +43,11 @@ function plotdepthprofile! end
 
 function plottransect end
 
+function ratioatstation end
+function ratioatstation! end
+function plotstencil end
+function plotstencil! end
+
 export plothorizontalslice, plothorizontalslice!, surfacemap, surfacemap!,
     plot∫dz, plot∫dz!, plotverticalintegral, plotverticalintegral!,
     plotverticalmean, plotverticalaverage,
@@ -54,4 +59,6 @@ export plothorizontalslice, plothorizontalslice!, surfacemap, surfacemap!,
     plot∫dxdy, plot∫dxdy!, plothorizontalintegral, plothorizontalintegral!,
     plothorizontalmean, plothorizontalmean!, plothorizontalaverage, plothorizontalaverage!,
     plotdepthprofile, plotdepthprofile!,
-    plottransect
+    plottransect,
+    ratioatstation, ratioatstation!,
+    plotstencil, plotstencil!

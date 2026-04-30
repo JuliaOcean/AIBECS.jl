@@ -5,7 +5,7 @@
 
 # The tracer equation for the ideal age is
 #
-# $$\left(\partial_t + \mathbf{T}\right) \boldsymbol{a} = 1 - \frac{\boldsymbol{a}}{τ} \, (\boldsymbol{z} \le z_0),$$
+# $$\left(\partial_t + \mathbf{T}\right) \boldsymbol{a} = 1 - \frac{\boldsymbol{a}}{\tau} \, (\boldsymbol{z} \le z_0),$$
 #
 # where the sink term on the right clamps the age to $0$ at the surface (where $\boldsymbol{z} \le z_0$).
 # The smaller the timescale $\tau$, the quicker $\boldsymbol{a}$ is restored to $0$ at the surface.

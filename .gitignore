@@ -6,4 +6,10 @@ docs/build/
 docs/src/tutorials/
 docs/src/howtos/
 docs/src/notebooks/
+
 settings.json
+settings.local.json
+
+node_modules/
+package-lock.json
+docs/package.json

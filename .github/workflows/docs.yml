@@ -3,17 +3,23 @@ name: Documentation
 on:
   push:
     branches:
-      - 'master'
-      - 'release-'
+      - 'main'
     tags: '*'
   pull_request:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  statuses: write
+  pull-requests: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   build:
-    permissions:
-      contents: write
-      pull-requests: read
-      statuses: write
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,10 +31,10 @@ jobs:
         run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
           GKSwstype: 100
         run: julia --project=docs/ docs/make.jl
-      - uses: julia-actions/julia-uploadcodecov@latest
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Save cache on failure
+        uses: julia-actions/cache@v1
+        if: failure()

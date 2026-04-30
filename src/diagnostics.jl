@@ -94,8 +94,7 @@ a Gaussian Kernel for values, but conserving mass.
 This matrix can also likely be used as a covariance matrix for observations in a Bayesian framework.
 """
 function smooth_operator(grd, T; σs=(1.0, 1.0, 0.25))
-    st = stencil(grd, T)
-    weight(dir) = Kernel.gaussian(σs)[dir]
+    weight(dir) = exp(-sum((Tuple(dir) ./ σs) .^ 2) / 2)
     Isym, Jsym, _, _ = symmetric_IJVVᵀ(T)
     dirs = directions(Isym, Jsym, grd)
     A = sparse(Isym, Jsym, weight.(dirs))
