@@ -1,4 +1,18 @@
 
+"""
+    CTKAlg <: SciMLBase.AbstractSteadyStateAlgorithm
+
+Marker algorithm that selects AIBECS's customised Newton–Chord–Shamanskii
+solver when passed to `SciMLBase.solve(::SteadyStateProblem, ::CTKAlg)`.
+
+```julia
+prob = SteadyStateProblem(fun, x₀, p)
+sol  = solve(prob, CTKAlg(); maxItNewton=50)
+```
+
+The underlying engine is `AIBECS.NewtonChordShamanskii` (with Armijo line
+search and lazy Jacobian refresh, after Kelley 2003).
+"""
 struct CTKAlg <: SciMLBase.AbstractSteadyStateAlgorithm end
 
 """

@@ -150,7 +150,41 @@ vec(p)
 
 # Note how `γ` (the third parameter, but the second flattenable one), is converted to meters.
 
-# ## Other features
+# ## Bounds, priors, and log-scaling
 
-# Coming soon!
+# Optimisable parameters can carry per-field metadata that AIBECS uses
+# during parameter optimisation: a Bayesian prior, hard bounds, and
+# a flag marking the parameter as log-scaled when it spans many orders
+# of magnitude. These are introduced via the `@prior`, `@bounds`, and
+# `@logscaled` macros — usable on the same struct as `@units` and
+# `@flattenable`. They require `using Distributions` so the
+# `AIBECSParametersDistributionsExt` extension activates.
+#
+# ```julia
+# using Distributions
+# @initial_value @units @flattenable @bounds @logscaled @prior struct OptParams{T} <: AbstractParameters{T}
+#     k::T | 1.0 | u"d^-1" | true  | (0.01, 100.0) | true  | LogNormal()
+# end
+# ```
+
+# ## Vector ↔ parameter conversion
+
+# Once parameters are tagged optimisable, AIBECS round-trips between a
+# struct and a flat vector via `vec`, `p2λ`, and `λ2p`:
+#
+# - `vec(p)` flattens the optimisable fields to SI units (shown above).
+# - `p2λ(p)` does the same, then maps each parameter through its bijector
+#   so the vector is unconstrained (log-transformed when log-scaled,
+#   logit-transformed when bounded). Pair with `λ2p(typeof(p), λ)` to
+#   reconstruct a parameter struct from a flat unconstrained vector.
+
+# ## Tabular display
+
+# Beyond the default `show`, AIBECS exposes a few presentation helpers:
+#
+# - `AIBECS.table(p)` returns a `DataFrame` of the parameter values plus
+#   their metadata columns (units, prior, bounds, …). Requires
+#   `using DataFrames`.
+# - `latex(p)` prints a LaTeX-formatted version of the same table,
+#   convenient for paper supplements.
 

@@ -1,3 +1,15 @@
+"""
+    AO
+
+Helpers to download the AWESOME-OCIM (AO) MATLAB toolbox of John et al. (2020)
+as a zipped GitHub archive and unpack it locally via `DataDeps`.
+The unpacked tree contains MATLAB code, OCIM1 transport matrices, and
+auxiliary GEOTRACES/WOA datasets bundled by the AO authors.
+
+Note: the upstream zip is served by GitHub directly (there is no official
+mirror), so downloads are subject to GitHub availability — see
+[`download_and_unpack`](@ref).
+"""
 module AO
 
 using DataDeps              # For storage location of data

@@ -8,6 +8,8 @@ ENV["GKSwstype"] = "100"
 
 using Literate
 using AIBECS
+using Plots                 # activate AIBECSRecipesBaseExt so plot-recipe stubs gain methods
+using Distributions, Bijectors, DataFrames  # activate parameter extensions for @docs introspection
 
 # generate tutorials and how-to guides using Literate
 src = joinpath(@__DIR__, "src")
@@ -41,9 +43,10 @@ makedocs(
         "Tutorials" => pages("tutorials"),
         "How-to guides" => pages("howtos"),
         "Explanation" => pages("explanation"),
-        "Reference" => pages("reference")
+        "Reference" => pages("reference"),
+        "Publications" => pages("publications")
         ],
-    warnonly = false,
+    warnonly = [:missing_docs],   # internals are intentionally omitted from the curated reference page
     format = DocumenterVitepress.MarkdownVitepress(
         repo = "https://github.com/JuliaOcean/AIBECS.jl",
         devbranch = "main",

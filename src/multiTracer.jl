@@ -7,6 +7,22 @@ Generate 𝐹 and ∇ₓ𝐹 from user input
 ============================================ =#
 
 # TODO replace this with DiffEqOperators when possible
+"""
+    LinearOperators(ops...)
+
+Container for a tuple of linear operators that acts as their sum.
+
+Lets AIBECS represent a transport operator built from several pieces (e.g. a
+sparse advection matrix plus a matrix-free diffusion operator) without
+materialising the sum eagerly. Supports `*`, `\\`, `+` with sparse matrices,
+and in-place `mul!`. `factorize`, `*`, and `\\` materialise the sum on demand.
+
+```julia
+A = LinearOperators(T1, T2)   # behaves like T1 + T2
+A * x                          # equivalent to (T1 + T2) * x
+A \\ b                         # equivalent to (T1 + T2) \\ b
+```
+"""
 struct LinearOperators{T<:Tuple}
     ops::T
 end
@@ -28,7 +44,35 @@ function Base.:*(A::LinearOperators, u::AbstractArray) # has to be same type!
 end
 export LinearOperators
 
-# AIBECSFunction creates an ODEFunction from the Ts and Gs
+"""
+    AIBECSFunction(T, G, nb)
+    AIBECSFunction(Ts, Gs, nb, [nt, Tidx])
+    AIBECSFunction(Ts, Gs, nb, ::Type{P}) where {P <: AbstractParameters}
+
+Build a `SciMLBase.ODEFunction` for the AIBECS state equation
+
+```math
+\\partial_t \\boldsymbol{x} = \\boldsymbol{G}(\\boldsymbol{x}, \\boldsymbol{p}) - \\mathbf{T}(\\boldsymbol{p}) \\, \\boldsymbol{x}
+```
+
+together with its Jacobian ``\\nabla_x F = \\nabla_x \\boldsymbol{G} - \\mathbf{T}``,
+ready to plug into `SteadyStateProblem` or any SciML solver.
+
+`T` is the linear transport operator: a sparse matrix (single tracer, constant
+in `p`) or a function `p -> T(p)` (depends on parameters). `G` is the local
+sources-and-sinks function `G(x, p)`. For multi-tracer models pass tuples `Ts`
+and `Gs`; the optional `Tidx` maps each of the `nt` tracers to one of the
+operators in `Ts` (defaults to one operator per tracer). When a parameter type
+`P <: AbstractParameters` is supplied, the returned function also accepts a
+flat `Vector` parameter (converted internally via [`λ2p`](@ref)).
+
+```julia
+T(p) = transportoperator(grd, OCIM2.load()[2])
+G(x, p) = -x ./ p.τ
+fun = AIBECSFunction(T, G, count(iswet(grd)))
+prob = SteadyStateProblem(fun, x₀, p)
+```
+"""
 AIBECSFunction(T::AbstractSparseArray, G::Function) = AIBECSFunction(p -> T, G, T.n)
 AIBECSFunction(T::Function, G::Function, nb::Int) = AIBECSFunction(T, (G,), nb)
 function AIBECSFunction(T::Function, Gs::Tuple, nb::Int)
@@ -194,6 +238,22 @@ function generate_∇ₓf(ωs, grd, modify::Function, obs)
 end
 
 
+"""
+    f_and_∇ₓf(ωs, μx, σ²x, v, ωp, ::Type{P})
+    f_and_∇ₓf(ωs, ωp, grd, obs, ::Type{P}; kwargs...)
+    f_and_∇ₓf(ωs, ωp, grd, modify, obs, ::Type{P})
+
+Build a `(f, ∇ₓf)` pair where `f(x, λorp)` is a volume-weighted mismatch
+objective combining tracer-vs-observation misfit with a parameter prior
+mismatch, and `∇ₓf` is its analytical state Jacobian.
+
+`ωs` weights each tracer in the sum, `ωp` weights the parameter-prior term,
+and `P <: AbstractParameters` is the parameter type. The first form takes
+volume-mean / variance / volume vectors directly; the second takes a grid
+plus observation tables; the third additionally lets the user transform
+tracers before the misfit is evaluated. Used as the model entry point for
+Newton-style optimisation (see [the parameter-optimisation how-to](@ref parameter-optimization)).
+"""
 function f_and_∇ₓf(ωs, μx, σ²x, v, ωp, ::Type{T}) where {T <: APar}
     generate_f(ωs, μx, σ²x, v, ωp, T), generate_∇ₓf(ωs, μx, σ²x, v)
 end
@@ -286,18 +346,59 @@ end
 unpacking of multi-tracers
 ============================================ =#
 
+"""
+    state_to_tracers(x, nb, nt)
+    state_to_tracers(x, grd)
+
+Split the flat state vector `x` into a tuple of `nt` tracer views of length `nb`.
+
+The returned objects are `view`s into `x`, so mutating them mutates `x`. The
+2-argument form infers `nb` from `grd` and `nt` from `length(x) / nb`.
+
+```julia
+xs = state_to_tracers(x, grd)
+DIP, DOP = xs                    # for a 2-tracer model
+```
+"""
 state_to_tracers(x, nb, nt) = ntuple(i -> state_to_tracer(x, nb, nt, i), nt)
+
+"""
+    state_to_tracer(x, nb, nt, i)
+
+View into the `i`th tracer of the flat state vector `x` (length `nb*nt`).
+Equivalent to `state_to_tracers(x, nb, nt)[i]`.
+"""
 state_to_tracer(x, nb, nt, i) = view(x, tracer_indices(nb, nt, i))
 function state_to_tracers(x, grd)
     nb = number_of_wet_boxes(grd)
     nt = Int(round(length(x) / nb))
     return state_to_tracers(x, nb, nt)
 end
+
+"""
+    tracer_indices(nb, nt, i)
+
+Range of indices in the flat state vector that correspond to the `i`th tracer
+of an `nt`-tracer, `nb`-box model.
+"""
 tracer_indices(nb, nt, i) = (i - 1) * nb + 1:i * nb
+
+"""
+    tracers_to_state(xs)
+
+Concatenate a tuple/array of tracer vectors `xs` into a flat state vector,
+the inverse of [`state_to_tracers`](@ref).
+"""
 tracers_to_state(xs) = reduce(vcat, xs)
 export state_to_tracers, state_to_tracer, tracers_to_state, tracer_indices
-# Alias for better name
-unpack_tracers = state_to_tracers
+
+"""
+    unpack_tracers(x, grd)
+    unpack_tracers(x, nb, nt)
+
+Alias for [`state_to_tracers`](@ref) with a more user-friendly name.
+"""
+unpack_tracers(args...) = state_to_tracers(args...)
 export unpack_tracers
 
 

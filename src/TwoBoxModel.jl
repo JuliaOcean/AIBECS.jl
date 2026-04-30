@@ -1,19 +1,19 @@
-module TwoBoxModel
-#=
-This module serves to load the 2-box model matrix and grid
-from the Sarmiento and Gruber book (2006) book.
+"""
+    TwoBoxModel
 
+Pedagogical 2-box (surface + deep) circulation and grid from Sarmiento and
+Gruber (2006), useful as a minimal sanity-check model. Use
+[`TwoBoxModel.load`](@ref) to obtain `(grd, T)`.
+
+```text
 ┌────────────────────────────────┐
 │                        Surface │
 ├────────────────────────────────┤
-│                                │
-│                                │
-│                                │
-│                                │
 │                           Deep │
 └────────────────────────────────┘
-
-=#
+```
+"""
+module TwoBoxModel
 
 using LinearAlgebra, SparseArrays
 using Unitful

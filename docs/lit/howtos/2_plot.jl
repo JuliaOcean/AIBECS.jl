@@ -73,7 +73,7 @@ plotmeridionalslice(dummy, grd, lon=330)
 
 # #### Global zonal average
 
-zonalaverage(dummy, grd)
+plotzonalaverage(dummy, grd)
 
 # If you want a zonal average over a specific region, you can just mask it out
 

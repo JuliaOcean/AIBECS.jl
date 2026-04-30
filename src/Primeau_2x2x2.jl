@@ -1,14 +1,14 @@
-module Primeau_2x2x2
-#=
-This circulation and grid was created by François Primeau (fprimeau@uci.edu)
-It was taken from his Notebook at
-https://github.com/fprimeau/BIOGEOCHEM_TEACHING/blob/master/Intro2TransportOperators.ipynb
+"""
+    Primeau_2x2x2
 
-The simple box model we consider is embeded in a 2×2×2 "shoebox".
-It has 5 wet boxes and 3 dry boxes.
-See image at
-https://github.com/fprimeau/BIOGEOCHEM_TEACHING/blob/master/boxmodel.png
-=#
+Pedagogical 2×2×2 "shoebox" circulation by François Primeau, with 5 wet boxes
+and 3 dry boxes (see his
+[Intro2TransportOperators](https://github.com/fprimeau/BIOGEOCHEM_TEACHING/blob/master/Intro2TransportOperators.ipynb)
+notebook and
+[boxmodel.png](https://github.com/fprimeau/BIOGEOCHEM_TEACHING/blob/master/boxmodel.png)).
+Use [`Primeau_2x2x2.load`](@ref) to obtain `(grd, T)`.
+"""
+module Primeau_2x2x2
 
 using LinearAlgebra, SparseArrays
 using Unitful

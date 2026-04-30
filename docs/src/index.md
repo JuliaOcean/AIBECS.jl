@@ -34,6 +34,10 @@ features:
     title: Reference
     details: Function docstrings and API reference.
     link: /reference/functions
+  - icon: 📑
+    title: Publications
+    details: Publications and software using AIBECS.
+    link: /publications/1_publications
 ---
 ```
 
@@ -46,9 +50,12 @@ features:
 
 ----
 
-!!! note
-    The AIBECS is being developed primarily by Benoît Pasquier (postdoc with Seth John at the University of Southern California).
-    If you use the AIBECS in your research, [please cite it](https://doi.org/10.5281/zenodo.2864051)!
+!!! note "Maintenance status"
+    AIBECS is essentially in maintenance-only mode, and might remain so for a little while.
+    Although it works (the software has been published and has been used in publications), I consider AIBECS still in development, with a bunch of features and fixes that are currently missing, but I do not have enough time to work on it unfortunately.
+    Please get in touch if you have some bandwidth and/or funding and are interested in collaborating or developing AIBECS!
+
+    If you use AIBECS in your research, [please cite it](https://doi.org/10.5281/zenodo.2864051)!
     Similarly, if you access data from within AIBECS (like the OCIM or OCCA ocean circulations) please cite them too.
 
 !!! warning

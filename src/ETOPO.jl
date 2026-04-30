@@ -1,3 +1,14 @@
+"""
+    ETOPO
+
+Access to the 1-arc-minute ETOPO1 global relief model (Amante and Eakins, 2009),
+either the bedrock (`:bedrock`) or ice-surface (`:ice`) variant. Provides
+[`ETOPO.load`](@ref) plus the bin-on-grid helpers [`fractiontopo`](@ref) and
+[`roughnesstopo`](@ref) for mapping subgrid topography onto an `OceanGrid`.
+
+Loading the dataset requires `Distances` and `NCDatasets` so that the
+`AIBECSETOPOExt` extension is activated.
+"""
 module ETOPO
 
 using OceanGrids

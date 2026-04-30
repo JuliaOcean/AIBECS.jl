@@ -1,3 +1,11 @@
+"""
+    GroundWaters
+
+Coastal fresh-groundwater discharge dataset of Luijendijk et al. (2020),
+exposed as `GroundWaterSource` entries that can be regridded onto an
+`OceanGrid`. Loading the dataset requires the `Shapefile` and `DataFrames`
+packages so that the `AIBECSShapefileExt` extension is activated.
+"""
 module GroundWaters
 
 using OceanGrids
@@ -7,6 +15,12 @@ using DataDeps              # For storage location of data
 using Downloads
 import OceanGrids: regrid
 
+"""
+    GroundWaterSource(lon, lat, VFR)
+
+A point-source groundwater discharge: longitude, latitude, and volumetric flow
+rate `VFR` (Unitful quantity).
+"""
 struct GroundWaterSource{T}
     lon::Float64
     lat::Float64
