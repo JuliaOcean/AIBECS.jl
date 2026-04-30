@@ -58,7 +58,6 @@ if get(ENV, "CI", "false") == "true"
     deploydocs(
         repo = "github.com/JuliaOcean/AIBECS.jl.git",
         push_preview = true,
-        target = joinpath(@__DIR__, "build", "final_site"),
     )
 end
 
