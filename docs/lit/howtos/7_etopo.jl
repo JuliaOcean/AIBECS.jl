@@ -24,7 +24,7 @@ Z, lats, lons = ETOPO.load()                 # bedrock variant by default
 
 # ## Fraction of sediment per box
 
-f = fractiontopo(grd)
+f = ETOPO.fractiontopo(grd)
 plothorizontalslice(f, grd, depth = 3000u"m", color = :viridis)
 
 # Cells with `f > 0` at depth `z` correspond to grid boxes whose subgrid
@@ -32,7 +32,7 @@ plothorizontalslice(f, grd, depth = 3000u"m", color = :viridis)
 
 # ## Roughness proxy
 
-r = roughnesstopo(grd)
+r = ETOPO.roughnesstopo(grd)
 plothorizontalslice(r, grd, depth = 3000u"m", color = :inferno)
 
 # Higher values flag boxes overlapping the seafloor with significant

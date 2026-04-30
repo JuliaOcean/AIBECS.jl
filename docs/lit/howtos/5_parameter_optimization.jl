@@ -19,34 +19,36 @@ using Bijectors, Distributions
 
 # Combine the `@initial_value`, `@units`, `@flattenable`, `@bounds`,
 # `@logscaled`, and `@prior` macros on a single `AbstractParameters`
-# struct. Each column corresponds to one piece of metadata.
+# struct. Each column corresponds to one piece of metadata; the
+# leftmost column is consumed by the outermost macro.
 
-import AIBECS: @initial_value, @units, @flattenable, @bounds, @logscaled, @prior
-
-@initial_value @units @flattenable @bounds @logscaled @prior struct OptParams{T} <: AbstractParameters{T}
-    k::T  | 1.0    | u"d^-1"  | true  | (0.01, 100.0)   | true  | LogNormal()
-    z₀::T | 100.0  | u"m"     | true  | (10.0, 5000.0)  | false | Uniform(10.0, 5000.0)
-    τ::T  | 30.0   | u"d"     | false | (1.0, 365.0)    | false | Uniform(1.0, 365.0)
-end
+# ```julia
+# import AIBECS: @initial_value, @units, @flattenable, @bounds, @logscaled, @prior
+# using Distributions
+#
+# @initial_value @units @flattenable @bounds @logscaled @prior struct OptParams{T} <: AbstractParameters{T}
+#     k::T  | 1.0    | u"d^-1"  | true  | (0.01, 100.0)   | true  | LogNormal()
+#     z₀::T | 100.0  | u"m"     | true  | (10.0, 5000.0)  | false | Uniform(10.0, 5000.0)
+#     τ::T  | 30.0   | u"d"     | false | (1.0, 365.0)    | false | Uniform(1.0, 365.0)
+# end
+# ```
 
 # Only fields with `flattenable = true` participate in optimisation; the
 # others are held fixed at their initial value.
-
-p = OptParams()
 
 # ## Vector ↔ parameter conversion
 
 # `vec(p)` flattens the optimisable fields to SI units. For optimisation
 # we usually want an *unconstrained* vector, which is what `p2λ` produces
 # by composing `vec` with each parameter's bijector (log when log-scaled,
-# logit when bounded).
+# logit when bounded). `λ2p(typeof(p), λ)` is the inverse: it reconstructs
+# a parameter struct from a flat unconstrained vector and applies inverse
+# bijectors so the result satisfies the bounds.
 
-λ = p2λ(p)
-
-# `λ2p` is the inverse: it reconstructs a parameter struct from a flat
-# vector, applying inverse bijectors so the result satisfies the bounds.
-
-p′ = λ2p(typeof(p), λ)
+# ```julia
+# λ  = p2λ(p)
+# p′ = λ2p(typeof(p), λ)
+# ```
 
 # This round-trip is exactly what `AIBECSFunction(Ts, Gs, nb, ::Type{P})`
 # uses internally to let the SciML solvers receive a flat parameter
