@@ -34,7 +34,7 @@ function SciMLBase.solve(prob::SciMLBase.AbstractSteadyStateProblem,
     x_steady = NewtonChordShamanskii(F, ∇ₓF, nrm, x0, τstop; preprint=preprint, maxItNewton=maxItNewton)
     resid = F(x_steady)
     # Return the common SciMLBase solution type
-    SciMLBase.build_solution(prob, alg, x_steady, resid; retcode=:Success)
+    SciMLBase.build_solution(prob, alg, x_steady, resid; retcode=SciMLBase.ReturnCode.Success)
 end
 
 export solve, SteadyStateProblem, CTKAlg
