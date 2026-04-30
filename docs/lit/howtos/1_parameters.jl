@@ -16,6 +16,7 @@
 # As usual, make sure you are using AIBECS
 
 using AIBECS
+using DataFrames # required for `AIBECS.table` (loaded via package extension)
 
 # ## Abstract parameters type
 

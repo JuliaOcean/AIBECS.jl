@@ -7,6 +7,8 @@ using OceanGrids
 using Unitful
 using Unitful: °, ustrip
 
+import AIBECS: ratioatstation, ratioatstation!, plotstencil, plotstencil!
+
 const lonticks = (-180:30:360, ["180°", "", "120°W", "", "60°W", "", "0°", "", "60°E", "", "120°E", "", "180°", "", "120°W", "", "60°W", "", "0°"])
 const latticks = (-90:30:90, ["SP", "60°S", "30°S", "EQ", "30°N", "60°N", "NP"])
 function prettyticks(axis, defaultticks)

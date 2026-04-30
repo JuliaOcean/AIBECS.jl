@@ -151,6 +151,7 @@ plothorizontalslice(POP .* w(z,p) * (mol/m^3*m/s) .|> mmol/yr/m^2, grd, depth=50
 # Now let's make our model a little fancier and use a fine topographic map to refine the remineralization profile.
 # For this, we will use the ETOPO dataset, which can be downloaded by AIBECS via
 
+using Distances, NCDatasets # required to activate the `AIBECSETOPOExt` extension
 f_topo = ETOPO.fractiontopo(grd)
 
 # `f_topo` is the fraction of sediments located in each wet box of the `grd` grid.
