@@ -1,3 +1,14 @@
+"""
+    Rivers
+
+Annual-mean discharge locations and volumetric flow rates of the 200 largest
+rivers, extracted from the Dai and Trenberth global river-flow dataset
+(`runoff-table-A.txt` and `runoff-table2-top50r.txt` on UCAR's RDA, used
+with permission from Aiguo Dai). Use [`Rivers.load`](@ref) to obtain the list
+and [`regrid`](@ref) to project it onto an `OceanGrid`.
+
+See [`Rivers.citation`](@ref) for citation strings.
+"""
 module Rivers
 
 using Unitful
@@ -6,16 +17,12 @@ import Unitful: uconvert
 using OceanGrids
 import OceanGrids: regrid
 
-# These river discharge volumetric flow rates and locations were taken from the Dai and Trenberth dataset
-# located on UCAR's Research Data Archive (RDA)
-# (URL: https://rda.ucar.edu/datasets/ds551.0/index.html#!description)
-# and were converted to Julia/AIBECS with permission from Aiguo Dai.
-#
-# This module only contains the annual mean river discharge of the 200 largest rivers, taken specifically from files `runoff-table-A.txt` and `runoff-table2-top50r.txt` of the original dataset.
-#
-# Then I copied these files here and wrote them up into a Julia format by hand
-# because it was the most straightforward approach for me here...
+"""
+    River(name, lon, lat, VFR)
 
+A river entry: `name`, mouth `lon`/`lat` (degrees), and volumetric flow rate
+`VFR` (e.g. in `km^3/yr` or `m^3/s` via Unitful).
+"""
 struct River{T}
     name::String
     lon::Float64
@@ -234,6 +241,13 @@ const RIVERS = [
     River("Murchison",                       114.5, -27.9,    0.2km^3/yr)
 ]
 
+"""
+    Rivers.citation()
+
+Multi-line citation string for the Dai and Trenberth river-discharge dataset
+(plus its updates). BibTeX entries are stored in `CITATION.bib` under the
+keys `Dai_2017`, `Dai_Trenberth_2002`, `Dai_etal_2009`, and `Dai_2016`.
+"""
 citation() = """
 - For the dataset itself: Dai, A. 2017. Dai and Trenberth Global River Flow and Continental Discharge Dataset. Research Data Archive at the National Center for Atmospheric Research, Computational and Information Systems Laboratory. https://doi.org/10.5065/D6V69H1T.
 - For the formal publication that describe the dataset: Dai, A., and K. E. Trenberth, 2002: Estimates of freshwater discharge from continents: Latitudinal and seasonal variations. J. Hydrometeorol., 3, 660–687.
@@ -244,6 +258,12 @@ citation() = """
 
 uconvert(u, r::River) = River(r.name, r.lon, r.lat, uconvert(u, r.VFR))
 
+"""
+    Rivers.load(unit=m^3/s)
+
+Return the 200 largest rivers as a `Vector{River}`, with volumetric flow rates
+converted to `unit`.
+"""
 function load(unit=m^3/s)
     @info """You are about to use the Dai and Trenberth river discharge dataset.
           If you use it for research, please cite:
@@ -257,6 +277,12 @@ function load(unit=m^3/s)
     return uconvert.(unit, RIVERS)
 end
 
+"""
+    regrid(R::Vector{River}, grd)
+
+Bin a list of rivers `R` onto the surface boxes of `grd`, returning a vector of
+volumetric flow rates per wet box (zero for boxes with no river).
+"""
 function regrid(R::Vector{River{T}}, grd) where T <: Quantity
     lats = [r.lat for r in R]
     lons = [r.lon for r in R]

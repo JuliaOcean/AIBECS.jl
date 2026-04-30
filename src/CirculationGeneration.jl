@@ -3,10 +3,6 @@
 using LinearAlgebra, SparseArrays
 using Unitful
 
-#=============================================
-Tools for making simple circulations
-=============================================#
-
 """
     T_advection(ϕ, orig, dest, v3D, nb)
 
@@ -47,3 +43,13 @@ end
 
 
 end
+
+@doc """
+    CirculationGeneration
+
+Tools for assembling simple advection/diffusion transport operators from
+sequences of inter-box flow rates, with [`T_advection`](@ref) and
+[`T_diffusion`](@ref) as the two building blocks. Used by the pedagogical
+circulation modules ([`TwoBoxModel`](@ref), [`Primeau_2x2x2`](@ref),
+[`Archer_etal_2000`](@ref), [`Haine_and_Hall_2025`](@ref)).
+""" CirculationGeneration

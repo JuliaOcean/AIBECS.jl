@@ -1,26 +1,22 @@
-module Archer_etal_2000
-#=
-This module serves to load the 6-box model matrix and grid.
-The 6-box model is used because it makes it easier to build
-operators for sinking particles in a regular grid,
-and because the code to bin WOA data requires a regular grid.
-These are the indices of the 6-box model:
+"""
+    Archer_etal_2000
 
+3-box circulation of Archer et al. (2000), implemented as a regular 6-box grid
+so that AIBECS can build particulate sinking-flux operators on it. The boxes
+group as: high-latitude surface (1+3), low-latitude surface (2), deep (4+5+6).
+Use [`Archer_etal_2000.load`](@ref) to obtain `(grd, T)`.
+
+```text
 ┌───────┬────────────────────────┐
 │ 1(H)  │         2(L)           │
 ├───────┼────────────────────────┤
 │ 3(H)  │         4(D)           │
 ├───────┼────────────────────────┤
-│       │                        │
 │ 5(D)  │         6(D)           │
-│       │                        │
 └───────┴────────────────────────┘
-
-The boxes are grouped as indicated:
-- 1 + 3 represents the high-latitudes (surface) box
-- 2 represents the low-latitudes (surface) box
-- 4 + 5 + 6 represents the deep box
-=#
+```
+"""
+module Archer_etal_2000
 
 using LinearAlgebra, SparseArrays
 using Unitful

@@ -1,3 +1,9 @@
+"""
+    updateλs(λⱼ, λⱼ₋₁, N2Fᵢ, N2Fⱼ, N2Fⱼ₋₁)
+
+Internal helper. Parabolic line-search update of the Armijo step size, following
+Kelley (2003). Not exported.
+"""
 function updateλs(λⱼ, λⱼ₋₁, N2Fᵢ, N2Fⱼ, N2Fⱼ₋₁)
     # Fit a parabola for a line search of the minimum of the norm of F(xᵢ + λ δxᵢ) = p(λ)
     # modified from C.T.Kelley, 2003
@@ -37,6 +43,12 @@ function updateλs(λⱼ, λⱼ₋₁, N2Fᵢ, N2Fⱼ, N2Fⱼ₋₁)
 
 end
 
+"""
+    searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint="")
+
+Internal helper. In-place Armijo line search shrinking the Newton step `δxᵢ`
+until ``\\|F(x + λ δx)\\|`` decreases sufficiently. Not exported.
+"""
 function searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint = "")
     preprint ≠ "" ? preprint = preprint * "    │" : nothing
     j = 0 # Armijo iteration counter
@@ -101,6 +113,26 @@ function updateJacobian!(JF, rShamᵢ, rSham₀, ArmijoFail, ∇ₓF, xᵢ)
     return JF
 end
 
+"""
+    NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop; preprint="", maxItNewton=50)
+    NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint="", maxItNewton=50)
+
+Newton–Chord–Shamanskii solver for `F(x) = 0`, with Armijo line search and
+lazy Jacobian refresh.
+
+Drives the solver via `F(x)` and `∇ₓF(x)`, recycling factorisations of the
+Jacobian whenever the Newton residual reduces by more than `rSham₀ = 0.5`,
+and refreshing otherwise. The norm `nrm` and the stopping criterion
+``\\|x\\| / \\|F(x)\\| > τ_{stop}`` follow the convention of Kelley (2003).
+The second form lets the caller pass a pre-computed factorisation `Jfinit`
+to skip the first Jacobian factorisation.
+
+This is the engine behind AIBECS's [`AIBECS.CTKAlg`](@ref) algorithm wrapper
+used by `SciMLBase.solve(::SteadyStateProblem)`.
+
+Reference: C. T. Kelley (2003), *Solving Nonlinear Equations with Newton's
+Method*, SIAM, Frontiers in Applied Mathematics 1.
+"""
 function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop; preprint="", maxItNewton=50)
     if preprint ≠ ""
         println(preprint * "(No initial Jacobian factors fed to Newton solver)")

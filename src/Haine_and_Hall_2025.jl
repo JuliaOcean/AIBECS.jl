@@ -1,15 +1,17 @@
+"""
+    Haine_and_Hall_2025
+
+9-box pedagogical circulation of Haine and Hall (2002), as described in
+Figure 6 of Haine, Griffies, Gebbie, and Jiang (2025), *A review of Green's
+function methods for tracer timescales and pathways in ocean models*. This
+implementation translates the reference Julia version in
+[OceanGreensFunctionMethods.jl](https://github.com/ggebbie/OceanGreensFunctionMethods.jl)
+(file `src/pedagogical_tracer_box_model.jl`) into AIBECS's
+[`T_advection`](@ref) / [`T_diffusion`](@ref) machinery. Use
+[`Haine_and_Hall_2025.load`](@ref) to obtain `(grd, T)`.
+"""
 module Haine_and_Hall_2025
 #=
-This module loads the 9-box pedagogical circulation model of
-Haine and Hall (2002), as described in Figure 6 of the JAMES review by
-Haine et al. (2024/2025), "A Review of Green's Function Methods for
-Tracer Timescales and Pathways in Ocean Models".
-
-The reference Julia implementation is in
-https://github.com/ggebbie/OceanGreensFunctionMethods.jl
-(see src/pedagogical_tracer_box_model.jl). This file translates that
-exact circulation into AIBECS's T_advection / T_diffusion machinery.
-
 Box layout: 1 longitude × 3 latitudes × 3 depths. Linear (column-major)
 indexing of the wet3D = trues(3, 1, 3) array gives:
 

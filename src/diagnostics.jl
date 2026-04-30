@@ -1,6 +1,21 @@
 
 
 
+"""
+    stencil(T, grd)
+    stencil(grd, T)
+
+Unique relative neighbour offsets (`CartesianIndex`es) used by the transport
+operator `T` on grid `grd`.
+
+Useful for inspecting which directions a circulation matrix actually couples
+boxes along.
+
+```julia
+grd, T = OCCA.load()
+stencil(T, grd)   # e.g. [CI(0,0,0), CI(0,1,0), CI(0,-1,0), ...]
+```
+"""
 stencil(T, grd::OceanGrid) = unique(directions(T, grd))
 stencil(grd::OceanGrid, T) = stencil(T, grd)
 export stencil
@@ -59,6 +74,15 @@ function symmetric_IJVVᵀ(T)
 end
 
 
+"""
+    directional_transport(T, grd, dir)
+
+Sub-operator of `T` that contains only the transport along the relative
+direction `dir` (a `CartesianIndex` from [`stencil`](@ref)).
+
+Useful for diagnosing how much of a circulation acts along, say, the vertical
+versus the zonal axis.
+"""
 function directional_transport(T, grd, dir)
     Isym, Jsym, Vsym, Vᵀsym = symmetric_IJVVᵀ(T)
     dirs = directions(Isym, Jsym, grd)
@@ -73,6 +97,18 @@ function _directional_transport(dir, dirs, n, Isym, Jsym, Vsym, Vᵀsym, v)
     @views i, j, val, valᵀ = Isym[idir], Jsym[idir], Vsym[idir], Vᵀsym[idir]
     return sparse([i; i], [j; i], [val; -v[j] ./ v[i] .* valᵀ], n, n)
 end
+"""
+    directional_transports(T, grd)
+
+Dictionary mapping human-readable direction labels (`"East"`, `"AboveNorth"`, …)
+to the corresponding [`directional_transport`](@ref) sub-operators of `T`.
+
+```julia
+grd, T = OCCA.load()
+parts = directional_transports(T, grd)
+parts["East"]                 # zonal eastward component
+```
+"""
 function directional_transports(T, grd)
     st = stencil(grd, T)
     Isym, Jsym, Vsym, Vᵀsym = symmetric_IJVVᵀ(T)
