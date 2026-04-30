@@ -43,7 +43,8 @@ makedocs(
         "Tutorials" => pages("tutorials"),
         "How-to guides" => pages("howtos"),
         "Explanation" => pages("explanation"),
-        "Reference" => pages("reference")
+        "Reference" => pages("reference"),
+        "Publications" => pages("publications")
         ],
     warnonly = [:missing_docs],   # internals are intentionally omitted from the curated reference page
     format = DocumenterVitepress.MarkdownVitepress(

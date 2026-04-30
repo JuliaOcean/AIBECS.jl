@@ -34,6 +34,10 @@ features:
     title: Reference
     details: Function docstrings and API reference.
     link: /reference/functions
+  - icon: 📑
+    title: Publications
+    details: Publications and software using AIBECS.
+    link: /publications/1_publications
 ---
 ```
 
