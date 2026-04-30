@@ -22,23 +22,17 @@
   <a href="https://doi.org/10.5281/zenodo.2864051">
     <img src="http://img.shields.io/badge/DOI-10.5281%20%2F%20zenodo.2864051-blue.svg?&style=flat-square">
   </a>
-  <a href="https://github.com/JuliaOcean/AIBECS.jl/blob/master/LICENSE">
+  <a href="https://github.com/JuliaOcean/AIBECS.jl/blob/main/LICENSE">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg?&style=flat-square">
   </a>
 </p>
 
 <p>
-  <a href="https://github.com/JuliaOcean/AIBECS.jl/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/JuliaOcean/AIBECS.jl/mac.yml?label=OSX&logo=Apple&logoColor=white&style=flat-square">
-  </a>
-  <a href="https://github.com/JuliaOcean/AIBECS.jl/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/JuliaOcean/AIBECS.jl/linux.yml?label=Linux&logo=Linux&logoColor=white&style=flat-square">
-  </a>
-  <a href="https://github.com/JuliaOcean/AIBECS.jl/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/JuliaOcean/AIBECS.jl/windows.yml?label=Windows&logo=Windows&logoColor=white&style=flat-square">
+  <a href="https://github.com/JuliaOcean/AIBECS.jl/actions/workflows/Test.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/JuliaOcean/AIBECS.jl/Test.yml?label=Test&logo=github&logoColor=white&style=flat-square">
   </a>
   <a href="https://codecov.io/gh/JuliaOcean/AIBECS.jl">
-    <img src="https://img.shields.io/codecov/c/github/JuliaOcean/AIBECS.jl/master?label=Codecov&logo=codecov&logoColor=white&style=flat-square">
+    <img src="https://img.shields.io/codecov/c/github/JuliaOcean/AIBECS.jl/main?label=Codecov&logo=codecov&logoColor=white&style=flat-square">
   </a>
 </p>
 

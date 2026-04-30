@@ -1,6 +1,6 @@
 name = "AIBECS"
 uuid = "ace601d6-714c-11e9-04e5-89b7fad23838"
-version = "0.16.0"
+version = "0.16.1"
 authors = ["Benoit Pasquier <briochemc@gmail.com>"]
 
 [deps]
@@ -65,7 +65,7 @@ NCDatasets = "0.14"
 OceanGrids = "0.4"
 RecipesBase = "1"
 Reexport = "1"
-SciMLBase = "2"
+SciMLBase = "2, 3"
 Shapefile = "0.13"
 SparseArrays = "1"
 UnPack = "1"
