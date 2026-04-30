@@ -58,7 +58,7 @@ Flatten = "0.4"
 ForwardDiff = "0.10"
 Interpolations = "0.15"
 JLD2 = "0.5"
-MAT = "0.10"
+MAT = "0.10, 0.12"
 MD5 = "0.2.3"
 MetadataArrays = "0.1"
 NCDatasets = "0.14"
@@ -89,19 +89,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WorldOceanAtlasTools = "04f20302-f1b9-11e8-29d9-7d841cb0a64a"
 
 [targets]
-test = [
-    "Bijectors",
-    "DataFrames",
-    "Distances",
-    "Distributions",
-    "DualNumbers",
-    "Interpolations",
-    "JLD2",
-    "MAT",
-    "NCDatasets",
-    "Plots",
-    "RecipesBase",
-    "Shapefile",
-    "Test",
-    "WorldOceanAtlasTools",
-]
+test = ["Bijectors", "DataFrames", "Distances", "Distributions", "DualNumbers", "Interpolations", "JLD2", "MAT", "NCDatasets", "Plots", "RecipesBase", "Shapefile", "Test", "WorldOceanAtlasTools"]
