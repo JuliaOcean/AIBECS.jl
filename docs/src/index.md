@@ -7,7 +7,7 @@ hero:
   text:
   tagline: Algebraic Implicit Biogeochemistry Elemental Cycling System
   image:
-    src: /assets/logo.png
+    src: /logo.png
     alt: AIBECS logo
   actions:
     - theme: brand
