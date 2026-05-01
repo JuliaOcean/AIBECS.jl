@@ -57,21 +57,21 @@ distributions by [briochemc/OceanCirculations](https://github.com/briochemc/Ocea
 
 | Module | Variant | Grid size | Citation | Source | Size (MB) |
 |---|---|---|---|---|---|
-| `OCIM0` | (single) | 180×90×24 | [DeVries & Primeau (2011)](https://doi.org/10.1175/JPO-D-10-05011.1); [Primeau et al. (2013)](https://doi.org/10.1002/jgrc.20181) | [link](https://figshare.com/ndownloader/files/28336086) | 11 |
-| `OCIM1` | CTL | 180×91×24 | [DeVries (2014)](https://doi.org/10.1002/2013GB004739) | [link](https://ndownloader.figshare.com/files/28335882) | 28 |
-| `OCIM2` | CTL_He (default) | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336284) | 29 |
-| `OCIM2` | CTL_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336299) | 29 |
-| `OCIM2` | KiHIGH_He | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336302) | 29 |
-| `OCIM2` | KiHIGH_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336311) | 28 |
-| `OCIM2` | KiLOW_He | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336317) | 29 |
-| `OCIM2` | KiLOW_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336323) | 29 |
-| `OCIM2` | KvHIGH_He | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336326) | 29 |
-| `OCIM2` | KvHIGH_KiHIGH_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336329) | 28 |
-| `OCIM2` | KvHIGH_KiLOW_He | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336332) | 29 |
-| `OCIM2` | KvHIGH_KiLOW_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336341) | 29 |
-| `OCIM2` | KvHIGH_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://ndownloader.figshare.com/files/28336353) | 29 |
-| `OCIM2_48L` | base | 180×91×48 | [Holzer, DeVries & de Lavergne (2021)](https://doi.org/10.1038/s41467-021-24648-x) | [link](https://ndownloader.figshare.com/files/28468077) | 554 |
-| `OCCA` | (single) | 180×80×10 | [Forget (2010)](https://doi.org/10.1175/2009JPO4043.1) | [link](https://ndownloader.figshare.com/files/28336173) | 5 |
+| `OCIM0` | (single) | 180×90×24 | [DeVries & Primeau (2011)](https://doi.org/10.1175/JPO-D-10-05011.1); [Primeau et al. (2013)](https://doi.org/10.1002/jgrc.20181) | [link](https://zenodo.org/records/19944573/files/OCIM0.1.jld2) | 11 |
+| `OCIM1` | CTL | 180×91×24 | [DeVries (2014)](https://doi.org/10.1002/2013GB004739) | [link](https://zenodo.org/records/19944597/files/OCIM1_CTL.jld2) | 28 |
+| `OCIM2` | CTL_He (default) | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_CTL_He.jld2) | 29 |
+| `OCIM2` | CTL_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_CTL_noHe.jld2) | 29 |
+| `OCIM2` | KiHIGH_He | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_KiHIGH_He.jld2) | 29 |
+| `OCIM2` | KiHIGH_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_KiHIGH_noHe.jld2) | 28 |
+| `OCIM2` | KiLOW_He | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_KiLOW_He.jld2) | 29 |
+| `OCIM2` | KiLOW_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_KiLOW_noHe.jld2) | 29 |
+| `OCIM2` | KvHIGH_He | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_He.jld2) | 29 |
+| `OCIM2` | KvHIGH_KiHIGH_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_KiHIGH_noHe.jld2) | 28 |
+| `OCIM2` | KvHIGH_KiLOW_He | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_KiLOW_He.jld2) | 29 |
+| `OCIM2` | KvHIGH_KiLOW_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_KiLOW_noHe.jld2) | 29 |
+| `OCIM2` | KvHIGH_noHe | 180×91×24 | [DeVries & Holzer (2019)](https://doi.org/10.1029/2018JC014716) | [link](https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_noHe.jld2) | 29 |
+| `OCIM2_48L` | base | 180×91×48 | [Holzer, DeVries & de Lavergne (2021)](https://doi.org/10.1038/s41467-021-24648-x) | [link](https://zenodo.org/records/19944665/files/OCIM2_48L_base.tar.gz) | 554 |
+| `OCCA` | (single) | 180×80×10 | [Forget (2010)](https://doi.org/10.1175/2009JPO4043.1) | [link](https://zenodo.org/records/19944605/files/OCCA.jld2) | 5 |
 
 Loading any OCIM matrix requires `using JLD2` (which activates the
 `AIBECSJLD2Ext` extension); loading `OCIM2_48L` additionally requires
@@ -95,15 +95,6 @@ the AWESOME-OCIM toolbox. These are hosted by their original maintainers
 Loading these typically requires the matching extension dependencies:
 `AeolianSources` needs `NCDatasets`, `ETOPO` needs `Distances, NCDatasets`,
 `GroundWaters` needs `Shapefile, DataFrames`.
-
-## Migration to Zenodo (in progress)
-
-The OCIM matrices are currently hosted on FigShare (the table above shows
-the live URLs). FigShare's CDN occasionally fails during CI, so these files
-are being migrated to Zenodo for reliability. Once the migration is
-complete this page will be updated with the new Zenodo URLs and DOIs; the
-FigShare links above will remain functional but will no longer be the
-canonical source.
 
 ## Cache layout
 

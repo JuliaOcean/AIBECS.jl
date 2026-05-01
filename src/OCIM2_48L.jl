@@ -14,7 +14,7 @@ The `OCIM2_48L` module is used to load the OCIM2-48L matrices and grid for use i
 
 
 !!! note
-    The files, that are downloaded from a public and persistant URL in FigShare,
+    The files, that are downloaded from a public and persistent URL on Zenodo,
     were created with the code available at https://github.com/briochemc/OceanCirculations.
 """
 module OCIM2_48L
@@ -29,7 +29,7 @@ using Reexport
 @reexport using OceanGrids            # To store the grid
 
 # OCIM2_48L URL
-const URL = "https://ndownloader.figshare.com/files/28468077"
+const URL = "https://zenodo.org/records/19944665/files/OCIM2_48L_base.tar.gz"
 
 # OCIM2_48L Hash
 const MD5 = "7938f20f06eff072b2791b571d2bb9d7"
