@@ -17,5 +17,5 @@ Shapefile = "8e980c4a-a4fe-5da2-b3a7-4b4b0353a2f4"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
-Documenter = "1"
-DocumenterVitepress = "0.1"
+Documenter = "1.11"
+DocumenterVitepress = "0.3"
