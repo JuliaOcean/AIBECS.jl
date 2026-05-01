@@ -9,7 +9,7 @@ The `OCCA` module is used to load the OCCA matrix and grid for use in AIBECS.
     See *Forget* (2010) for more details
 
 !!! note
-    The files, that are downloaded from a public and persistant URL in FigShare,
+    The files, that are downloaded from a public and persistent URL on Zenodo,
     were created with the code available at https://github.com/briochemc/OceanCirculations.
 """
 module OCCA
@@ -19,11 +19,11 @@ using DataDeps              # For storage location of data
 using Downloads
 using Unitful               # for units
 using Reexport
-using MD5                   # for hash checking (MD5 is what is used in FigShare)
+using MD5                   # for hash checking (MD5 is what Zenodo exposes)
 @reexport using OceanGrids  # To store the grid
 
 # OCCA URLs
-const OCCA_URL = "https://ndownloader.figshare.com/files/28336173"
+const OCCA_URL = "https://zenodo.org/records/19944605/files/OCCA.jld2"
 
 # OCCA Hashes
 const OCCA_MD5 = "f2a2a2d295f85771c2302e6c0eb35f4c"

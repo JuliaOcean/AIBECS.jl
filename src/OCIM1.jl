@@ -9,7 +9,7 @@ The `OCIM1` module is used to load the OCIM v1 matrix and grid for use in AIBECS
     See *DeVries and Primeau* (2011) and *Primeau et al.* (2013) for more details.
 
 !!! note
-    The files, that are downloaded from a public and persistant URL in FigShare,
+    The files, that are downloaded from a public and persistent URL on Zenodo,
     were created with the code available at https://github.com/briochemc/OceanCirculations.
 """
 module OCIM1
@@ -19,13 +19,13 @@ using DataDeps              # For storage location of data
 using Downloads
 using Unitful               # for units
 using Reexport
-using MD5                   # for hash checking (MD5 is what is used in FigShare)
+using MD5                   # for hash checking (MD5 is what Zenodo exposes)
 @reexport using OceanGrids  # To store the grid
 
 const VERSIONS = ["CTL"] # TODO add different OCIM1 versions
 
 # URLs
-const OCIM1_URL = "https://ndownloader.figshare.com/files/28335882"
+const OCIM1_URL = "https://zenodo.org/records/19944597/files/OCIM1_CTL.jld2"
 
 # OCIM1 Hashes
 const OCIM1_MD5 = "eaa57b42e7edec0fe965575e9938c66d"

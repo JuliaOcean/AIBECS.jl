@@ -14,7 +14,7 @@ The `OCIM2` module is used to load the OCIM2 matrices and grid for use in AIBECS
 
 
 !!! note
-    The files, that are downloaded from a public and persistant URL in FigShare,
+    The files, that are downloaded from a public and persistent URL on Zenodo,
     were created with the code available at https://github.com/briochemc/OceanCirculations.
 """
 module OCIM2
@@ -24,7 +24,7 @@ using DataDeps              # For storage location of data
 using Downloads
 using Unitful               # for units
 using Reexport
-using MD5                   # for hash checking (MD5 is what is used in FigShare)
+using MD5                   # for hash checking (MD5 is what Zenodo exposes)
 @reexport using OceanGrids  # To store the grid
 
 const VERSIONS =[
@@ -43,24 +43,26 @@ const VERSIONS =[
 
 # URLs
 const OCIM2_URLs = Dict(
-    "CTL_He" => "https://ndownloader.figshare.com/files/28336284",
-    "CTL_noHe" => "https://ndownloader.figshare.com/files/28336299",
-    "KiHIGH_He" => "https://ndownloader.figshare.com/files/28336302",
-    "KiHIGH_noHe" => "https://ndownloader.figshare.com/files/28336311",
-    "KiLOW_He" => "https://ndownloader.figshare.com/files/28336317",
-    "KiLOW_noHe" => "https://ndownloader.figshare.com/files/28336323",
-    "KvHIGH_He" => "https://ndownloader.figshare.com/files/28336326",
-    "KvHIGH_KiHIGH_noHe" => "https://ndownloader.figshare.com/files/28336329",
-    "KvHIGH_KiLOW_He" => "https://ndownloader.figshare.com/files/28336332",
-    "KvHIGH_KiLOW_noHe" => "https://ndownloader.figshare.com/files/28336341",
-    "KvHIGH_noHe" => "https://ndownloader.figshare.com/files/28336353"
+    "CTL_He" => "https://zenodo.org/records/19949125/files/OCIM2_CTL_He.jld2",
+    "CTL_noHe" => "https://zenodo.org/records/19949125/files/OCIM2_CTL_noHe.jld2",
+    "KiHIGH_He" => "https://zenodo.org/records/19949125/files/OCIM2_KiHIGH_He.jld2",
+    "KiHIGH_noHe" => "https://zenodo.org/records/19949125/files/OCIM2_KiHIGH_noHe.jld2",
+    "KiLOW_He" => "https://zenodo.org/records/19949125/files/OCIM2_KiLOW_He.jld2",
+    "KiLOW_noHe" => "https://zenodo.org/records/19949125/files/OCIM2_KiLOW_noHe.jld2",
+    "KvHIGH_He" => "https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_He.jld2",
+    "KvHIGH_KiHIGH_noHe" => "https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_KiHIGH_noHe.jld2",
+    "KvHIGH_KiLOW_He" => "https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_KiLOW_He.jld2",
+    "KvHIGH_KiLOW_noHe" => "https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_KiLOW_noHe.jld2",
+    "KvHIGH_noHe" => "https://zenodo.org/records/19949125/files/OCIM2_KvHIGH_noHe.jld2"
 )
 
-# OCIM2 Hashes
+# OCIM2 Hashes (lifted directly from Zenodo's API; KiHIGH_He differs from
+# the prior FigShare-era value, which had drifted out of sync with the
+# actual file bytes.)
 const OCIM2_MD5 = Dict(
     "CTL_He" => "da15192381ef04e9f7cce7c886eb4833",
     "CTL_noHe" => "abede7e16b75cb3f9b7d25367772455e",
-    "KiHIGH_He" => "3c8312f9aeb9bb6cb6ac32a8d84fb901",
+    "KiHIGH_He" => "b16dbce50d66c9e7de7f2f3edb0fb5e2",
     "KiHIGH_noHe" => "781b8c058eb74a81d10befa83faf0d08",
     "KiLOW_He" => "ee6c6f14c6bd90c1980daf8a220f0551",
     "KiLOW_noHe" => "47eabd73588739344c81f72d39367f27",
