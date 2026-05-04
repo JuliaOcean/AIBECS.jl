@@ -110,15 +110,15 @@ end
     @unpack xgeo = p
     x = xgeo * ones(n) .* exp.(cos.(collect(1:n)) / 10)
     @testset "split F ≈ F" begin
-        @test F2(x, p) ≈ fun(x, p) rtol = 1e-10
+        @test F2(x, p) ≈ fun(x, p) rtol = 1.0e-10
     end
     @testset "split F ≈ L + NL" begin
-        @test F2(x, p) ≈ L(x, p) + NL(x, p) - T(p) * x rtol = 1e-10
+        @test F2(x, p) ≈ L(x, p) + NL(x, p) - T(p) * x rtol = 1.0e-10
     end
     @testset "split ∇ₓF ≈ ∇ₓF" begin
-        @test fun.jac(x, p) ≈ ∇ₓF2(x, p) rtol = 1e-10
+        @test fun.jac(x, p) ≈ ∇ₓF2(x, p) rtol = 1.0e-10
     end
     @testset "split ∇ₓF ≈ T + ∇ₓNL" begin
-        @test ∇ₓF2(x, p) ≈ ∇ₓL(p) + ∇ₓNL(x, p) - T(p) rtol = 1e-10
+        @test ∇ₓF2(x, p) ≈ ∇ₓL(p) + ∇ₓNL(x, p) - T(p) rtol = 1.0e-10
     end
 end

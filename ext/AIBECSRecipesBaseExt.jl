@@ -13,7 +13,7 @@ const lonticks = (-180:30:360, ["180°", "", "120°W", "", "60°W", "", "0°", "
 const latticks = (-90:30:90, ["SP", "60°S", "30°S", "EQ", "30°N", "60°N", "NP"])
 function prettyticks(axis, defaultticks)
     idx = findall(ustrip(minimum(axis)) .≤ defaultticks[1] .≤ ustrip(maximum(axis)))
-    (defaultticks[1][idx], defaultticks[2][idx])
+    return (defaultticks[1][idx], defaultticks[2][idx])
 end
 
 #============================
@@ -24,7 +24,7 @@ horizontal maps / (x,y) plots
     x, y, z = p.args
     @series begin
         seriestype --> :heatmap
-        size --> (800,400)
+        size --> (800, 400)
         aspect_ratio --> :equal
         framestyle --> :box
         xguide --> ""
@@ -34,17 +34,17 @@ horizontal maps / (x,y) plots
         x, y, z
     end
 end
-AIBECS.plothorizontalslice(x, grd; depth=nothing, kwargs...) = horizontalplane(grd.lon, grd.lat, AIBECS.horizontalslice(x, grd; depth=depth); kwargs...)
-AIBECS.plothorizontalslice!(x, grd; depth=nothing, kwargs...) = horizontalplane!(grd.lon, grd.lat, AIBECS.horizontalslice(x, grd; depth=depth); kwargs...)
-AIBECS.plothorizontalslice!(plt, x, grd; depth=nothing, kwargs...) = horizontalplane!(plt, grd.lon, grd.lat, AIBECS.horizontalslice(x, grd; depth=depth); kwargs...)
-AIBECS.surfacemap(args...; kwargs...) = AIBECS.plothorizontalslice(args...; kwargs..., depth=0)
-AIBECS.surfacemap!(args...; kwargs...) = AIBECS.plothorizontalslice!(args...; kwargs..., depth=0)
-AIBECS.plot∫dz(x, grd; mask=1, kwargs...) = horizontalplane(grd.lon, grd.lat, AIBECS.∫dz(x, grd, mask); kwargs...)
-AIBECS.plot∫dz!(plt, x, grd; mask=1, kwargs...) = horizontalplane!(plt, grd.lon, grd.lat, AIBECS.∫dz(x, grd, mask); kwargs...)
-AIBECS.plotverticalmean(x, grd; mask=1, kwargs...) = horizontalplane(grd.lon, grd.lat, AIBECS.verticalmean(x, grd, mask); kwargs...)
+AIBECS.plothorizontalslice(x, grd; depth = nothing, kwargs...) = horizontalplane(grd.lon, grd.lat, AIBECS.horizontalslice(x, grd; depth = depth); kwargs...)
+AIBECS.plothorizontalslice!(x, grd; depth = nothing, kwargs...) = horizontalplane!(grd.lon, grd.lat, AIBECS.horizontalslice(x, grd; depth = depth); kwargs...)
+AIBECS.plothorizontalslice!(plt, x, grd; depth = nothing, kwargs...) = horizontalplane!(plt, grd.lon, grd.lat, AIBECS.horizontalslice(x, grd; depth = depth); kwargs...)
+AIBECS.surfacemap(args...; kwargs...) = AIBECS.plothorizontalslice(args...; kwargs..., depth = 0)
+AIBECS.surfacemap!(args...; kwargs...) = AIBECS.plothorizontalslice!(args...; kwargs..., depth = 0)
+AIBECS.plot∫dz(x, grd; mask = 1, kwargs...) = horizontalplane(grd.lon, grd.lat, AIBECS.∫dz(x, grd, mask); kwargs...)
+AIBECS.plot∫dz!(plt, x, grd; mask = 1, kwargs...) = horizontalplane!(plt, grd.lon, grd.lat, AIBECS.∫dz(x, grd, mask); kwargs...)
+AIBECS.plotverticalmean(x, grd; mask = 1, kwargs...) = horizontalplane(grd.lon, grd.lat, AIBECS.verticalmean(x, grd, mask); kwargs...)
 
 @userplot MiniMap
-@recipe function f(p::MiniMap; central_longitude=200°)
+@recipe function f(p::MiniMap; central_longitude = 200°)
     grd, = p.args
     wlon = central_longitude - 180°
     xgrd = @. mod(grd.lon - wlon, 360°) + wlon
@@ -60,7 +60,7 @@ AIBECS.plotverticalmean(x, grd; mask=1, kwargs...) = horizontalplane(grd.lon, gr
         legend --> :none
         colorbar --> false
         grid --> false
-        xgrd[ix], grd.lat, view(AIBECS.iswet(grd),:,ix,1)
+        xgrd[ix], grd.lat, view(AIBECS.iswet(grd), :, ix, 1)
     end
 end
 
@@ -80,13 +80,13 @@ Vertical–meridional / (y,z) plots
         y, z, v
     end
 end
-AIBECS.plotmeridionalslice(x, grd; lon=nothing, kwargs...) = meridionalplane(grd.lat, grd.depth, AIBECS.meridionalslice(x, grd; lon=lon); kwargs...)
-AIBECS.plotmeridionalslice!(x, grd; lon=nothing, kwargs...) = meridionalplane!(grd.lat, grd.depth, AIBECS.meridionalslice(x, grd; lon=lon); kwargs...)
-AIBECS.plotmeridionalslice!(plt, x, grd; lon=nothing, kwargs...) = meridionalplane!(plt, grd.lat, grd.depth, AIBECS.meridionalslice(x, grd; lon=lon); kwargs...)
-AIBECS.plotzonalmean(x, grd; mask=1, kwargs...) = meridionalplane(grd.lat, grd.depth, AIBECS.zonalmean(x, grd, mask)'; kwargs...)
-AIBECS.plotzonalmean!(x, grd; mask=1, kwargs...) = meridionalplane!(grd.lat, grd.depth, AIBECS.zonalmean(x, grd, mask)'; kwargs...)
-AIBECS.plotzonalmean!(plt, x, grd; mask=1, kwargs...) = meridionalplane!(plt, grd.lat, grd.depth, AIBECS.zonalmean(x, grd, mask)'; kwargs...)
-AIBECS.plot∫dx(x, grd; mask=1, kwargs...) = meridionalplane(grd.lat, grd.depth, AIBECS.∫dx(x, grd, mask)'; kwargs...)
+AIBECS.plotmeridionalslice(x, grd; lon = nothing, kwargs...) = meridionalplane(grd.lat, grd.depth, AIBECS.meridionalslice(x, grd; lon = lon); kwargs...)
+AIBECS.plotmeridionalslice!(x, grd; lon = nothing, kwargs...) = meridionalplane!(grd.lat, grd.depth, AIBECS.meridionalslice(x, grd; lon = lon); kwargs...)
+AIBECS.plotmeridionalslice!(plt, x, grd; lon = nothing, kwargs...) = meridionalplane!(plt, grd.lat, grd.depth, AIBECS.meridionalslice(x, grd; lon = lon); kwargs...)
+AIBECS.plotzonalmean(x, grd; mask = 1, kwargs...) = meridionalplane(grd.lat, grd.depth, AIBECS.zonalmean(x, grd, mask)'; kwargs...)
+AIBECS.plotzonalmean!(x, grd; mask = 1, kwargs...) = meridionalplane!(grd.lat, grd.depth, AIBECS.zonalmean(x, grd, mask)'; kwargs...)
+AIBECS.plotzonalmean!(plt, x, grd; mask = 1, kwargs...) = meridionalplane!(plt, grd.lat, grd.depth, AIBECS.zonalmean(x, grd, mask)'; kwargs...)
+AIBECS.plot∫dx(x, grd; mask = 1, kwargs...) = meridionalplane(grd.lat, grd.depth, AIBECS.∫dx(x, grd, mask)'; kwargs...)
 
 #===========================
 Vertical–zonal / (x,z) plots
@@ -102,9 +102,9 @@ Vertical–zonal / (x,z) plots
         x, z, v
     end
 end
-AIBECS.plotzonalslice(x, grd; lat=nothing, kwargs...) = zonalplane(grd.lon, grd.depth, AIBECS.zonalslice(x, grd; lat=lat); kwargs...)
-AIBECS.plotmeridionalmean(x, grd; mask=1, kwargs...) = zonalplane(grd.lon, grd.depth, AIBECS.meridionalmean(x, grd, mask)'; kwargs...)
-AIBECS.plot∫dy(x, grd; mask=1, kwargs...) = zonalplane(grd.lon, grd.depth, AIBECS.∫dy(x, grd, mask)'; kwargs...)
+AIBECS.plotzonalslice(x, grd; lat = nothing, kwargs...) = zonalplane(grd.lon, grd.depth, AIBECS.zonalslice(x, grd; lat = lat); kwargs...)
+AIBECS.plotmeridionalmean(x, grd; mask = 1, kwargs...) = zonalplane(grd.lon, grd.depth, AIBECS.meridionalmean(x, grd, mask)'; kwargs...)
+AIBECS.plot∫dy(x, grd; mask = 1, kwargs...) = zonalplane(grd.lon, grd.depth, AIBECS.∫dy(x, grd, mask)'; kwargs...)
 
 #=================
 Vertical / z plots
@@ -120,14 +120,14 @@ Vertical / z plots
         x, z
     end
 end
-AIBECS.plot∫dxdy(x, grd; mask=1, kwargs...) = zplot(AIBECS.∫dxdy(x, grd, mask), grd.depth; kwargs...)
-AIBECS.plot∫dxdy!(x, grd; mask=1, kwargs...) = zplot!(AIBECS.∫dxdy(x, grd, mask), grd.depth; kwargs...)
-AIBECS.plot∫dxdy!(plt, x, grd; mask=1, kwargs...) = zplot!(plt, AIBECS.∫dxdy(x, grd, mask), grd.depth; kwargs...)
-AIBECS.plothorizontalmean(x, grd; mask=1, kwargs...) = zplot(AIBECS.horizontalmean(x, grd, mask), grd.depth; kwargs...)
-AIBECS.plothorizontalmean!(x, grd; mask=1, kwargs...) = zplot!(AIBECS.horizontalmean(x, grd, mask), grd.depth; kwargs...)
-AIBECS.plothorizontalmean!(plt, x, grd; mask=1, kwargs...) = zplot!(plt, AIBECS.horizontalmean(x, grd, mask), grd.depth; kwargs...)
-AIBECS.plotdepthprofile(x, grd; lonlat=nothing, kwargs...) = zplot(AIBECS.depthprofile(x, grd; lonlat=lonlat), grd.depth; kwargs...)
-AIBECS.plotdepthprofile!(plt, x, grd; lonlat=nothing, kwargs...) = zplot!(plt, AIBECS.depthprofile(x, grd; lonlat=lonlat), grd.depth; kwargs...)
+AIBECS.plot∫dxdy(x, grd; mask = 1, kwargs...) = zplot(AIBECS.∫dxdy(x, grd, mask), grd.depth; kwargs...)
+AIBECS.plot∫dxdy!(x, grd; mask = 1, kwargs...) = zplot!(AIBECS.∫dxdy(x, grd, mask), grd.depth; kwargs...)
+AIBECS.plot∫dxdy!(plt, x, grd; mask = 1, kwargs...) = zplot!(plt, AIBECS.∫dxdy(x, grd, mask), grd.depth; kwargs...)
+AIBECS.plothorizontalmean(x, grd; mask = 1, kwargs...) = zplot(AIBECS.horizontalmean(x, grd, mask), grd.depth; kwargs...)
+AIBECS.plothorizontalmean!(x, grd; mask = 1, kwargs...) = zplot!(AIBECS.horizontalmean(x, grd, mask), grd.depth; kwargs...)
+AIBECS.plothorizontalmean!(plt, x, grd; mask = 1, kwargs...) = zplot!(plt, AIBECS.horizontalmean(x, grd, mask), grd.depth; kwargs...)
+AIBECS.plotdepthprofile(x, grd; lonlat = nothing, kwargs...) = zplot(AIBECS.depthprofile(x, grd; lonlat = lonlat), grd.depth; kwargs...)
+AIBECS.plotdepthprofile!(plt, x, grd; lonlat = nothing, kwargs...) = zplot!(plt, AIBECS.depthprofile(x, grd; lonlat = lonlat), grd.depth; kwargs...)
 
 #======================================================
 Vertical / (dist,z) plots (for transect/section slices)
@@ -144,10 +144,10 @@ Vertical / (dist,z) plots (for transect/section slices)
         dist, z, v
     end
 end
-AIBECS.plottransect(x, grd; ct=nothing, start=:south, show_stations=false, insetmap=false, kwargs...) = verticalplane(AIBECS.verticalsection2(x, grd; ct=ct)...; kwargs...)
+AIBECS.plottransect(x, grd; ct = nothing, start = :south, show_stations = false, insetmap = false, kwargs...) = verticalplane(AIBECS.verticalsection2(x, grd; ct = ct)...; kwargs...)
 
 @userplot RatioAtStation
-@recipe function f(p::RatioAtStation; depthlims=(0,Inf))
+@recipe function f(p::RatioAtStation; depthlims = (0, Inf))
     depthlims = OceanGrids.convertdepth.(depthlims)
     x, y, grd, st = p.args
     x3D = AIBECS.rearrange_into_3Darray(x, grd)
@@ -182,7 +182,7 @@ Diagnostic recipes
     @series begin
         linecolor --> :black
         label --> ""
-        convert.(Tuple, vcat([[0*x, x, 0*x] for x in st]...))
+        convert.(Tuple, vcat([[0 * x, x, 0 * x] for x in st]...))
     end
     @series begin
         marker_z --> [x.I[3] for x in st]

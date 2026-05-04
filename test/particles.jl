@@ -14,7 +14,7 @@
         end
 
         @testset "fractional sed remin" begin
-            T = transportoperator(grd, w, fsedremin=0.5)
+            T = transportoperator(grd, w, fsedremin = 0.5)
             @test T isa SparseMatrixCSC
             @test norm(v) / norm(T' * v) < ustrip(upreferred(1u"yr"))
         end

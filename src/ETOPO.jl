@@ -28,7 +28,7 @@ const URL = Dict(
 )
 
 # Create registry entry for ETOPO
-function register_ETOPO(data=:bedrock)
+function register_ETOPO(data = :bedrock)
     register(
         DataDep(
             string("ETOPO_", data),
@@ -56,8 +56,10 @@ Requires `using Distances, NCDatasets` so that the `AIBECSETOPOExt`
 extension is activated.
 """
 function load(args...; kwargs...)
-    error("AIBECS.ETOPO.load requires `using Distances, NCDatasets`. " *
-          "Add them to your environment, then retry.")
+    error(
+        "AIBECS.ETOPO.load requires `using Distances, NCDatasets`. " *
+            "Add them to your environment, then retry."
+    )
 end
 
 citation() = "Amante, C. and B.W. Eakins, 2009. ETOPO1 1 Arc-Minute Global Relief Model: Procedures, Data Sources and Analysis. NOAA Technical Memorandum NESDIS NGDC-24. National Geophysical Data Center, NOAA. doi:10.7289/V5C8276M [access date]."
@@ -68,20 +70,20 @@ citation() = "Amante, C. and B.W. Eakins, 2009. ETOPO1 1 Arc-Minute Global Relie
 Bins the depths `Z` into at locations `(lat,lon)` onto `grd`.
 To be used with the ETOPO dataset to dertermine the amount of subgrid topography in each box area
 """
-function bintopo(Z::AbstractArray{T,2}, lats, lons, grd) where T
+function bintopo(Z::AbstractArray{T, 2}, lats, lons, grd) where {T}
     bin3D = zeros(size(grd))
     # Use the top edge to invert the functions lon[i], lat[j], and depth[k]
     # I.e., to find the index in grd for a given lon, lat, depth
     edepth = ustrip.(grd.depth .+ 0.5grd.δdepth)
     elon = ustrip.(grd.lon .+ 0.5grd.δlon)
     elat = ustrip.(grd.lat .+ 0.5grd.δlat)
-    kmax = dropdims(count(iswet(grd), dims=3), dims=3)
-    for (j,lat) in enumerate(lats)
+    kmax = dropdims(count(iswet(grd), dims = 3), dims = 3)
+    for (j, lat) in enumerate(lats)
         jgrd = searchsortedfirst(elat, lat)
-        for (i,lon) in enumerate(lons)
+        for (i, lon) in enumerate(lons)
             igrd = searchsortedfirst(elon, mod(lon, 360))
-            kmax[jgrd,igrd] == 0 && continue
-            kgrd = searchsortedfirst(view(edepth, 1:kmax[jgrd, igrd]-1), -Z[i,j])
+            kmax[jgrd, igrd] == 0 && continue
+            kgrd = searchsortedfirst(view(edepth, 1:(kmax[jgrd, igrd] - 1)), -Z[i, j])
             bin3D[jgrd, igrd, kgrd] += 1
         end
     end
@@ -101,7 +103,7 @@ below are counted in the deepest wet box.
 function fractiontopo end
 # Pure-math helper: takes the binned ETOPO array and returns the fraction
 # per wet box. No NCDatasets/Distances dependency, so it stays in main.
-fractiontopo(bin3D, grd) = vectorize(bin3D ./ repeat(sum(bin3D, dims=3), outer=(1, 1, size(grd)[3])), grd)
+fractiontopo(bin3D, grd) = vectorize(bin3D ./ repeat(sum(bin3D, dims = 3), outer = (1, 1, size(grd)[3])), grd)
 export fractiontopo
 
 """
@@ -114,24 +116,22 @@ extension is activated.
 """
 function roughnesstopo end
 
-function sumroughness(A::AbstractArray{T,2}, Z, lats, lons, grd) where T
+function sumroughness(A::AbstractArray{T, 2}, Z, lats, lons, grd) where {T}
     roughness = zeros(size(grd))
     edepth = ustrip.(grd.depth .+ 0.5grd.δdepth)
     elon = ustrip.(grd.lon .+ 0.5grd.δlon)
     elat = ustrip.(grd.lat .+ 0.5grd.δlat)
-    kmax = dropdims(count(iswet(grd), dims=3), dims=3)
-    for (j,lat) in enumerate(lats)
+    kmax = dropdims(count(iswet(grd), dims = 3), dims = 3)
+    for (j, lat) in enumerate(lats)
         jgrd = searchsortedfirst(elat, lat)
-        for (i,lon) in enumerate(lons)
+        for (i, lon) in enumerate(lons)
             igrd = searchsortedfirst(elon, mod(lon, 360))
-            kmax[jgrd,igrd] == 0 && continue
-            kgrd = searchsortedfirst(view(edepth, 1:kmax[jgrd, igrd]-1), -Z[i,j])
-            roughness[jgrd, igrd, kgrd] += A[i,j]
+            kmax[jgrd, igrd] == 0 && continue
+            kgrd = searchsortedfirst(view(edepth, 1:(kmax[jgrd, igrd] - 1)), -Z[i, j])
+            roughness[jgrd, igrd, kgrd] += A[i, j]
         end
     end
     return roughness[iswet(grd)]
 end
 
 end # module
-
-export ETOPO

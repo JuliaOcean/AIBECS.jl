@@ -1,11 +1,9 @@
-
-
 """
     ustrip(x::MetadataArray)
 
 Strips unit from `x.parent` but stores it in `x.metadata` for safekeeping.
 """
-Unitful.ustrip(x::MetadataArray) = MetadataArray(ustrip.(x.parent), (x.metadata..., unit=unit(eltype(x))))
+Unitful.ustrip(x::MetadataArray) = MetadataArray(ustrip.(x.parent), (x.metadata..., unit = unit(eltype(x))))
 """
     upreferred(x::MetadataArray)
 
@@ -18,7 +16,7 @@ function Unitful.upreferred(x::MetadataArray)
         metadata = x.metadata
         push!(metadata.processing, processing_str)
     else
-        metadata = (x.metadata..., processing=[processing_str])
+        metadata = (x.metadata..., processing = [processing_str])
     end
     return MetadataArray(parent, metadata)
 end
@@ -34,7 +32,7 @@ function Base.:*(x::MetadataArray, q::Quantity)
         metadata = x.metadata
         push!(metadata.processing, processing_str)
     else
-        metadata = (x.metadata..., processing=[processing_str])
+        metadata = (x.metadata..., processing = [processing_str])
     end
     return MetadataArray(parent, metadata)
 end
@@ -46,7 +44,7 @@ Returns `x[idx]` but also applies the index to the metadata that is originally o
 """
 function onlykeep(x::MetadataArray, idx)
     xout = x.parent[idx]
-    mout = (;((v isa Vector && length(v) == length(x)) ? (k,v[idx]) : (k,v) for (k,v) in pairs(x.metadata))...)
+    mout = (; ((v isa Vector && length(v) == length(x)) ? (k, v[idx]) : (k, v) for (k, v) in pairs(x.metadata))...)
     return MetadataArray(xout, mout)
 end
 export onlykeep
@@ -71,5 +69,3 @@ Dispatches backslash to work with all `JacobianFactors` subtypes.
 function Base.:\(Jf::AgedJacobianFactors, y)
     return Jf.fac \ y
 end
-
-

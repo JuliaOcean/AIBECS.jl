@@ -1,6 +1,6 @@
 # Hyper parameters
 ωs = [1.0, 0.0, 0.0]
-ωp = 1e-7
+ωp = 1.0e-7
 # PO₄ mean and variance of observations fom WOA18
 μDIPobs3D, σ²DIPobs3D = WorldOceanAtlasTools.fit_to_grid(grd, "PO₄")
 μDIPobs, σ²DIPobs = μDIPobs3D[iwet], σ²DIPobs3D[iwet]

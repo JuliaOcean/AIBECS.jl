@@ -2,7 +2,8 @@
 #@reexport module SinkingParticles
 
 using Unitful
-using LinearAlgebra, SparseArrays
+using LinearAlgebra
+using SparseArrays
 using OceanGrids
 
 
@@ -120,9 +121,6 @@ function PFDO(grd, δz, w_top, w_bot, frac_seafloor, cumfrac_seafloor, fsedremin
 end
 
 
-
-
-
 """
     DIVO(grd)
 
@@ -189,18 +187,19 @@ julia> T = transportoperator(grd, z -> 2z + 1; fsedremin=0.0)
 For finer control and advanced use, see the particle-flux divergence
 operator function, `PFDO`.
 """
-transportoperator(grd, w_top; DIVop=DIVO(grd), Iabove=buildIabove(grd)) = PFDO(w_top, DIVop, Iabove)
-function transportoperator(grd, w::Function;
-              δz = ustrip.(grd.δz_3D[iswet(grd)]),
-              Iabove = buildIabove(grd),
-              fsedremin = 1.0,
-              z_top = topdepthvec(grd),
-              z_bot = bottomdepthvec(grd),
-              frac_seafloor = float.(isseafloorvec(grd)),
-              cumfrac_seafloor = zcumsum(frac_seafloor, grd))
+transportoperator(grd, w_top; DIVop = DIVO(grd), Iabove = buildIabove(grd)) = PFDO(w_top, DIVop, Iabove)
+function transportoperator(
+        grd, w::Function;
+        δz = ustrip.(grd.δz_3D[iswet(grd)]),
+        Iabove = buildIabove(grd),
+        fsedremin = 1.0,
+        z_top = topdepthvec(grd),
+        z_bot = bottomdepthvec(grd),
+        frac_seafloor = float.(isseafloorvec(grd)),
+        cumfrac_seafloor = zcumsum(frac_seafloor, grd)
+    )
     return PFDO(grd, δz, ustrip.(upreferred.(w.(z_top))), ustrip.(upreferred.(w.(z_bot))), frac_seafloor, cumfrac_seafloor, fsedremin, Iabove)
 end
 
 
 export transportoperator
-

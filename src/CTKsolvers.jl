@@ -52,7 +52,7 @@ until ``\\|F(x + λ δx)\\|`` decreases sufficiently. Not exported.
 function searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint = "")
     preprint ≠ "" ? preprint = preprint * "    │" : nothing
     j = 0 # Armijo iteration counter
-    α = 1e-4 # Armijo parameter from C. T. Kelley [2003] (K03 hereafter)
+    α = 1.0e-4 # Armijo parameter from C. T. Kelley [2003] (K03 hereafter)
     λⱼ₋₁, λⱼ = 1.0, 1.0 # Relative step size
     # Norm of F(xᵢ) never changes
     NFᵢ = nrm(Fᵢ)
@@ -64,7 +64,7 @@ function searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint = "
     xⱼ = xᵢ .+ δxᵢ # Newton step
     Fⱼ = F(xⱼ)
     NFⱼ = nrm(Fⱼ)
-    if (NFⱼ < (1 - α * λⱼ) * NFᵢ) || (nrm(δxᵢ) / nrm(xᵢ) < 1e-10) || eltype(Fᵢ) ≠ Float64
+    if (NFⱼ < (1 - α * λⱼ) * NFᵢ) || (nrm(δxᵢ) / nrm(xᵢ) < 1.0e-10) || eltype(Fᵢ) ≠ Float64
         # Update xᵢ, and Fᵢ
         xᵢ .= xⱼ
         Fᵢ .= Fⱼ
@@ -74,7 +74,7 @@ function searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint = "
         λⱼ = 0.5
         xⱼ .= xᵢ .+ λⱼ .* δxᵢ
         Fⱼ .= F(xⱼ)
-        NFⱼ, NFⱼ₋₁ = nrm(Fⱼ),  NFⱼ
+        NFⱼ, NFⱼ₋₁ = nrm(Fⱼ), NFⱼ
         # Initialize the squares of norms
         N2Fⱼ, N2Fⱼ₋₁ = NFⱼ^2, NFⱼ₋₁^2
         while (NFⱼ >= (1 - α * λⱼ) * NFᵢ) && (j <= maxItArmijo)
@@ -133,17 +133,17 @@ used by `SciMLBase.solve(::SteadyStateProblem)`.
 Reference: C. T. Kelley (2003), *Solving Nonlinear Equations with Newton's
 Method*, SIAM, Frontiers in Applied Mathematics 1.
 """
-function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop; preprint="", maxItNewton=50)
+function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop; preprint = "", maxItNewton = 50)
     if preprint ≠ ""
         println(preprint * "(No initial Jacobian factors fed to Newton solver)")
     end
     # Initial Jacobian
     J = ∇ₓF(xinit)
     Jfinit = factorize(J) # construct JF
-    return NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=preprint, maxItNewton=maxItNewton)
+    return NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint = preprint, maxItNewton = maxItNewton)
 end
 
-function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint="", maxItNewton=50)
+function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint = "", maxItNewton = 50)
     if preprint ≠ ""
         println(preprint * "Solving F(x) = 0 (using Shamanskii Method)")
         preprint_end = preprint * "└─> "
@@ -151,7 +151,7 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
     end
 
     maxItArmijo = 20 # Max iterations in Armijo line search
-     # Max quasi Newton iterations
+    # Max quasi Newton iterations
     rSham₀ = 0.5     # Shamanskii minimum reduction to keep old J
 
     # Initial values for while loop
@@ -235,7 +235,7 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
                     print(preprint * "Armijo Failure, but old J")
                 else
                     print(preprint * "Complete Armijo failure (new J): ")
-                    @printf("|x|/|F(x)| = %.2g years\n", τᵢ/(365*24*60*60))
+                    @printf("|x|/|F(x)| = %.2g years\n", τᵢ / (365 * 24 * 60 * 60))
                 end
             end
             nArmijo == 0 ? nothing : print(preprint * "    └─────> ") # alignment thing
@@ -248,18 +248,16 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
     if preprint ≠ ""
         (τᵢ < τstop) && print(preprint_end * "Newton has reached max iterations, ")
         (τᵢ > τstop) && print(preprint_end * "Newton has converged, ")
-        @printf("|x|/|F(x)| = %.2g years\n", τᵢ/(365*24*60*60))
+        @printf("|x|/|F(x)| = %.2g years\n", τᵢ / (365 * 24 * 60 * 60))
     end
 
     return xᵢ
 end
 
 function print_marker(i)
-    if i==0
+    return if i == 0
         @printf " (!)%2d    " i
     else
         @printf "%6d    " i
     end
 end
-
-

@@ -11,7 +11,8 @@
 # load them yourself.
 
 using AIBECS
-using NonlinearSolve, LinearSolve
+using NonlinearSolve
+using LinearSolve
 using JLD2 # required by `OCIM0.load`
 
 # We use the small OCIM0 circulation here so the example stays light;

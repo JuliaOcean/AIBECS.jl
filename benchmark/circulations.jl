@@ -9,9 +9,13 @@ using Unitful
 # ---------------------------------------------------------------------------
 
 const TIERS = (
-    small  = [("OCIM0", OCIM0.load),
-              ("OCCA",  OCCA.load)],
-    medium = [("OCIM1", OCIM1.load),
-              ("OCIM2", OCIM2.load)],
-    large  = [("OCIM2_48L", OCIM2_48L.load)],
+    small = [
+        ("OCIM0", OCIM0.load),
+        ("OCCA", OCCA.load),
+    ],
+    medium = [
+        ("OCIM1", OCIM1.load),
+        ("OCIM2", OCIM2.load),
+    ],
+    large = [("OCIM2_48L", OCIM2_48L.load)],
 )

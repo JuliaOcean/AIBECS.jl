@@ -24,8 +24,8 @@ end
 function build_idealage_problem(grd, T_circ)
     z = depthvec(grd)
     G(x, p) = (@unpack τ, z₀ = p; @. 1 - x / τ * (z ≤ z₀))
-    F  = AIBECSFunction(T_circ, G)
-    p  = IdealAgeParameters(1.0, 30.0)
+    F = AIBECSFunction(T_circ, G)
+    p = IdealAgeParameters(1.0, 30.0)
     nb = sum(iswet(grd))
     return SteadyStateProblem(F, zeros(nb), p)
 end
@@ -33,20 +33,22 @@ end
 # === Radiocarbon (mirrors 2_radiocarbon.jl) ================================
 
 @units struct RadiocarbonParameters{U} <: AbstractParameters{U}
-    λ::U    | u"m/yr"
-    h::U    | u"m"
-    τ::U    | u"yr"
-    Ratm::U | u"M"
+    λ::U | m / yr
+    h::U | m
+    τ::U | yr
+    Ratm::U | M
 end
 
 function build_radiocarbon_problem(grd, T_circ)
     z = depthvec(grd)
     G(R, p) = (@unpack λ, h, Ratm, τ = p; @. λ / h * (Ratm - R) * (z ≤ h) - R / τ)
     F = AIBECSFunction(T_circ, G)
-    p = RadiocarbonParameters(λ    = 50u"m"/10u"yr",
-                              h    = grd.δdepth[1],
-                              τ    = 5730u"yr"/log(2),
-                              Ratm = 42.0u"nM")
+    p = RadiocarbonParameters(
+        λ = 50u"m" / 10u"yr",
+        h = grd.δdepth[1],
+        τ = 5730u"yr" / log(2),
+        Ratm = 42.0u"nM"
+    )
     nb = sum(iswet(grd))
     return SteadyStateProblem(F, zeros(nb), p)
 end
@@ -54,19 +56,19 @@ end
 # === Coupled PO4-POP (mirrors 3_Pmodel.jl) =================================
 
 @initial_value @units struct PmodelParameters{U} <: AbstractParameters{U}
-    w₀::U       |  0.64 | m/d
-    w′::U       |  0.13 | m/d/m
-    τ_DIP::U    | 230.0 | d
-    k::U        |  6.62 | μmol/m^3
-    z₀::U       |  80.0 | m
-    τ_POP::U    |   5.0 | d
-    τ_geo::U    |   1.0 | Myr
-    DIP_geo::U  |  2.12 | mmol/m^3
+    w₀::U | 0.64 | m / d
+    w′::U | 0.13 | m / d / m
+    τ_DIP::U | 230.0 | d
+    k::U | 6.62 | μmol / m^3
+    z₀::U | 80.0 | m
+    τ_POP::U | 5.0 | d
+    τ_geo::U | 1.0 | Myr
+    DIP_geo::U | 2.12 | mmol / m^3
 end
 
 function build_pmodel_problem(grd, T_circ)
     nb = sum(iswet(grd))
-    z  = depthvec(grd)
+    z = depthvec(grd)
 
     T_DIP(p) = T_circ
     function w(z, p)
@@ -100,7 +102,7 @@ function build_pmodel_problem(grd, T_circ)
 end
 
 const TRACER_SETUPS = (
-    idealage    = (label = "idealage",    build = build_idealage_problem),
+    idealage = (label = "idealage", build = build_idealage_problem),
     radiocarbon = (label = "radiocarbon", build = build_radiocarbon_problem),
-    po4pop      = (label = "po4pop",      build = build_pmodel_problem),
+    po4pop = (label = "po4pop", build = build_pmodel_problem),
 )

@@ -36,7 +36,7 @@ const CITATION = """
 """
 
 # Create registry entry for OCIM1 in JLD2 format
-function register_OCIM1(; version=VERSIONS[1])
+function register_OCIM1(; version = VERSIONS[1])
     register(
         DataDep(
             "AIBECS-OCIM1_$version",
@@ -65,6 +65,3 @@ function load(args...; kwargs...)
 end
 
 end # end module
-
-export OCIM1
-

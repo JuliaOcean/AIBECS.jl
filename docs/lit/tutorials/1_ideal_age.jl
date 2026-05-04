@@ -1,4 +1,3 @@
-
 #---------------------------------------------------------
 # # [Ideal age](@id idealage)
 #---------------------------------------------------------
@@ -47,7 +46,7 @@ grd, TOCIM2 = OCIM2.load()
 
 # The local sources and sinks for the age take the form
 
-function G(x,p)
+function G(x, p)
     @unpack τ, z₀ = p
     return @. 1 - x / τ * (z ≤ z₀)
 end
@@ -108,7 +107,7 @@ age_in_yrs = age * u"s" .|> u"yr"
 
 # And we take a horizontal slice at about 2000m.
 
-plothorizontalslice(age_in_yrs, grd, depth=2000u"m", color=:magma)
+plothorizontalslice(age_in_yrs, grd, depth = 2000u"m", color = :magma)
 
 # Or look at the horiontal mean
 
@@ -116,4 +115,3 @@ plothorizontalmean(age_in_yrs, grd)
 
 # That's it for this tutorial...
 # Good job!
-

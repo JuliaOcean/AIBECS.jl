@@ -1,4 +1,3 @@
-
 """
     CTKAlg <: SciMLBase.AbstractSteadyStateAlgorithm
 
@@ -25,18 +24,20 @@ struct CTKAlg <: SciMLBase.AbstractSteadyStateAlgorithm end
 
 Solves `prob` using an AIBECS-customized version of C.T.Kelley Shamanskii-method algorithm.
 """
-function SciMLBase.solve(prob::SciMLBase.AbstractSteadyStateProblem,
-                         alg::CTKAlg;
-                         nrm=norm,
-                         τstop=ustrip(u"s", 1e6u"Myr"),
-                         preprint="",
-                         maxItNewton=50)
+function SciMLBase.solve(
+        prob::SciMLBase.AbstractSteadyStateProblem,
+        alg::CTKAlg;
+        nrm = norm,
+        τstop = ustrip(u"s", 1.0e6u"Myr"),
+        preprint = "",
+        maxItNewton = 50
+    )
     # Define the functions according to SciMLBase.SteadyStateProblem type
     p = prob.p
     x0 = copy(prob.u0)
     dx = copy(x0)
     function F(x)
-        if SciMLBase.isinplace(prob)
+        return if SciMLBase.isinplace(prob)
             prob.f(dx, x, p)
             dx
         else
@@ -45,10 +46,10 @@ function SciMLBase.solve(prob::SciMLBase.AbstractSteadyStateProblem,
     end
     ∇ₓF(x) = prob.f.jac(x, p)
     # Compute `u_steady` and `resid` as per SciMLBase using my algorithm
-    x_steady = NewtonChordShamanskii(F, ∇ₓF, nrm, x0, τstop; preprint=preprint, maxItNewton=maxItNewton)
+    x_steady = NewtonChordShamanskii(F, ∇ₓF, nrm, x0, τstop; preprint = preprint, maxItNewton = maxItNewton)
     resid = F(x_steady)
     # Return the common SciMLBase solution type
-    SciMLBase.build_solution(prob, alg, x_steady, resid; retcode=SciMLBase.ReturnCode.Success)
+    return SciMLBase.build_solution(prob, alg, x_steady, resid; retcode = SciMLBase.ReturnCode.Success)
 end
 
 export solve, SteadyStateProblem, CTKAlg

@@ -16,27 +16,27 @@ const ∞ = Inf
     σ::T    |  1/3 | NoUnits     | "Fraction of quick local uptake recycling"    |  (0,1) | true
     τDIP::T | 30.0 | u"d"        | "Uptake maximum timescale (DIP to POP)"       |  (0,∞) | true
 end
-function prior(::Type{T}, s::Symbol) where {T<:AbstractParameters}
+function prior(::Type{T}, s::Symbol) where {T <: AbstractParameters}
     if flattenable(T, s)
         lb, ub = limits(T, s)
-        if (lb, ub) == (0,∞)
+        if (lb, ub) == (0, ∞)
             μ = log(initial_value(T, s))
             return LogNormal(μ, 1.0)
-        elseif (lb, ub) == (-∞,∞)
+        elseif (lb, ub) == (-∞, ∞)
             μ = initial_value(T, s)
             σ = 10.0 # Assumes that a sensible unit is chosen (i.e., that within 10.0 * U)
             return Normal(μ, σ)
         else
-            return lb + (ub-lb) * LogitNormal() # <- The LogitNormal works well for Optim?
+            return lb + (ub - lb) * LogitNormal() # <- The LogitNormal works well for Optim?
         end
     else
         return nothing
     end
 end
-prior(::T, s::Symbol) where {T<:AbstractParameters} = prior(T,s)
-prior(::Type{T}) where {T<:AbstractParameters} = Tuple(prior(T,s) for s in AIBECS.symbols(T))
-prior(::T) where {T<:AbstractParameters} = prior(T)
-Distributions.gradlogpdf(::Uniform, x::T) where {T<:Real} = zero(T) # Required for these tests because undefined in Distributions...
+prior(::T, s::Symbol) where {T <: AbstractParameters} = prior(T, s)
+prior(::Type{T}) where {T <: AbstractParameters} = Tuple(prior(T, s) for s in AIBECS.symbols(T))
+prior(::T) where {T <: AbstractParameters} = prior(T)
+Distributions.gradlogpdf(::Uniform, x::T) where {T <: Real} = zero(T) # Required for these tests because undefined in Distributions...
 
 p = TestParameters()
 

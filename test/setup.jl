@@ -1,4 +1,3 @@
-
 # Load the circulation and grid
 grd, T_Circulation_unit = Circulation.load()
 T_Circulation = ustrip.(T_Circulation_unit) # strip units for now
@@ -55,4 +54,3 @@ end
     @test DIV isa SparseMatrixCSC
     @test Iabove isa SparseMatrixCSC
 end
-

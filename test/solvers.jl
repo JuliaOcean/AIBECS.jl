@@ -1,12 +1,11 @@
-
 # Algorithms tested on every toy circulation. CTKAlg is the AIBECS-native
 # solver and works without optional deps. The NonlinearSolve algorithms
 # require the AIBECSNonlinearSolveExt extension to be loaded.
 solver_cases = [
-    (label = "CTKAlg",                  build = () -> CTKAlg(),                                       needs_nlprob = false),
-    (label = "recommended_nlalg",       build = AIBECS.recommended_nlalg,                             needs_nlprob = true),
+    (label = "CTKAlg", build = () -> CTKAlg(), needs_nlprob = false),
+    (label = "recommended_nlalg", build = AIBECS.recommended_nlalg, needs_nlprob = true),
     (label = "NewtonRaphson + UMFPACK", build = () -> NewtonRaphson(linsolve = UMFPACKFactorization()), needs_nlprob = true),
-    (label = "NewtonRaphson + KLU",     build = () -> NewtonRaphson(linsolve = KLUFactorization()),    needs_nlprob = true),
+    (label = "NewtonRaphson + KLU", build = () -> NewtonRaphson(linsolve = KLUFactorization()), needs_nlprob = true),
 ]
 
 @testset "Solvers" begin
@@ -21,7 +20,7 @@ solver_cases = [
             prob = case.needs_nlprob ? AIBECS.nonlinearproblem(ssprob) : ssprob
             s = solve(prob, case.build())
             @test s isa SciMLBase.AbstractSciMLSolution
-            @test norm(s.u) / norm(fun.f(s.u, testp, 0)) > ustrip(upreferred(1e5u"Myr"))
+            @test norm(s.u) / norm(fun.f(s.u, testp, 0)) > ustrip(upreferred(1.0e5u"Myr"))
         end
     end
 end
