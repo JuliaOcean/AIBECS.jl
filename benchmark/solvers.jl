@@ -11,18 +11,14 @@
 #   - bench_results.json      : github-action-benchmark format ({name, unit, value})
 #   - latest_timings.md       : human-readable Markdown table for docs inclusion
 #
-# Algorithm matrix: CTKAlg (baseline), NewtonRaphson + UMFPACK/KLU,
-# TrustRegion + UMFPACK, LevenbergMarquardt + UMFPACK, plus a no-jac
-# NewtonRaphson + UMFPACK row that exercises the DI sparse-AD stack.
+# Algorithm matrix: CTKAlg (baseline), recommended_nlalg (NewtonRaphson +
+# UMFPACK), and the bare NewtonRaphson + UMFPACK / KLU pairs.
 #
 # Krylov solvers are deliberately omitted: AIBECS lacks a preconditioner
 # suitable for the steady-state advection-diffusion-reaction system.
 
 using AIBECS
 using NonlinearSolve, LinearSolve
-using ADTypes, DifferentiationInterface
-using SparseConnectivityTracer, SparseMatrixColorings
-using ForwardDiff
 using BenchmarkTools
 using JSON3
 using Printf
@@ -37,35 +33,11 @@ const TIER    = Symbol(get(ENV, "BENCH_TIER", "small"))
 const TRACERS = Symbol(get(ENV, "BENCH_TRACERS", "all"))
 
 const ALG_MATRIX = [
-    (label = "CTKAlg",                       wants_nlprob = false, build = () -> CTKAlg(),
-     drop_jac = false),
-    (label = "NewtonRaphson + UMFPACK",      wants_nlprob = true,
-     build = () -> NewtonRaphson(linsolve = UMFPACKFactorization()),
-     drop_jac = false),
-    (label = "NewtonRaphson + KLU",          wants_nlprob = true,
-     build = () -> NewtonRaphson(linsolve = KLUFactorization()),
-     drop_jac = false),
-    (label = "TrustRegion + UMFPACK",        wants_nlprob = true,
-     build = () -> TrustRegion(linsolve = UMFPACKFactorization()),
-     drop_jac = false),
-    (label = "LevenbergMarquardt + UMFPACK", wants_nlprob = true,
-     build = () -> LevenbergMarquardt(linsolve = UMFPACKFactorization()),
-     drop_jac = false),
-    (label = "NewtonRaphson + UMFPACK + sparse-AD (no jac)",
-     wants_nlprob = true,
-     build = () -> NewtonRaphson(linsolve = UMFPACKFactorization(),
-                                  autodiff = AIBECS.default_sparse_ad()),
-     drop_jac = true),
+    (label = "CTKAlg",                  build = () -> CTKAlg(),                                       needs_nlprob = false),
+    (label = "recommended_nlalg",       build = AIBECS.recommended_nlalg,                             needs_nlprob = true),
+    (label = "NewtonRaphson + UMFPACK", build = () -> NewtonRaphson(linsolve = UMFPACKFactorization()), needs_nlprob = true),
+    (label = "NewtonRaphson + KLU",     build = () -> NewtonRaphson(linsolve = KLUFactorization()),    needs_nlprob = true),
 ]
-
-# Build a NonlinearProblem variant that drops the analytical jac so the
-# autodiff path is actually exercised.
-function nonlinearproblem_no_jac(prob::SciMLBase.AbstractSteadyStateProblem)
-    f_ode = prob.f.f
-    f_nl(u, p) = f_ode(u, p)
-    nf = SciMLBase.NonlinearFunction{false}(f_nl)
-    return SciMLBase.NonlinearProblem{false}(nf, prob.u0, prob.p)
-end
 
 struct Result
     circulation::String
@@ -82,11 +54,7 @@ end
 function run_one(circ_label, tracer_label, ssprob, case)
     n = length(ssprob.u0)
     alg = case.build()
-    prob = if case.wants_nlprob
-        case.drop_jac ? nonlinearproblem_no_jac(ssprob) : AIBECS.nonlinearproblem(ssprob)
-    else
-        ssprob
-    end
+    prob = case.needs_nlprob ? AIBECS.nonlinearproblem(ssprob) : ssprob
 
     # Warm up + correctness check before timing.
     sol = try

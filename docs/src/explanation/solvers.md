@@ -21,10 +21,9 @@ and lists the algorithm/factorisation pairs that have been verified.
 - **Use `CTKAlg()` if** you want the smallest possible install, you're
   running the tutorials as written, or you need a stable baseline to
   compare against. It is the zero-dependency default.
-- **Use NonlinearSolve if** you want to experiment with TrustRegion or
-  Levenberg–Marquardt globalisations, swap in a different LinearSolve
-  factorisation (UMFPACK, KLU, …), or benchmark several algorithms on
-  the same problem. Activating the integration costs the load-time of
+- **Use NonlinearSolve if** you want to swap in a different LinearSolve
+  factorisation (UMFPACK, KLU, …) or benchmark several algorithms
+  against `CTKAlg`. Activating the integration costs the load-time of
   NonlinearSolve.jl and LinearSolve.jl plus their transitive deps.
 
 Switching between the two paths is a one-line change at the call site —
@@ -33,43 +32,19 @@ the underlying `SteadyStateProblem` and its sparse Jacobian are reused.
 ## Algorithms
 
 The combinations below have been verified on the toy `Primeau_2x2x2`
-circulation and converge to the same root as `CTKAlg()` (within the
-tolerance noted) unless flagged otherwise.
+circulation and converge to the same root as `CTKAlg()`.
 
 | Solver call | Match vs `CTKAlg()` | Notes |
 |---|---|---|
-| `solve(prob, CTKAlg())` | (baseline) | Native AIBECS Newton-Krylov. |
+| `solve(prob, CTKAlg())` | (baseline) | Native AIBECS Newton-Krylov; consumes the `SteadyStateProblem`. |
 | `solve(nlprob, NewtonRaphson(linsolve = UMFPACKFactorization()))` | exact | Recommended default. |
 | `solve(nlprob, NewtonRaphson(linsolve = KLUFactorization()))` | 1e-10 | KLU may be faster on very-sparse Jacobians. |
-| `solve(nlprob, AIBECS.recommended_nlalg())` | exact | NewtonRaphson + UMFPACK + sparse-AD fallback. |
-| `solve(nlprob, TrustRegion(linsolve = UMFPACKFactorization()))` | different root | Globalised Newton; may converge to a different valid root for nonconvex BGC systems. |
-| `solve(nlprob, LevenbergMarquardt(linsolve = UMFPACKFactorization()))` | different root | Same caveat as TrustRegion. |
+| `solve(nlprob, AIBECS.recommended_nlalg())` | exact | NewtonRaphson + UMFPACK. |
 
-`nlprob` here is `AIBECS.nonlinearproblem(prob)` — see the how-to for the
-full pattern and the rationale for the wrapper.
-
-## Default sparse AD
-
-`AIBECS.recommended_nlalg()` falls back to `AIBECS.default_sparse_ad()`
-when no analytical Jacobian is supplied. The default is
-
-```julia
-AutoSparse(
-    AutoForwardDiff();
-    sparsity_detector = TracerSparsityDetector(),
-    coloring_algorithm = GreedyColoringAlgorithm(),
-)
-```
-
-i.e. ForwardDiff for the per-column Jacobian-vector products, with
-[SparseConnectivityTracer.jl](https://github.com/adrhill/SparseConnectivityTracer.jl)
-detecting the sparsity pattern and
-[SparseMatrixColorings.jl](https://github.com/gdalle/SparseMatrixColorings.jl)
-compressing it via greedy colouring. AIBECS-built problems already carry
-an analytical Jacobian (constructed from the linear transport operator
-plus AD on the local sources/sinks), so this fallback only matters for
-benchmarking against problems where the user has stripped the Jacobian
-or supplied an external `F`.
+For the NonlinearSolve rows, `nlprob = AIBECS.nonlinearproblem(prob)` —
+see the how-to for the full pattern. The helper attaches the sparse
+Jacobian buffer type so LinearSolve's UMFPACK / KLU factorisations
+allocate sparse buffers instead of erroring on a dense default.
 
 ## Latest benchmark results (auto-updated)
 
@@ -95,11 +70,6 @@ meantime:
   factorisation used by the AIBECS-recommended algorithm.
 - **KLU may win on very-sparse Jacobians.** Worth trying if a profile
   shows the linear solve dominating.
-- **TrustRegion / LevenbergMarquardt may find different roots.** These
-  globalised methods are robust on stiff or ill-conditioned problems but
-  for nonconvex BGC systems they can land on a different valid root than
-  `CTKAlg()`. Always validate against the `CTKAlg()` solution before
-  using the result for science.
 
 ## Krylov solvers
 

@@ -55,33 +55,23 @@ export solve, SteadyStateProblem, CTKAlg
 
 # ── NonlinearSolve / LinearSolve extension hooks ──────────────────────────────
 # Bodies live in ext/AIBECSNonlinearSolveExt.jl and only become callable when
-# the user has loaded NonlinearSolve, LinearSolve, ADTypes, DifferentiationInterface,
-# SparseConnectivityTracer, and SparseMatrixColorings.
+# the user has loaded NonlinearSolve and LinearSolve.
 """
     AIBECS.nonlinearproblem(prob::AbstractSteadyStateProblem) -> NonlinearProblem
 
-Build a `NonlinearProblem` from an AIBECS `SteadyStateProblem` with the
-Jacobian sparsity prototype attached so LinearSolve can dispatch to a
-sparse-aware factorization. Requires NonlinearSolve.jl to be loaded.
+Convert an AIBECS `SteadyStateProblem` into a `NonlinearProblem` with the
+sparse Jacobian buffer type attached as `jac_prototype`. Without this, the
+default Jacobian buffer is dense `Matrix{Float64}` and sparse linear-solver
+factorisations (UMFPACK, KLU) error on the type mismatch. Requires
+NonlinearSolve.jl and LinearSolve.jl to be loaded.
 """
 function nonlinearproblem end
 
 """
-    AIBECS.default_sparse_ad()
-
-Default sparse automatic-differentiation backend used as a fallback when
-no analytical Jacobian is supplied to NonlinearSolve. Combines ForwardDiff
-(via DifferentiationInterface), SparseConnectivityTracer for sparsity
-detection, and SparseMatrixColorings for graph coloring.
-"""
-function default_sparse_ad end
-
-"""
-    AIBECS.recommended_nlalg(; linsolve=UMFPACKFactorization(), autodiff=default_sparse_ad())
+    AIBECS.recommended_nlalg(; linsolve=UMFPACKFactorization())
 
 Recommended NonlinearSolve algorithm for AIBECS-style sparse steady-state
 problems: `NewtonRaphson` with `UMFPACKFactorization` (matches what
-`LinearAlgebra.factorize` picks for sparse matrices today). `autodiff` is
-only consulted if the supplied `prob.f.jac` is dropped.
+`LinearAlgebra.factorize` picks for sparse matrices today).
 """
 function recommended_nlalg end

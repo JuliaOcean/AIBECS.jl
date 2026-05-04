@@ -1,5 +1,5 @@
 using AIBECS
-using AIBECS: @units, units
+import AIBECS: @units, units
 using Unitful
 using UnPack
 

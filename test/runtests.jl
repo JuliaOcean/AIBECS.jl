@@ -22,8 +22,6 @@ using Shapefile     # AIBECSShapefileExt (GroundWaters)
 using Interpolations # AIBECSRecipesBaseExt (RatioAtStation recipe)
 using RecipesBase   # plotting recipes
 using NonlinearSolve, LinearSolve   # AIBECSNonlinearSolveExt
-using ADTypes, DifferentiationInterface
-using SparseConnectivityTracer, SparseMatrixColorings
 
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true

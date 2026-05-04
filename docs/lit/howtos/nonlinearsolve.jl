@@ -41,19 +41,16 @@ prob = SteadyStateProblem(F, x_init, p)
 
 # ## Solving with NonlinearSolve
 
-# The recommended pattern is to wrap the `SteadyStateProblem` with
-# `AIBECS.nonlinearproblem` before calling `solve`. The helper attaches the
-# sparse Jacobian prototype so LinearSolve can pick an efficient sparse
-# factorisation, and pins `NonlinearProblem{false}` to bypass the
-# in-place promotion path that mishandles AIBECS's 3-argument
-# `f(u, p, t=0)` signature.
+# Wrap the `SteadyStateProblem` with `AIBECS.nonlinearproblem` before
+# calling `solve`. The helper performs the SciML conversion to a
+# `NonlinearProblem` and attaches the sparse Jacobian buffer type
+# (`jac_prototype`) that LinearSolve's UMFPACK / KLU factorisations expect.
 
 nlprob = AIBECS.nonlinearproblem(prob)
 sol = solve(nlprob, NewtonRaphson(linsolve = UMFPACKFactorization()))
 
 # Or, equivalently, use the AIBECS-recommended default — same Newton step,
-# UMFPACK factorisation, and a sparse-AD fallback for problems that don't
-# carry an analytical Jacobian:
+# same UMFPACK factorisation:
 
 sol = solve(nlprob, AIBECS.recommended_nlalg())
 
@@ -62,7 +59,7 @@ sol = solve(nlprob, AIBECS.recommended_nlalg())
 # `CTKAlg()` continues to work exactly as before — no extra packages
 # required:
 
-age = solve(prob, CTKAlg())
+sol = solve(prob, CTKAlg())
 
 # See the [solvers explanation page](@ref solvers) for guidance on when
 # each solver path is appropriate and which algorithm/linear-solver
