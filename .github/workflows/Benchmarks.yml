@@ -1,0 +1,115 @@
+name: Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Benchmark tier (small | medium | large)"
+        required: false
+        default: "medium"
+      tracers:
+        description: "Tracer setup (idealage | radiocarbon | po4pop | all)"
+        required: false
+        default: "all"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+env:
+  DATADEPS_ALWAYS_ACCEPT: "true"
+
+jobs:
+  bench:
+    name: "Run solver benchmarks (${{ github.event_name == 'workflow_dispatch' && inputs.tier || 'small' }})"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      deployments: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+
+      - uses: julia-actions/cache@v3
+
+      - name: Resolve benchmark env
+        run: julia --project=benchmark -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+
+      - name: Run benchmarks
+        env:
+          BENCH_TIER: ${{ github.event_name == 'workflow_dispatch' && inputs.tier || 'small' }}
+          BENCH_TRACERS: ${{ github.event_name == 'workflow_dispatch' && inputs.tracers || 'all' }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: julia --project=benchmark benchmark/solvers.jl
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results-${{ github.run_id }}
+          path: |
+            benchmark/results/bench_results.json
+            benchmark/results/latest_timings.md
+
+      # ── Push results to gh-pages dashboard (main + push only) ─────────────
+      - name: Publish to dashboard
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: AIBECS Solver Benchmarks
+          tool: customSmallerIsBetter
+          output-file-path: benchmark/results/bench_results.json
+          benchmark-data-dir-path: benchmarks
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: "110%"
+          comment-on-alert: true
+          fail-on-alert: false
+          summary-always: true
+          max-items-in-chart: 5000
+
+      # ── Auto-commit the latest_timings.md table back to main for docs ─────
+      - name: Sync latest timings to docs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          dest=docs/src/explanation/latest_timings.md
+          mkdir -p "$(dirname "$dest")"
+          if [ -f "$dest" ] && cmp -s benchmark/results/latest_timings.md "$dest"; then
+            echo "latest_timings.md unchanged — skipping commit."
+            exit 0
+          fi
+          cp benchmark/results/latest_timings.md "$dest"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dest"
+          git commit -m "docs(benchmarks): update latest solver timings table"
+          git push origin HEAD:main
+
+      # ── PR-time comparison comment (no dashboard push) ────────────────────
+      - name: Compare against base on PR
+        if: github.event_name == 'pull_request'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: AIBECS Solver Benchmarks
+          tool: customSmallerIsBetter
+          output-file-path: benchmark/results/bench_results.json
+          benchmark-data-dir-path: benchmarks
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          alert-threshold: "110%"
+          comment-on-alert: true
+          fail-on-alert: false
+          summary-always: true
+          max-items-in-chart: 5000

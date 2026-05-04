@@ -1,0 +1,187 @@
+# Benchmark harness for AIBECS steady-state solvers.
+#
+# Run with:
+#   julia --project=benchmark benchmark/solvers.jl
+#
+# Configuration via env vars:
+#   BENCH_TIER    ∈ {small, medium, large}            (default: small)
+#   BENCH_TRACERS ∈ {idealage, radiocarbon, po4pop, all}  (default: all)
+#
+# Outputs in benchmark/results/:
+#   - bench_results.json      : github-action-benchmark format ({name, unit, value})
+#   - latest_timings.md       : human-readable Markdown table for docs inclusion
+#
+# Algorithm matrix: CTKAlg (baseline), NewtonRaphson + UMFPACK/KLU,
+# TrustRegion + UMFPACK, LevenbergMarquardt + UMFPACK, plus a no-jac
+# NewtonRaphson + UMFPACK row that exercises the DI sparse-AD stack.
+#
+# Krylov solvers are deliberately omitted: AIBECS lacks a preconditioner
+# suitable for the steady-state advection-diffusion-reaction system.
+
+using AIBECS
+using NonlinearSolve, LinearSolve
+using ADTypes, DifferentiationInterface
+using SparseConnectivityTracer, SparseMatrixColorings
+using ForwardDiff
+using BenchmarkTools
+using JSON3
+using Printf
+using LinearAlgebra
+using SciMLBase
+using Dates
+
+include(joinpath(@__DIR__, "circulations.jl"))
+include(joinpath(@__DIR__, "tracer_setups.jl"))
+
+const TIER    = Symbol(get(ENV, "BENCH_TIER", "small"))
+const TRACERS = Symbol(get(ENV, "BENCH_TRACERS", "all"))
+
+const ALG_MATRIX = [
+    (label = "CTKAlg",                       wants_nlprob = false, build = () -> CTKAlg(),
+     drop_jac = false),
+    (label = "NewtonRaphson + UMFPACK",      wants_nlprob = true,
+     build = () -> NewtonRaphson(linsolve = UMFPACKFactorization()),
+     drop_jac = false),
+    (label = "NewtonRaphson + KLU",          wants_nlprob = true,
+     build = () -> NewtonRaphson(linsolve = KLUFactorization()),
+     drop_jac = false),
+    (label = "TrustRegion + UMFPACK",        wants_nlprob = true,
+     build = () -> TrustRegion(linsolve = UMFPACKFactorization()),
+     drop_jac = false),
+    (label = "LevenbergMarquardt + UMFPACK", wants_nlprob = true,
+     build = () -> LevenbergMarquardt(linsolve = UMFPACKFactorization()),
+     drop_jac = false),
+    (label = "NewtonRaphson + UMFPACK + sparse-AD (no jac)",
+     wants_nlprob = true,
+     build = () -> NewtonRaphson(linsolve = UMFPACKFactorization(),
+                                  autodiff = AIBECS.default_sparse_ad()),
+     drop_jac = true),
+]
+
+# Build a NonlinearProblem variant that drops the analytical jac so the
+# autodiff path is actually exercised.
+function nonlinearproblem_no_jac(prob::SciMLBase.AbstractSteadyStateProblem)
+    f_ode = prob.f.f
+    f_nl(u, p) = f_ode(u, p)
+    nf = SciMLBase.NonlinearFunction{false}(f_nl)
+    return SciMLBase.NonlinearProblem{false}(nf, prob.u0, prob.p)
+end
+
+struct Result
+    circulation::String
+    tracers::String
+    alg::String
+    n::Int
+    seconds::Float64
+    allocs_bytes::Int
+    residual::Float64
+    converged::Bool
+    error::Union{Nothing,String}
+end
+
+function run_one(circ_label, tracer_label, ssprob, case)
+    n = length(ssprob.u0)
+    alg = case.build()
+    prob = if case.wants_nlprob
+        case.drop_jac ? nonlinearproblem_no_jac(ssprob) : AIBECS.nonlinearproblem(ssprob)
+    else
+        ssprob
+    end
+
+    # Warm up + correctness check before timing.
+    sol = try
+        solve(prob, alg)
+    catch e
+        return Result(circ_label, tracer_label, case.label, n,
+                      NaN, 0, NaN, false, sprint(showerror, e))
+    end
+    residual = norm(ssprob.f.f(sol.u, ssprob.p))
+    converged = residual < 1e-6 * max(norm(sol.u), 1.0)
+
+    bench = @benchmark solve($prob, $alg) samples=3 evals=1 seconds=60
+    return Result(circ_label, tracer_label, case.label, n,
+                  minimum(bench).time / 1e9,
+                  minimum(bench).memory,
+                  residual, converged, nothing)
+end
+
+function tracer_keys(req::Symbol)
+    req === :all && return collect(keys(TRACER_SETUPS))
+    haskey(TRACER_SETUPS, req) || error("unknown BENCH_TRACERS=$req; expected one of $(collect(keys(TRACER_SETUPS))) or :all")
+    return [req]
+end
+
+function gather_results()
+    haskey(TIERS, TIER) || error("unknown BENCH_TIER=$TIER; expected one of $(collect(keys(TIERS)))")
+    out = Result[]
+    @info "Benchmark configuration" tier = TIER tracers = TRACERS
+    for (circ_label, loader) in TIERS[TIER]
+        @info "Loading circulation" circ_label
+        grd, T_circ = loader()
+        for tk in tracer_keys(TRACERS)
+            setup = TRACER_SETUPS[tk]
+            @info "Building problem" circulation = circ_label tracers = setup.label
+            ssprob = setup.build(grd, T_circ)
+            for case in ALG_MATRIX
+                @info "Benchmarking" alg = case.label
+                push!(out, run_one(circ_label, setup.label, ssprob, case))
+            end
+        end
+    end
+    return out
+end
+
+function bench_name(r::Result)
+    return string(r.circulation, " / ", r.tracers, " / ", r.alg)
+end
+
+function write_json(results, path)
+    payload = [Dict(
+        "name"   => bench_name(r),
+        "unit"   => "s/solve",
+        "value"  => isnan(r.seconds) ? -1.0 : r.seconds,
+        "extra"  => string("n=", r.n,
+                           "; alloc=", r.allocs_bytes,
+                           "; residual=", @sprintf("%.3e", r.residual),
+                           r.converged ? "" : "; CONVERGENCE FAILED",
+                           r.error === nothing ? "" : string("; error=", r.error)),
+    ) for r in results]
+    open(path, "w") do io
+        JSON3.pretty(io, payload)
+    end
+end
+
+function write_markdown(results, path; commit = nothing)
+    open(path, "w") do io
+        println(io, "<!-- Auto-generated by benchmark/solvers.jl. Do not edit by hand. -->")
+        println(io, "")
+        println(io, "| Circulation | Tracers | Algorithm | n | Time (s) | Allocs (MB) | Residual | Converged |")
+        println(io, "|---|---|---|---:|---:|---:|---|:---:|")
+        for r in results
+            time_str = isnan(r.seconds) ? "—" : @sprintf("%.3g", r.seconds)
+            alloc_mb = r.allocs_bytes / 1024^2
+            alloc_str = isnan(r.seconds) ? "—" : @sprintf("%.1f", alloc_mb)
+            res_str  = isnan(r.residual) ? "—" : @sprintf("%.2e", r.residual)
+            conv = r.converged ? "✓" : "✗"
+            println(io, "| ", r.circulation, " | ", r.tracers, " | ", r.alg, " | ",
+                    r.n, " | ", time_str, " | ", alloc_str, " | ",
+                    res_str, " | ", conv, " |")
+        end
+        println(io, "")
+        commit_note = commit === nothing ? "" : string(", commit ", commit)
+        println(io, "_Last updated: ", string(now()), commit_note, "_")
+    end
+end
+
+function main()
+    results = gather_results()
+    outdir = joinpath(@__DIR__, "results")
+    isdir(outdir) || mkpath(outdir)
+    write_json(results, joinpath(outdir, "bench_results.json"))
+    commit = get(ENV, "GITHUB_SHA", nothing)
+    write_markdown(results, joinpath(outdir, "latest_timings.md"); commit)
+    println("\nWrote ", length(results), " benchmark entries to ", outdir)
+    return results
+end
+
+main()
