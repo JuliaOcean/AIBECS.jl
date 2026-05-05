@@ -18,6 +18,7 @@
 # suitable for the steady-state advection-diffusion-reaction system.
 
 using AIBECS
+using JLD2          # activates AIBECSJLD2Ext so OCIM*/OCCA loaders work
 using NonlinearSolve
 using LinearSolve
 using BenchmarkTools
