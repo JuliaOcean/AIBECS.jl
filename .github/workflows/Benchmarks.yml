@@ -22,6 +22,8 @@ concurrency:
 
 env:
   DATADEPS_ALWAYS_ACCEPT: "true"
+  BENCH_TIER: ${{ github.event_name == 'workflow_dispatch' && inputs.tier || 'small' }}
+  BENCH_TRACERS: ${{ github.event_name == 'workflow_dispatch' && inputs.tracers || 'all' }}
 
 jobs:
   bench:
@@ -47,28 +49,26 @@ jobs:
 
       - name: Run benchmarks
         env:
-          BENCH_TIER: ${{ github.event_name == 'workflow_dispatch' && inputs.tier || 'small' }}
-          BENCH_TRACERS: ${{ github.event_name == 'workflow_dispatch' && inputs.tracers || 'all' }}
           GITHUB_SHA: ${{ github.sha }}
         run: julia --project=benchmark benchmark/solvers.jl
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: bench-results-${{ github.run_id }}
+          name: bench-results-${{ env.BENCH_TIER }}-${{ github.run_id }}
           path: |
-            benchmark/results/bench_results.json
-            benchmark/results/latest_timings.md
+            benchmark/results/bench_results_${{ env.BENCH_TIER }}.json
+            benchmark/results/latest_timings_${{ env.BENCH_TIER }}.md
 
       # ── Push results to gh-pages dashboard (main + push only) ─────────────
       - name: Publish to dashboard
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: AIBECS Solver Benchmarks
+          name: AIBECS Solver Benchmarks (${{ env.BENCH_TIER }})
           tool: customSmallerIsBetter
-          output-file-path: benchmark/results/bench_results.json
-          benchmark-data-dir-path: benchmarks
+          output-file-path: benchmark/results/bench_results_${{ env.BENCH_TIER }}.json
+          benchmark-data-dir-path: benchmarks/${{ env.BENCH_TIER }}
           gh-pages-branch: gh-pages
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
@@ -78,22 +78,23 @@ jobs:
           summary-always: true
           max-items-in-chart: 5000
 
-      # ── Auto-commit the latest_timings.md table back to main for docs ─────
+      # ── Auto-commit the latest_timings_<tier>.md table back to main for docs ─
       - name: Sync latest timings to docs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           set -euo pipefail
-          dest=docs/src/explanation/latest_timings.md
+          src="benchmark/results/latest_timings_${BENCH_TIER}.md"
+          dest="docs/src/explanation/latest_timings_${BENCH_TIER}.md"
           mkdir -p "$(dirname "$dest")"
-          if [ -f "$dest" ] && cmp -s benchmark/results/latest_timings.md "$dest"; then
-            echo "latest_timings.md unchanged — skipping commit."
+          if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+            echo "$dest unchanged — skipping commit."
             exit 0
           fi
-          cp benchmark/results/latest_timings.md "$dest"
+          cp "$src" "$dest"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$dest"
-          git commit -m "docs(benchmarks): update latest solver timings table"
+          git commit -m "docs(benchmarks): update ${BENCH_TIER}-tier solver timings table"
           git push origin HEAD:main
 
       # ── PR-time comparison comment (no dashboard push) ────────────────────
@@ -101,10 +102,10 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: AIBECS Solver Benchmarks
+          name: AIBECS Solver Benchmarks (${{ env.BENCH_TIER }})
           tool: customSmallerIsBetter
-          output-file-path: benchmark/results/bench_results.json
-          benchmark-data-dir-path: benchmarks
+          output-file-path: benchmark/results/bench_results_${{ env.BENCH_TIER }}.json
+          benchmark-data-dir-path: benchmarks/${{ env.BENCH_TIER }}
           gh-pages-branch: gh-pages
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: false

@@ -34,7 +34,7 @@ struct IdealAgeParameters{U} <: AbstractParameters{U}
     z₀::U
 end
 
-p = IdealAgeParameters(1.0, 30.0)
+p = IdealAgeParameters(1.0, z[1])
 F = AIBECSFunction(T_OCIM0, G)
 nb = sum(iswet(grd))
 x_init = zeros(nb)

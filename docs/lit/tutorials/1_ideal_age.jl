@@ -71,7 +71,7 @@ end
 # The type is now ready for us to generate an instance of the parameter `p`.
 # Let's use `τ = 1.0` (s) and `z₀` the minimum depth of the model.
 
-p = IdealAgeParameters(1.0, 30.0)
+p = IdealAgeParameters(1.0, z[1])
 
 # We now use the AIBECS to generate the state function $\boldsymbol{F}$ (and its Jacobian) via
 
