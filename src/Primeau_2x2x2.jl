@@ -10,7 +10,8 @@ Use [`Primeau_2x2x2.load`](@ref) to obtain `(grd, T)`.
 """
 module Primeau_2x2x2
 
-using LinearAlgebra, SparseArrays
+using LinearAlgebra
+using SparseArrays
 using Unitful
 using Reexport
 @reexport using OceanGrids            # To store the grid
@@ -20,13 +21,13 @@ CG = CirculationGeneration
 
 function build_wet3D()
     wet3D = trues(2, 2, 2)
-    wet3D[[4,7,8]] .= false # land points
+    wet3D[[4, 7, 8]] .= false # land points
     return wet3D
 end
 
 
 function build_grid()
-    elon = [0,180,360] * u"°"
+    elon = [0, 180, 360] * u"°"
     elat = [-90, 0, 90] * u"°"
     edepth = [0, 200, 3700] * u"m"
     return OceanGrid(elon, elat, edepth, build_wet3D())
@@ -38,13 +39,13 @@ function build_T(grid)
     nb = length(v3D)
 
     # Antarctic Circumpoloar Current 1 -> 3 -> 1
-    ACC = 100e6u"m^3/s"
-    T  = CG.T_advection(ACC, [1, 3, 1], v3D, nb)
+    ACC = 100.0e6u"m^3/s"
+    T = CG.T_advection(ACC, [1, 3, 1], v3D, nb)
     # Meridional Overturning Circulation 1 -> 2 -> 6 -> 5 -> 1
-    MOC = 15e6u"m^3/s"
+    MOC = 15.0e6u"m^3/s"
     T += CG.T_advection(MOC, [1, 2, 6, 5, 1], v3D, nb)
     # vertical mixing at "high northern latitudes" 2 <-> 6
-    MIX = 10e6u"m^3/s"
+    MIX = 10.0e6u"m^3/s"
     T += CG.T_diffusion(MIX, 2, 6, v3D, nb)
 
     # Only keep wet points
@@ -68,6 +69,3 @@ function load()
 end
 
 end
-
-export Primeau_2x2x2
-

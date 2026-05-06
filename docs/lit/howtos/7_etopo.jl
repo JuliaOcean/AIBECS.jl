@@ -13,8 +13,10 @@
 # Loading the ETOPO data requires `Distances` and `NCDatasets` so the
 # `AIBECSETOPOExt` extension activates.
 
-using AIBECS, Plots
-using Distances, NCDatasets
+using AIBECS
+using Plots
+using Distances
+using NCDatasets
 using JLD2 # required by `OCIM2.load`
 
 # ## Load ETOPO and the target grid

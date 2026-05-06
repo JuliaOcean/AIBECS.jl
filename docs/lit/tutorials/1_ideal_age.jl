@@ -1,4 +1,3 @@
-
 #---------------------------------------------------------
 # # [Ideal age](@id idealage)
 #---------------------------------------------------------
@@ -47,7 +46,7 @@ grd, TOCIM2 = OCIM2.load()
 
 # The local sources and sinks for the age take the form
 
-function G(x,p)
+function G(x, p)
     @unpack τ, z₀ = p
     return @. 1 - x / τ * (z ≤ z₀)
 end
@@ -72,7 +71,7 @@ end
 # The type is now ready for us to generate an instance of the parameter `p`.
 # Let's use `τ = 1.0` (s) and `z₀` the minimum depth of the model.
 
-p = IdealAgeParameters(1.0, 30.0)
+p = IdealAgeParameters(1.0, z[1])
 
 # We now use the AIBECS to generate the state function $\boldsymbol{F}$ (and its Jacobian) via
 
@@ -108,7 +107,7 @@ age_in_yrs = age * u"s" .|> u"yr"
 
 # And we take a horizontal slice at about 2000m.
 
-plothorizontalslice(age_in_yrs, grd, depth=2000u"m", color=:magma)
+plothorizontalslice(age_in_yrs, grd, depth = 2000u"m", color = :magma)
 
 # Or look at the horiontal mean
 
@@ -116,4 +115,3 @@ plothorizontalmean(age_in_yrs, grd)
 
 # That's it for this tutorial...
 # Good job!
-

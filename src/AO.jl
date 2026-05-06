@@ -16,7 +16,6 @@ using DataDeps              # For storage location of data
 using Downloads
 
 
-
 function register_AO_files()
     register(
         DataDep(
@@ -43,29 +42,27 @@ function download_and_unpack()
     register_AO_files()
     AO_path = datadep"AWESOME-OCIM"
     @info """You are about to download (and unpack) the AWESOME OCIM (AO)
-          files as a zip file from GitHub and unpack them into:
+    files as a zip file from GitHub and unpack them into:
 
-              $AO_path
+        $AO_path
 
-          You can run
+    You can run
 
-              tree $AO_path
+        tree $AO_path
 
-          (in shell mode) to check its contents.
+    (in shell mode) to check its contents.
 
-          Please check with Seth John (sethjohn@usc.edu) for references
-          to cite if you use the other data contained in the AO files,
-          e.g., GEOTRACES, WOA, Weber and John, and so on.
+    Please check with Seth John (sethjohn@usc.edu) for references
+    to cite if you use the other data contained in the AO files,
+    e.g., GEOTRACES, WOA, Weber and John, and so on.
 
-          Also note that downloading files like this from GitHub is
-          probably not very robust. However, some of the data files in
-          the AO repository do not exist anywhere else officially,
-          therefore this seems like the best solution at this stage.
-          PRs welcome to improve this!
-          """
+    Also note that downloading files like this from GitHub is
+    probably not very robust. However, some of the data files in
+    the AO repository do not exist anywhere else officially,
+    therefore this seems like the best solution at this stage.
+    PRs welcome to improve this!
+    """
     return AO_path
 end
 
 end # module
-
-export AO

@@ -53,8 +53,10 @@ Requires `using Shapefile, DataFrames` so that the `AIBECSShapefileExt`
 extension is activated.
 """
 function load(args...; kwargs...)
-    error("AIBECS.GroundWaters.load requires `using Shapefile, DataFrames`. " *
-          "Add them to your environment, then retry.")
+    error(
+        "AIBECS.GroundWaters.load requires `using Shapefile, DataFrames`. " *
+            "Add them to your environment, then retry."
+    )
 end
 
 citation() = """
@@ -67,7 +69,7 @@ citation() = """
 
 Regrids and bins the groundwater discharge values into `grd` surface boxes.
 """
-function regrid(gws::Vector{GroundWaterSource{T}}, grd) where T <: Quantity
+function regrid(gws::Vector{GroundWaterSource{T}}, grd) where {T <: Quantity}
     lats = [x.lat for x in gws]
     lons = [x.lon for x in gws]
     depths = zeros(length(gws))
@@ -77,5 +79,3 @@ end
 export regrid
 
 end # module
-
-export GroundWaters

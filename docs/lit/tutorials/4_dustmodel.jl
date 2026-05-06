@@ -1,4 +1,3 @@
-
 #---------------------------------------------------------
 # # [A dust model](@id dust-model)
 #---------------------------------------------------------
@@ -31,7 +30,7 @@ grd, T_OCIM = OCIM0.load()
 
 function T_dust(p)
     @unpack fsedremin = p
-    return LinearOperators((T_OCIM, transportoperator(grd, z -> w(z,p), fsedremin=fsedremin)))
+    return LinearOperators((T_OCIM, transportoperator(grd, z -> w(z, p), fsedremin = fsedremin)))
 end
 
 # For the settling transport of dust particles, we have used the `transportoperator` function
@@ -49,7 +48,7 @@ end
 
 # Following the assumption that $w(z) = w_0 + w' z$ increases linearly with depth, we write it as
 
-function w(z,p)
+function w(z, p)
     @unpack w₀, w′ = p
     return w₀ + w′ * z
 end
@@ -67,12 +66,12 @@ s_A_2D = AeolianSources.load()
 # We transpose it to (lat, lon) order and regrid it onto the surface layer of `grd`,
 # the 3D grid of the ocean circulation:
 
-s_dust_2D = regrid(permutedims(s_A_2D[:dust], (2,1)), s_A_2D[:lat], s_A_2D[:lon], grd)
+s_dust_2D = regrid(permutedims(s_A_2D[:dust], (2, 1)), s_A_2D[:lat], s_A_2D[:lon], grd)
 
 # Then we create a blank 3D array of zeros, of which we paint the top layer:
 
 s_dust_3D = zeros(size(grd)...)
-s_dust_3D[:,:,1] .= s_dust_2D
+s_dust_3D[:, :, 1] .= s_dust_2D
 
 # we convert it to a SI volumetric unit (i.e., in g m⁻³)
 s_dust_3D = ustrip.(upreferred.(s_dust_3D * u"kg/m^2/s" ./ grd.δz_3D))
@@ -92,8 +91,8 @@ G_dust(x, p) = s_dust
 import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
 @initial_value @units struct DustModelParameters{U} <: AbstractParameters{U}
-    w₀::U        | 0.1 | u"km/yr"
-    w′::U        | 0.1 | u"km/yr/km"
+    w₀::U | 0.1 | u"km/yr"
+    w′::U | 0.1 | u"km/yr/km"
     fsedremin::U | 5.0 | u"percent"
 end
 
@@ -121,19 +120,19 @@ using Plots
 
 # Let's have a look at a map of the mean dust concentration:
 
-plotverticalmean(sol * u"g/m^3", grd, color=cgrad(:turbid, rev=true, scale=:exp))
+plotverticalmean(sol * u"g/m^3", grd, color = cgrad(:turbid, rev = true, scale = :exp))
 
 # compared to the original source
 
-plotverticalintegral(s_dust * u"g/m^3/s", xlabel="", ylabel="", grd, color=cgrad(:starrynight, scale=:exp), title="Surface flux", zunit=u"mg/m^2/yr")
+plotverticalintegral(s_dust * u"g/m^3/s", xlabel = "", ylabel = "", grd, color = cgrad(:starrynight, scale = :exp), title = "Surface flux", zunit = u"mg/m^2/yr")
 
 # Huh? This is odd isn't it? What is happening? It seems that dust settles slowly enough to actually explore the ocean basins a little bit.
 # This is of course dependent on our choice of model parameters.
 
 # Let's look at what is exported below 500 m to compare:
 
-wflux = map(z -> w(z,p), depthvec(grd)) * u"m/s"
-plothorizontalslice(sol * u"g/m^3" .* wflux, grd, depth=500u"m", color=cgrad(:starrynight, scale=:exp), xlabel="", ylabel="", title="Flux at 500m", zunit=u"mg/yr/m^2")
+wflux = map(z -> w(z, p), depthvec(grd)) * u"m/s"
+plothorizontalslice(sol * u"g/m^3" .* wflux, grd, depth = 500u"m", color = cgrad(:starrynight, scale = :exp), xlabel = "", ylabel = "", title = "Flux at 500m", zunit = u"mg/yr/m^2")
 
 # We can also take a look at the global mean profile (the horizontal average)
 
@@ -145,10 +144,10 @@ profile_plot = plothorizontalmean(sol * u"g/m^3" .|> u"mg/m^3", grd)
 # Don't hesitate to play around with the parameters and see how things change!
 # For example, impose a larger fraction that stays in the bottom or change other parameters via
 
-p2 = DustModelParameters(w₀=0.1u"km/yr", w′=0.1u"km/yr/km", fsedremin=95.0u"percent")
+p2 = DustModelParameters(w₀ = 0.1u"km/yr", w′ = 0.1u"km/yr/km", fsedremin = 95.0u"percent")
 prob2 = SteadyStateProblem(F, x, p2)
 sol2 = solve(prob2, CTKAlg()).u
-plotverticalmean(sol2 * u"g/m^3", grd, color=cgrad(:turbid, rev=true, scale=:exp))
+plotverticalmean(sol2 * u"g/m^3", grd, color = cgrad(:turbid, rev = true, scale = :exp))
 
 # And watch how all the dust accumulates in the deepest holes of the ocean basins!
 #

@@ -40,7 +40,7 @@ function register_OCCA()
             - $CITATION
             """,
             OCCA_URL,
-            (md5, OCCA_MD5);
+            (md5, OCCA_MD5)
         )
     )
     return nothing
@@ -60,5 +60,3 @@ function load(args...; kwargs...)
 end
 
 end # end module
-
-export OCCA

@@ -64,6 +64,3 @@ end
 
 
 end # end module
-
-export OCIM0
-

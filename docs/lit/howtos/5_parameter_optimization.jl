@@ -13,7 +13,8 @@
 # load the trigger packages.
 
 using AIBECS
-using Bijectors, Distributions
+using Bijectors
+using Distributions
 
 # ## Declaring optimisable parameters
 

@@ -13,14 +13,14 @@ function OCIM2_48L.load()
     register_OCIM2_48L()
     files_path = @datadep_str "AIBECS-OCIM2_48L"
     @info """You are about to use the OCIM2_48L model.
-          If you use it for research, please cite:
+    If you use it for research, please cite:
 
-          $CITATION
+    $CITATION
 
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the "DeVries_Holzer_2019" and "Holzer_etal_2021" keys.)
-          """
+    You can find the corresponding BibTeX entries in the CITATION.bib file
+    at the root of the AIBECS.jl package repository.
+    (Look for the "DeVries_Holzer_2019" and "Holzer_etal_2021" keys.)
+    """
 
     # Convert convergence T in yr⁻¹ from original MAT file to divergence T in s⁻¹
     T = -ustrip.(s^-1, matread(joinpath(files_path, "OCIM2_48L_base_transport.mat"))["TR"] * yr^-1)
@@ -45,12 +45,12 @@ function OCIM2_48L.load()
         δdepth = 2(depth - depth_top)
         R = 6371.0km
         δy = R * δlat ./ 360°
-        δy_3D = repeat(reshape(δy, (nlat,1,1)), outer=(1,nlon,ndepth))
+        δy_3D = repeat(reshape(δy, (nlat, 1, 1)), outer = (1, nlon, ndepth))
         A_3D = Array(ds["area"])m^2
         δx_3D = A_3D ./ δy_3D
         volume_3D = Array(ds["vol"])m^3
         δz_3D = volume_3D ./ A_3D
-        A_2D = A_3D[:,:,1]
+        A_2D = A_3D[:, :, 1]
         nboxes = count(wet3D)
         OceanRectilinearGrid(
             lat,

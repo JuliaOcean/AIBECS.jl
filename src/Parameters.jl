@@ -241,7 +241,7 @@ Can also be used directly on the type of `p`.
 Base.size(::T) where {T <: APar} = (length(T),)
 Base.size(::Type{T}) where {T <: APar} = (length(T),)
 
-function Base.show(io::IO, p::T) where T <: APar
+function Base.show(io::IO, p::T) where {T <: APar}
     print(io, T)
     println(io)
     for s in symbols(p)
@@ -249,9 +249,10 @@ function Base.show(io::IO, p::T) where T <: APar
         u = units(T, s)
         println(io, "  ", s, " = ", v, isequal(u, 1) ? "" : " ($u)")
     end
+    return nothing
 end
-function Base.show(io::IO, ::MIME"text/plain", p::T) where T <: APar
-    show(io, p)
+function Base.show(io::IO, ::MIME"text/plain", p::T) where {T <: APar}
+    return show(io, p)
 end
 
 """
@@ -264,8 +265,8 @@ saving as a text/LaTeX table. Requires `using DataFrames` so the
 function table end
 
 # These line prevent the default (0.0, 1.0) value
-limits(::T) where {T<:APar} = limits(T)
-limits(::Type{T}) where {T<:APar} = Tuple(nothing for _ in 1:fieldcount(T))
+limits(::T) where {T <: APar} = limits(T)
+limits(::Type{T}) where {T <: APar} = Tuple(nothing for _ in 1:fieldcount(T))
 
 """
     latex(p)
@@ -283,7 +284,7 @@ Unpacks the parameter `s` from `p`.
 
 Note this is specialized and will convert the parameter value to SI units.
 """
-@inline UnPack.unpack(p::T, ::Val{f}) where {T<:APar,f} = ustrip(upreferred(getproperty(p, f) * units(T, f)))
+@inline UnPack.unpack(p::T, ::Val{f}) where {T <: APar, f} = ustrip(upreferred(getproperty(p, f) * units(T, f)))
 
 """
     +(p::T, v::Vector) where {T <: AbstractParameters}
@@ -325,10 +326,10 @@ Base.getindex(p::T, i) where {T <: APar} = flattenable_values(p)[i]
 
 function (::Type{T})(args::Quantity...) where {T <: APar}
     all(isequal(1), units(T)) && error("$T needs `units` for this construction to work")
-    return T([ustrip(x |> units(T, f)) for (x,f) in zip(args, fieldnames(T))]...)
+    return T([ustrip(x |> units(T, f)) for (x, f) in zip(args, fieldnames(T))]...)
 end
 
-function (::Type{T})(;kwargs...) where {T <: APar}
+function (::Type{T})(; kwargs...) where {T <: APar}
     all(isnothing, initial_value(T)) && length(kwargs) ≠ length(symbols(T)) && error("$T needs `initial_value` if one of the parameters is not supplied")
     value(f::Symbol, v::Quantity) = ustrip(v |> units(T, f))
     value(f::Symbol, v) = v
@@ -339,14 +340,14 @@ end
 Writing to savable formats
 ===============================#
 
-function Base.Dict(p::T, s=symbols(p)) where {T<:APar}
-    v = [getfield(p,s) for s in s]
-    u = [units(p,s) for s in s]
-    return Dict([(s,v*u) for (s,v,u) in zip(s,v,u)])
+function Base.Dict(p::T, s = symbols(p)) where {T <: APar}
+    v = [getfield(p, s) for s in s]
+    u = [units(p, s) for s in s]
+    return Dict([(s, v * u) for (s, v, u) in zip(s, v, u)])
 end
-function Base.NamedTuple(p::T, s=symbols(p)) where {T<:APar}
-    v = [getfield(p,s) for s in s]
-    u = [units(p,s) for s in s]
+function Base.NamedTuple(p::T, s = symbols(p)) where {T <: APar}
+    v = [getfield(p, s) for s in s]
+    u = [units(p, s) for s in s]
     return (; zip(s, v .* u)...)
 end
 
@@ -367,8 +368,8 @@ The methods that touch a `Distribution` or `Bijector` are added by the
 """
 function mismatch end
 # in λ space — generic dispatchers (always available)
-mismatch(::Type{T}, λ) where {T<:APar} = sum(mismatch(T, k, λᵢ) for (k, λᵢ) in zip(flattenable_symbols(T), λ))
-mismatch(::Type{T}, k, λ) where {T<:APar} = mismatch(prior(T, k), λ)
+mismatch(::Type{T}, λ) where {T <: APar} = sum(mismatch(T, k, λᵢ) for (k, λᵢ) in zip(flattenable_symbols(T), λ))
+mismatch(::Type{T}, k, λ) where {T <: APar} = mismatch(prior(T, k), λ)
 # `mismatch(p::T, k)`, `mismatch(p::T)`, and `mismatch(d::Distribution, λ)`
 # are added by the Bijectors / Distributions extensions.
 export mismatch
@@ -376,7 +377,7 @@ export mismatch
 # TODO check if I need that below:
 # The functions below is just for ForwardDiff to work with vectors instead of p
 # which requires `mismatch` to know about the priors, which are containted in `T`
-function generate_objective(ωs, μx, σ²x, v, ωp, ::Type{T}) where {T<:APar}
+function generate_objective(ωs, μx, σ²x, v, ωp, ::Type{T}) where {T <: APar}
     nt, nb = length(ωs), length(v)
     tracers(x) = state_to_tracers(x, nb, nt)
     f(x, p) = ωp * mismatch(T, p) +
@@ -415,4 +416,3 @@ function λ2p end
 
 export p2λ, λ2p
 export AbstractParameters, latex, table
-

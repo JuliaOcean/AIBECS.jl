@@ -1,12 +1,13 @@
-
-
-using AIBECS, Test
-using SparseArrays, LinearAlgebra
+using AIBECS
+using Test
+using SparseArrays
+using LinearAlgebra
 using Unitful
 using Unitful: °, m, km
 using WorldOceanAtlasTools
 using SciMLBase
-using ForwardDiff, DualNumbers
+using ForwardDiff
+using DualNumbers
 using DataFrames
 using Distributions
 using Bijectors
@@ -21,6 +22,8 @@ using MAT           # AIBECSOCIM2_48LExt
 using Shapefile     # AIBECSShapefileExt (GroundWaters)
 using Interpolations # AIBECSRecipesBaseExt (RatioAtStation recipe)
 using RecipesBase   # plotting recipes
+using NonlinearSolve   # AIBECSNonlinearSolveExt
+using LinearSolve      # AIBECSNonlinearSolveExt
 
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
@@ -69,7 +72,3 @@ test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000, :Haine_and_H
 end
 
 include("AO.jl")
-
-
-
-

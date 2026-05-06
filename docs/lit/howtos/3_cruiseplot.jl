@@ -10,7 +10,8 @@
 
 # As in the [basic plotting guide](@ref plots), throughout this guide we will use the OCIM2 grid and we will create a `dummy` modelled tracer.
 
-using AIBECS, Plots
+using AIBECS
+using Plots
 using JLD2          # required by `OCIM2.load`
 using Interpolations # required by `RatioAtStation` / cruise-profile recipe
 grd, _ = OCIM2.load()
@@ -36,39 +37,39 @@ dummy = fdummy(latlondepthvecs(grd)...)
 # Let us create a station `Sydney` at (34°S, 152°E) and a `ALOHA` station at (22.75°N, 158°W).
 
 using OceanographyCruises
-Sydney = Station(name="Sydney", lat=-30, lon=156)
-ALOHA = Station(name="ALOHA", lat=22.75, lon=-158)
+Sydney = Station(name = "Sydney", lat = -30, lon = 156)
+ALOHA = Station(name = "ALOHA", lat = 22.75, lon = -158)
 
 # Now let's create a range of 10 stations from `Sydney` to `ALOHA`.
 
 Nstations = 10
-stations = range(Sydney, ALOHA, length=Nstations, westmostlon=0)
+stations = range(Sydney, ALOHA, length = Nstations, westmostlon = 0)
 
 # (`westmostlon=0` ensures that the longitudes are in (0,360) to match the OCIM2 grid we use here.)
 
 # We can now construct a fictitious cruise track
 
-ct = CruiseTrack(name="CruisyMcCruiseFace", stations=stations)
+ct = CruiseTrack(name = "CruisyMcCruiseFace", stations = stations)
 
 # and check the station locations by overlaying a plot of the cruise's track over a surface map of the dummy tracer
 
-surfacemap(dummy, grd, color=:grays)
-plotcruisetrack!(ct, markercolor=:red)
+surfacemap(dummy, grd, color = :grays)
+plotcruisetrack!(ct, markercolor = :red)
 
 # Let's create a transect of data that is almost equal to the dummy.
 
 # First, a function for creating random depths
 
 function randomdepths(n, max)
-    depths = cumsum(rand(n+1))
-    return max * view(depths,1:n) / maximum(depths)
+    depths = cumsum(rand(n + 1))
+    return max * view(depths, 1:n) / maximum(depths)
 end
 Nobs = rand(1:20, Nstations) # number of obs per station/profile
 depths = [randomdepths(Nobs[i], 4000) for i in 1:Nstations]
-obs = [[fdummy(st.lat, st.lon, d) .+ 0.1randn() for d in depths[i]] for (i,st) in enumerate(stations)]
-profiles = [DepthProfile(station=st, depths=depths[i], values=obs[i]) for (i,st) in enumerate(stations)]
+obs = [[fdummy(st.lat, st.lon, d) .+ 0.1randn() for d in depths[i]] for (i, st) in enumerate(stations)]
+profiles = [DepthProfile(station = st, depths = depths[i], values = obs[i]) for (i, st) in enumerate(stations)]
 
-t = Transect(tracer="dummy", cruise=ct.name, profiles=profiles)
+t = Transect(tracer = "dummy", cruise = ct.name, profiles = profiles)
 
 #-----------------------------------------------
 # ## [Transects](@id transects)
@@ -78,7 +79,7 @@ t = Transect(tracer="dummy", cruise=ct.name, profiles=profiles)
 
 # We can plot the modelled `dummy` data along the `ct` cruise track in the zonal directiion (along longitudes) with
 
-plottransect(dummy, grd, ct=ct)
+plottransect(dummy, grd, ct = ct)
 
 # If we want the observations transect on top of it
 
@@ -95,7 +96,6 @@ plotscattertransect!(t)
 # However, this cannot be showcased online because GEOTRACES decided its data should "not be distributed to third parties".
 
 
-
 #----------------------------------------------------
 # ## [Other plots](@id other-plots)
 #----------------------------------------------------
@@ -104,8 +104,8 @@ plotscattertransect!(t)
 
 dummy1 = cosd.(latvec(grd)) + sqrt.(depthvec(grd)) / 30
 dummy2 = cosd.(2latvec(grd)) + 0.5sqrt.(depthvec(grd)) / 30
-ratioatstation(dummy1, dummy2, grd, ALOHA, xlabel="dummy 1", ylabel="dummy 2")
+ratioatstation(dummy1, dummy2, grd, ALOHA, xlabel = "dummy 1", ylabel = "dummy 2")
 
 # This can be useful to compare stoichiometric ratios at different stations.
 
-ratioatstation!(dummy1, dummy2, grd, Sydney, marker=:square)
+ratioatstation!(dummy1, dummy2, grd, Sydney, marker = :square)
