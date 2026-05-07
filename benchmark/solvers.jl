@@ -28,6 +28,7 @@ using JLD2          # activates AIBECSJLD2Ext so OCIM*/OCCA loaders work
 using NonlinearSolve
 using NonlinearSolveBase
 using LinearSolve
+using SparseArrays
 using JSON3
 using Printf
 using LinearAlgebra
@@ -38,17 +39,12 @@ using Unitful
 using Unitful: m, d, yr, Myr, mmol, μmol
 import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
-import NonlinearSolveBase: RelNormSafeBestTerminationMode
+import NonlinearSolveBase: AbsNormSafeBestTerminationMode
 import ParU_jll              # activates LinearSolveParUExt → ParUFactorization()
 import SIAMFANLEquations     # activates NonlinearSolveSIAMFANLEquationsExt
 import NLsolve               # activates NonlinearSolveNLsolveExt
 
-# Match CTKAlg's default τstop (the threshold on |x| / |F(x)| in seconds).
-# With reltol = 1/τstop and the Rel*Norm termination mode, NonlinearSolve's
-# convergence test reduces near the root to |F(u)| ≤ |u| / τstop, which is
-# the same scale-aware criterion CTKAlg applies. CTKAlg uses an L2 norm,
-# so we pass `LinearAlgebra.norm` as the internal norm.
-const τstop_seconds = ustrip(u"s", 1.0e6u"Myr")
+include(joinpath(@__DIR__, "dimensional_scaling.jl"))
 
 # === Circulation tiers =====================================================
 # `toy` runs purely-bundled circulations (no DataDeps, no JLD2 download). Best
@@ -151,13 +147,45 @@ function build_pmodel_problem(grd, T_circ)
     F = AIBECSFunction((T_DIP, T_POP), (G_DIP, G_POP), nb)
     p = PmodelParameters()
     @unpack DIP_geo = p
-    return SteadyStateProblem(F, DIP_geo * ones(2nb), p)
+    # Initial guess: DIP at its geological scale, POP at zero. Starting with
+    # POP = DIP_geo (uniform) over-seeds POP by ~46× its steady-state scale
+    # (≈ DIP_geo · τ_POP/τ_DIP), which can drive Newton to take a very large
+    # first step and bop around afterwards. Zero POP is closer to the true
+    # steady state and keeps R(POP)/τ_POP from dominating F(u₀).
+    return SteadyStateProblem(F, DIP_geo * kron([1, 0], ones(nb)), p)
+end
+
+# Physics-based scale recipe for the coupled DIP/POP system. AIBECS convention
+# (`src/Parameters.jl:287`): `@unpack` on an `APar` returns
+# `ustrip(upreferred(value * units))` — i.e. SI base units, dimensionless. So
+# the values we read here are numerically what `f(u, p)` and `prob.f.jac`
+# actually compute on.
+#
+# `scale_u_POP ≈ DIP_geo · τ_POP / τ_DIP` from the surface-box mass balance
+# `U(DIP) = R(POP)` once `DIP_geo ≫ k`; `scale_F` is the matching local rate
+# `scale_u / τ_characteristic`.
+function pmodel_scales(prob)
+    @unpack DIP_geo, τ_DIP, τ_POP = prob.p     # SI: mol/m³, s, s
+    nb = length(prob.u0) ÷ 2
+    DIP_scale   = DIP_geo
+    POP_scale   = DIP_scale * (τ_POP / τ_DIP)
+    F_DIP_scale = DIP_scale / τ_DIP
+    F_POP_scale = POP_scale / τ_POP            # = F_DIP_scale by construction
+    return (
+        vcat(fill(DIP_scale, nb),   fill(POP_scale, nb)),
+        vcat(fill(F_DIP_scale, nb), fill(F_POP_scale, nb)),
+    )
 end
 
 const TRACER_SETUPS = (
-    idealage = (label = "idealage", build = build_idealage_problem),
-    radiocarbon = (label = "radiocarbon", build = build_radiocarbon_problem),
-    po4pop = (label = "po4pop", build = build_pmodel_problem),
+    # `scales = nothing` ⇒ heuristic `default_scales` from initial guess.
+    # OK for single-tracer setups (no scale-mixing pathology). `po4pop`
+    # uses physics-based scales because the heuristic captures `u₀`'s
+    # magnitude (DIP_geo for both tracers) rather than the steady-state
+    # POP magnitude (≈ DIP_geo · τ_POP/τ_DIP, ~46× smaller).
+    idealage    = (label = "idealage",    build = build_idealage_problem,    scales = nothing),
+    radiocarbon = (label = "radiocarbon", build = build_radiocarbon_problem, scales = nothing),
+    po4pop      = (label = "po4pop",      build = build_pmodel_problem,      scales = pmodel_scales),
 )
 
 # === Algorithm matrix ======================================================
@@ -210,39 +238,62 @@ const TRACER_KEYS = TRACERS === :all ? collect(keys(TRACER_SETUPS)) :
 
 # === Run benchmarks ========================================================
 
-# Native NonlinearSolve algorithms: the Rel*Norm termination_condition with
-# reltol = 1/τstop reproduces CTKAlg's scale-aware |F(u)| ≤ |u| / τstop test.
-# `abstol = eps(Float64)` is harmless here — RelNormSafeBest terminates by
-# stagnation (`max_stalled_steps`) once the relative criterion plateaus.
-# CTKAlg itself accepts no kwargs from this surface (its API is τstop / nrm /
-# maxItNewton).
-const NL_TOLS = (;
-    reltol = 1 / τstop_seconds,
-    abstol = eps(Float64),
-)
-const NL_KWARGS = (;
-    NL_TOLS...,
+# After non-dim, both `ũ` and `F̃` are O(1) per component, so a scalar
+# `abstol` on the Inf-norm of `F̃` reads literally as "max relative drift per
+# component ≤ NL_ABSTOL". Each algorithm's internal norm is aligned to Inf
+# where configurable; NLsolveJL is stuck at L2 because the SciML extension
+# (`NonlinearSolveNLsolveExt.jl:58-62`) doesn't pass a `norm` kwarg through to
+# `NLsolve.nlsolve`. Apples-to-apples comparison is done post-solve via
+# `max_i |F_i / scale_F_i|`, which is reported in the MD `Max rel drift`
+# column.
+const NL_ABSTOL = 1.0e-6
+
+const NL_KWARGS_NATIVE = (;
+    abstol = NL_ABSTOL,
     maxiters = 20,
     show_trace = Val(true),
     trace_level = TraceMinimal(),
-    termination_condition = RelNormSafeBestTerminationMode(
-        LinearAlgebra.norm; max_stalled_steps = 8),
+    termination_condition = AbsNormSafeBestTerminationMode(
+        Base.Fix1(maximum, abs); max_stalled_steps = 8),
 )
 
-# Wrapper algorithms (SIAMFANLEquationsJL, NLsolveJL) reject
-# `termination_condition` and treat `abstol` as the operative |F| tolerance.
-# `eps(Float64)` is far below the residual floor at n≈10⁵ (matvec roundoff
-# alone is orders of magnitude larger), so leaving it in would push NLsolve's
-# `:newton` to its 1000-iter cap, silently re-factorising the same constant
-# Jacobian on every step. Use 1e-8 (NLsolve's own default ftol) and cap
-# iterations defensively. `show_trace` keeps these wrappers as visible as
-# the native rows.
-const NL_WRAPPER_KWARGS = (;
-    abstol = 1.0e-8,
+const NL_KWARGS_WRAPPER = (;
+    abstol = NL_ABSTOL,
     maxiters = 20,
     show_trace = Val(true),
     trace_level = TraceMinimal(),
 )
+
+# CTKAlg with Inf-norm: `‖ũ‖_∞ / ‖F̃‖_∞ ≥ τstop ⇔ max-rel-drift ≤ 1/τstop`.
+# `τstop = 1e6` aligns with `NL_ABSTOL = 1e-6`. `preprint = "    "` turns on
+# the per-iter `i | |F(x)| | |δx|/|x| | Jac age` table.
+const CTK_KWARGS = (;
+    maxItNewton = 20,
+    preprint = "    ",
+    τstop = 1.0e6,
+    nrm = Base.Fix1(maximum, abs),
+)
+
+# Per-solve diagnostic that prints, alongside the universal `max-rel-drift`,
+# whatever quantity the solver's *own* internal stopping test consumes —
+# evaluated on the final iterate. Reviewers see at a glance whether each
+# solver's internal termination criterion agrees with the apples-to-apples
+# comparison.
+function format_diagnostic(case, F̃, ũ)
+    Linf = maximum(abs, F̃)
+    L2   = norm(F̃, 2)
+    ratio = norm(ũ, Inf) / max(Linf, eps())
+    return if case.label == "CTKAlg"
+        @sprintf("‖ũ‖_∞ / ‖F̃‖_∞ = %.2e ≥ 1e6 ? %s",
+            ratio, ratio ≥ 1e6 ? "✓" : "✗")
+    elseif startswith(case.label, "NLsolveJL")
+        @sprintf("‖F̃‖_2 = %.2e ≤ %.0e ? %s   [L2 (~√n × tighter than the others)]",
+            L2, NL_ABSTOL, L2 ≤ NL_ABSTOL ? "✓" : "✗")
+    else  # NewtonRaphson + *, SIAMFANLEquationsJL — all Inf-norm
+        @sprintf("‖F̃‖_∞ = %.2e ≤ %.0e ? %s",
+            Linf, NL_ABSTOL, Linf ≤ NL_ABSTOL ? "✓" : "✗")
+    end
+end
 
 vprintln("Benchmark configuration: tier=$TIER tracers=$TRACERS")
 
@@ -256,6 +307,16 @@ for (circ_label, loader) in TIERS[TIER]
         vprintln("[$circ_label / $(setup.label)] building problem…")
         ssprob = setup.build(grd, T_circ)
         n = length(ssprob.u0)
+
+        # Non-dimensionalise once per (circulation, tracer); every algorithm
+        # below sees the scaled problem. `np` is the corresponding scaled
+        # NonlinearProblem (with sparse `jac_prototype`) for the algorithms
+        # that need one; CTKAlg consumes the SteadyStateProblem directly.
+        scale_u, scale_F = setup.scales === nothing ?
+            default_scales(ssprob) : setup.scales(ssprob)
+        sp = nondimensionalize(ssprob; scale_u = scale_u, scale_F = scale_F)
+        np = AIBECS.nonlinearproblem(sp.scaled)
+
         for case in ALG_MATRIX
             if n > case.max_n
                 vprintln("[$circ_label / $(setup.label) / $(case.label)] skipped (n=$n > max_n=$(case.max_n); dense-Jacobian wrapper)")
@@ -263,7 +324,7 @@ for (circ_label, loader) in TIERS[TIER]
                     results, (
                         circulation = circ_label, tracers = setup.label, alg = case.label,
                         n = n, seconds = NaN,
-                        residual = NaN, converged = false,
+                        max_rel_drift = NaN, converged = false,
                         error = "skipped: n>max_n",
                     )
                 )
@@ -271,11 +332,10 @@ for (circ_label, loader) in TIERS[TIER]
             end
             vprintln("[$circ_label / $(setup.label) / $(case.label)] solve (n=$n)…")
             alg = case.alg
-            prob = case.needs_nlprob ? AIBECS.nonlinearproblem(ssprob) : ssprob
-            # CTKAlg's iteration cap is `maxItNewton`, not `maxiters`; matched
-            # to the 20-iter cap used on the NonlinearSolve rows.
-            kwargs = case.supports_nl_kwargs ? NL_KWARGS :
-                     case.needs_nlprob ? NL_WRAPPER_KWARGS : (; maxItNewton = 20)
+            prob = case.needs_nlprob ? np : sp.scaled
+            kwargs = case.supports_nl_kwargs ? NL_KWARGS_NATIVE :
+                     case.needs_nlprob       ? NL_KWARGS_WRAPPER :
+                                               CTK_KWARGS
 
             timed = try
                 @timed solve(prob, alg; kwargs...)
@@ -285,7 +345,7 @@ for (circ_label, loader) in TIERS[TIER]
                     results, (
                         circulation = circ_label, tracers = setup.label, alg = case.label,
                         n = n, seconds = NaN,
-                        residual = NaN, converged = false,
+                        max_rel_drift = NaN, converged = false,
                         error = sprint(showerror, e),
                     )
                 )
@@ -294,16 +354,27 @@ for (circ_label, loader) in TIERS[TIER]
 
             sol = timed.value
             seconds = timed.time
-            residual = norm(ssprob.f.f(sol.u, ssprob.p))
-            converged = residual < 1.0e-6 * max(norm(sol.u), 1.0)
-            vprintln("    → $(@sprintf("%.3g", seconds)) s   residual=$(@sprintf("%.2e", residual))   $(converged ? "✓" : "✗")")
+            # Both `sol.u` and `F̃` are in scaled space (ũ ~ O(1) per
+            # component, F̃ ~ relative drift per component). The universal
+            # cross-solver metric `max-rel-drift = max_i |F_i / scale_F_i|`
+            # is exactly `‖F̃‖_∞`.
+            F̃ = sp.scaled.f.f(sol.u, sp.scaled.p)
+            max_rel_drift = maximum(abs, F̃)
+            converged = max_rel_drift < NL_ABSTOL
+            diag = format_diagnostic(case, F̃, sol.u)
+            vprintln(
+                "    → $(@sprintf("%.3g", seconds)) s",
+                "   max-rel-drift = $(@sprintf("%.2e", max_rel_drift))",
+                "   $(converged ? "✓" : "✗")",
+                "   internal: $diag",
+            )
 
             push!(
                 results, (
                     circulation = circ_label, tracers = setup.label, alg = case.label,
                     n = n,
                     seconds = seconds,
-                    residual = residual, converged = converged,
+                    max_rel_drift = max_rel_drift, converged = converged,
                     error = nothing,
                 )
             )
@@ -331,7 +402,7 @@ open(JSON_PATH, "w") do io
             "value" => isnan(r.seconds) ? -1.0 : r.seconds,
             "extra" => string(
                     "n=", r.n,
-                    "; residual=", @sprintf("%.3e", r.residual),
+                    "; max_rel_drift=", @sprintf("%.3e", r.max_rel_drift),
                     r.converged ? "" : "; CONVERGENCE FAILED",
                     r.error === nothing ? "" : string("; error=", r.error),
                 ),
@@ -364,13 +435,13 @@ open(MD_PATH, "w") do io
         println(io)
         println(io, "## ", circ, " / ", tracer, " (n = ", n, ")")
         println(io)
-        println(io, "| Algorithm | Time (s) | Residual | Converged |")
-        println(io, "|---|---:|---|:---:|")
+        println(io, "| Algorithm | Time (s) | Max rel drift | Converged |")
+        println(io, "|---|---:|---:|:---:|")
         for r in rows
             time_str = isnan(r.seconds) ? "—" : string(round(Int, r.seconds))
-            res_str = isnan(r.residual) ? "—" : @sprintf("%.2e", r.residual)
+            drift_str = isnan(r.max_rel_drift) ? "—" : @sprintf("%.2e", r.max_rel_drift)
             conv = r.converged ? "✓" : "✗"
-            println(io, "| ", r.alg, " | ", time_str, " | ", res_str, " | ", conv, " |")
+            println(io, "| ", r.alg, " | ", time_str, " | ", drift_str, " | ", conv, " |")
         end
     end
     println(io)

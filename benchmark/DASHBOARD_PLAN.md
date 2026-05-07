@@ -90,3 +90,13 @@ sticky-comment step in `Benchmarks.yml` (using
 `marocchino/sticky-pull-request-comment`) already posts
 `latest_timings_${tier}.md` on every PR push, so the table is visible
 during review whether or not the comparison step fires.
+
+## Aside: convergence column meaning
+
+The MD `Max rel drift` column reports `max_i |F_i(u, p) / scale_F_i|`,
+the Inf-norm of the scaled residual produced by
+`benchmark/dimensional_scaling.jl`'s `nondimensionalize`. This is a
+dimensionless per-component relative drift — comparable across
+circulations *and* tracer setups, which the original `‖F(u)‖_2` column
+was not (it scaled with `√n` and with each tracer's physical units).
+Convergence threshold: `< 1e-6` (``NL_ABSTOL`` in `solvers.jl`).
