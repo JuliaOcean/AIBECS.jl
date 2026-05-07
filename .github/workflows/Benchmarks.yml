@@ -97,6 +97,19 @@ jobs:
           git commit -m "docs(benchmarks): update ${BENCH_TIER}-tier solver timings table"
           git push origin HEAD:main
 
+      # ── Always post latest timings on PRs (sticky comment) ────────────────
+      # Independent of the comparison step below: that one only fires on a
+      # regression past `alert-threshold`, which leaves PRs uncommented on a
+      # fresh repo or any clean run. This step always edits a single sticky
+      # comment per (PR, tier) keyed by `header`, so reviewers see the
+      # current timings table without scrolling Actions logs.
+      - name: Post latest timings on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: bench-timings-${{ env.BENCH_TIER }}
+          path: benchmark/results/latest_timings_${{ env.BENCH_TIER }}.md
+
       # ── PR-time comparison comment (no dashboard push) ────────────────────
       - name: Compare against base on PR
         if: github.event_name == 'pull_request'

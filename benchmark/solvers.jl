@@ -222,6 +222,7 @@ const NL_TOLS = (;
 )
 const NL_KWARGS = (;
     NL_TOLS...,
+    maxiters = 20,
     show_trace = Val(true),
     trace_level = TraceMinimal(),
     termination_condition = RelNormSafeBestTerminationMode(
@@ -238,7 +239,7 @@ const NL_KWARGS = (;
 # the native rows.
 const NL_WRAPPER_KWARGS = (;
     abstol = 1.0e-8,
-    maxiters = 50,
+    maxiters = 20,
     show_trace = Val(true),
     trace_level = TraceMinimal(),
 )
@@ -271,8 +272,10 @@ for (circ_label, loader) in TIERS[TIER]
             vprintln("[$circ_label / $(setup.label) / $(case.label)] solve (n=$n)…")
             alg = case.alg
             prob = case.needs_nlprob ? AIBECS.nonlinearproblem(ssprob) : ssprob
+            # CTKAlg's iteration cap is `maxItNewton`, not `maxiters`; matched
+            # to the 20-iter cap used on the NonlinearSolve rows.
             kwargs = case.supports_nl_kwargs ? NL_KWARGS :
-                     case.needs_nlprob ? NL_WRAPPER_KWARGS : (;)
+                     case.needs_nlprob ? NL_WRAPPER_KWARGS : (; maxItNewton = 20)
 
             timed = try
                 @timed solve(prob, alg; kwargs...)

@@ -85,23 +85,8 @@ Defer until both:
   near-empty timeline that view is uninformative anyway.
 
 Until then the MD tables cover the side-by-side view and the stock
-github-action-benchmark dashboard covers regression alerts.
-
-## Aside: always post latest timings on PRs
-
-Today the PR-comparison step only comments when `benchmark-action`
-detects a regression past `alert-threshold`. On a fresh repo (no
-`gh-pages` baseline) or a clean PR, that means no comment at all —
-which makes the benchmark feel invisible during review.
-
-Worth adding a step that always posts the freshly generated
-`latest_timings_${tier}.md` as a PR comment (or an updated sticky
-comment), separately from the comparison logic. The MD already has
-the per-(circ, tracer) breakdown, so dropping it into a `gh pr comment
---body-file` call is a few lines of YAML. Sticky-comment behaviour
-(edit the existing comment instead of stacking new ones each push)
-needs an action like `marocchino/sticky-pull-request-comment` or a
-small `gh api` call that updates by comment id.
-
-This is independent of the custom-dashboard work above — useful
-whether or not we ever build the Chart.js renderer.
+github-action-benchmark dashboard covers regression alerts. The
+sticky-comment step in `Benchmarks.yml` (using
+`marocchino/sticky-pull-request-comment`) already posts
+`latest_timings_${tier}.md` on every PR push, so the table is visible
+during review whether or not the comparison step fires.
