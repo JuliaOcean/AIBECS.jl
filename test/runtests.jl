@@ -50,7 +50,7 @@ end
 # runners (job 75020877154 in run 25557565007 was killed mid-build).
 include(joinpath(@__DIR__, "..", "benchmark", "problems.jl"))
 @testset "Sparse Jacobian (OCCA)" begin
-    eval(:(Circulation = :OCCA))
+    eval(:(Circulation = OCCA))
     include("setup.jl")
     include("sparse_jacobian.jl")
 end
