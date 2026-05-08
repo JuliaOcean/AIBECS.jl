@@ -19,10 +19,14 @@ or to the paper that describes it,
 
 but, ideally, both. BibTeX entries live in [`CITATION.bib`](https://github.com/JuliaOcean/AIBECS.jl/blob/main/CITATION.bib) under the keys `AIBECS.jl` and `Pasquier_etal_JOSS_2022`. If you also use data provided by AIBECS (such as the OCIM circulations), please cite those datasets as well.
 
-## Papers using AIBECS
+## Papers using/citing AIBECS
 
-This list is curated by the maintainer; please add your own work via PR.
+Please add your own work via PR!
 
+- **Wise, P. M., Pasquier, B., John, S. G., & Hines, S. K. V. (2026).**
+  Differing controls on the cycling of neodymium in the Atlantic and
+  the Pacific. *Geophysical Research Letters*, 53(6), e2025GL117334.
+  [doi:10.1029/2025GL117334](https://doi.org/10.1029/2025GL117334)
 - **Du, J., Haley, B. A., McManus, J., Blaser, P., Rickli, J., & Vance,
   D. (2025).** Abyssal seafloor as a key driver of ocean trace-metal
   biogeochemical cycles. *Nature*, 642(8068), 620–627.
