@@ -11,6 +11,7 @@ using Unitful: s, yr, m, km, °
 
 function OCIM2_48L.load()
     register_OCIM2_48L()
+    OCIM2_48L.invalidate_stale_cache()
     files_path = @datadep_str "AIBECS-OCIM2_48L"
     @info """You are about to use the OCIM2_48L model.
     If you use it for research, please cite:

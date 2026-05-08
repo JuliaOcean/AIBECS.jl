@@ -35,6 +35,9 @@ const CITATION = """
 - DeVries, T. and F. Primeau, 2011: Dynamically and Observationally Constrained Estimates of Water-Mass Distributions and Ages in the Global Ocean. J. Phys. Oceanogr., 41, 2381–2401, doi:10.1175/JPO-D-10-05011.1
 """
 
+invalidate_stale_cache(; version = VERSIONS[1]) =
+    parentmodule(@__MODULE__)._invalidate_stale_cache("AIBECS-OCIM1_$version", "OCIM1_$version.jld2", OCIM1_MD5)
+
 # Create registry entry for OCIM1 in JLD2 format
 function register_OCIM1(; version = VERSIONS[1])
     register(

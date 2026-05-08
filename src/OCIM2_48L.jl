@@ -43,7 +43,10 @@ OCIM2versionerror(version) = error(
 )
 
 
-# Create registry entry for OCIM in JLD2 format
+const TARBALL_FILENAME = "OCIM2_48L_base.tar.gz"
+
+# `keep_originals = true` preserves the tarball next to the unpacked content
+# so that `invalidate_stale_cache()` can hash it on subsequent loads.
 function register_OCIM2_48L()
     register(
         DataDep(
@@ -54,11 +57,26 @@ function register_OCIM2_48L()
             """,
             URL,
             (md5, MD5),
-            post_fetch_method = unpack
+            post_fetch_method = f -> unpack(f; keep_originals = true),
         )
     )
     return nothing
 end
+
+const LEGACY_CACHE_WARNING = """
+The OCIM2_48L cache directory exists at {cache_dir}, but the original tarball is not there,
+so I cannot compare its MD5 against the registered constant ($MD5).
+This integrity check was added in AIBECS 0.17, and from that version onward the tarball is kept
+alongside the unpacked content. To enable the check, remove {cache_dir} and call `OCIM2_48L.load()`
+again — the next download will preserve the tarball for future verification.
+"""
+
+invalidate_stale_cache() = parentmodule(@__MODULE__)._invalidate_stale_cache(
+    "AIBECS-OCIM2_48L",
+    TARBALL_FILENAME,
+    MD5;
+    legacy_warning = LEGACY_CACHE_WARNING,
+)
 
 """
     grd, T = load()
@@ -70,10 +88,11 @@ See *DeVries and Holzer* (2019) and *Holzer et al.* (2021) for more details.
 Requires `using MAT, NCDatasets` so that the `AIBECSOCIM2_48LExt` extension is activated.
 """
 function load(args...; kwargs...)
-    error(
-        "AIBECS.OCIM2_48L.load requires `using MAT, NCDatasets`. " *
-            "Add them to your environment, then retry."
-    )
+    msg = """
+        AIBECS.OCIM2_48L.load requires `using MAT, NCDatasets`.
+        Add them to your environment, then retry.
+    """
+    error(msg)
 end
 
 const CITATION = """

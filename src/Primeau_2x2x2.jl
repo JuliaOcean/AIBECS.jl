@@ -27,9 +27,9 @@ end
 
 
 function build_grid()
-    elon = [0, 180, 360] * u"°"
-    elat = [-90, 0, 90] * u"°"
-    edepth = [0, 200, 3700] * u"m"
+    elon = [0.0, 180.0, 360.0] * u"°"
+    elat = [-90.0, 0.0, 90.0] * u"°"
+    edepth = [0.0, 200.0, 3700.0] * u"m"
     return OceanGrid(elon, elat, edepth, build_wet3D())
 end
 

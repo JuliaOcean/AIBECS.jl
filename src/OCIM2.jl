@@ -78,6 +78,9 @@ DeVries, T., & Holzer, M. (2019). Radiocarbon and helium isotope constraints on 
 """
 
 
+invalidate_stale_cache(; version = VERSIONS[1]) =
+    parentmodule(@__MODULE__)._invalidate_stale_cache("AIBECS-OCIM2_$version", "OCIM2_$version.jld2", OCIM2_MD5[version])
+
 # Create registry entry for OCIM2 in JLD2 format
 function register_OCIM2(; version = VERSIONS[1])
     register(

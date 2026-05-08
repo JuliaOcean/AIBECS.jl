@@ -53,14 +53,15 @@ Requires `using Shapefile, DataFrames` so that the `AIBECSShapefileExt`
 extension is activated.
 """
 function load(args...; kwargs...)
-    error(
-        "AIBECS.GroundWaters.load requires `using Shapefile, DataFrames`. " *
-            "Add them to your environment, then retry."
-    )
+    msg = """
+        AIBECS.GroundWaters.load requires `using Shapefile, DataFrames`.
+        Add them to your environment, then retry.
+    """
+    error(msg)
 end
 
 citation() = """
-- Luijendijk, E., Gleeson, T. & Moosdorf, N. Fresh groundwater discharge insignificant for the world’s oceans but important for coastal ecosystems. Nat Commun 11, 1260 (2020). doi:10.1038/s41467-020-15064-8
+- Luijendijk, E., Gleeson, T. & Moosdorf, N. Fresh groundwater discharge insignificant for the world's oceans but important for coastal ecosystems. Nat Commun 11, 1260 (2020). doi:10.1038/s41467-020-15064-8
 - Luijendijk, Elco; Gleeson, Tom; Moosdorf, Nils (2019): Geospatial data and model results for a global model study of coastal groundwater discharge. PANGAEA, doi:10.1594/PANGAEA.907641
 """
 

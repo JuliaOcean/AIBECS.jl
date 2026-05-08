@@ -83,10 +83,11 @@ const Chien_AEROSOLTYPE_NAMES = (
     :volc,    # Volcanoes
 )
 function load_Chien(args...; kwargs...)
-    error(
-        "AIBECS.AeolianSources.load(\"Chien\") requires `using NCDatasets`. " *
-            "Add it to your environment, then retry."
-    )
+    msg = """
+        AIBECS.AeolianSources.load("Chien") requires `using NCDatasets`.
+        Add it to your environment, then retry.
+    """
+    error(msg)
 end
 
 
@@ -106,10 +107,11 @@ const Kok_REGIONS_NAMES = (
 )
 
 function load_Kok(args...; kwargs...)
-    error(
-        "AIBECS.AeolianSources.load(\"Kok\") requires `using NCDatasets`. " *
-            "Add it to your environment, then retry."
-    )
+    msg = """
+        AIBECS.AeolianSources.load("Kok") requires `using NCDatasets`.
+        Add it to your environment, then retry.
+    """
+    error(msg)
 end
 
 

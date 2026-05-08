@@ -31,15 +31,18 @@ ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 test_setup_only = if haskey(ENV, "GITHUB_ACTIONS")
     [:OCIM1, :OCIM0, :OCCA] # Don't run 48L on CI
 else
-    [:OCIM2_48L, :OCIM1, :OCIM0, :OCCA]
+    [:OCIM2_48L, :OCIM2, :OCIM1, :OCIM0, :OCCA]
 end
 # Using `include` evaluates at global scope,
 # so `Circulation` must be changed at the global scope too.
 # This is why there is an `eval` in the for loop(s) below
-@testset "test setup.jl only" for C in test_setup_only
+include(joinpath(@__DIR__, "..", "benchmark", "problems.jl"))
+@testset "setup + sparse Jacobian" for C in test_setup_only
     @testset "$C" begin
         eval(:(Circulation = $C))
         include("setup.jl")
+        include("particles.jl")
+        include("sparse_jacobian.jl")
     end
 end
 
@@ -49,6 +52,7 @@ test_plots = [:OCIM2]
     @testset "$C" begin
         eval(:(Circulation = $C))
         include("setup.jl")
+        include("particles.jl")
         include("plots.jl")
         include("sources.jl")
     end
@@ -68,6 +72,7 @@ test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000, :Haine_and_H
         include("cost_functions.jl")
         include("solvers.jl")
         include("derivatives.jl")
+        include("sparse_jacobian.jl")
     end
 end
 
