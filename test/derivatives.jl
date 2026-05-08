@@ -1,3 +1,4 @@
+@info "Running test/derivatives.jl — ForwardDiff/DualNumbers derivatives" Circulation
 # For the conversion to go through ForwardDiff, I need
 #Base.convert(FDT::Type{ForwardDiff.Dual{T,V,N}}, p::AIBECS.Parameters) where {T,V,N} = AIBECS.Parameters(convert(Vector{FDT}, vec(p))...)
 

@@ -1,3 +1,4 @@
+@info "Running test/particles.jl — particle transport operators" Circulation
 @testset "Particles" begin
     @testset "scalar settling velocity" begin
         T = transportoperator(grd, 100.0)

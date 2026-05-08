@@ -1,3 +1,4 @@
+@info "Running test/sources.jl — aeolian sources" Circulation
 @testset "Aeolian sources" begin
     @testset "$dataset" for dataset in AeolianSources.DATASET_NAMES
         dataset == "Kok" && continue # Skip Kok dataset for now due UCLA SLS certificate

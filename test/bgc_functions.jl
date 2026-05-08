@@ -1,3 +1,4 @@
+@info "Running test/bgc_functions.jl — BGC functions" Circulation
 #===========================================
 Transport matrices
 ===========================================#

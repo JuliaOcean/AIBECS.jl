@@ -1,3 +1,4 @@
+@info "Running test/sparse_jacobian.jl — bespoke vs DI+SCT Jacobian" Circulation
 using DifferentiationInterface
 using SparseConnectivityTracer
 using SparseMatrixColorings

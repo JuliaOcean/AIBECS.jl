@@ -1,3 +1,4 @@
+@info "Running test/plots.jl — plot recipes" Circulation
 dummy = cosd.(latvec(grd)) + sqrt.(depthvec(grd)) / 30
 xs = (dummy, dummy * u"mol/m^3")
 

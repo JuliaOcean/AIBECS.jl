@@ -1,3 +1,4 @@
+@info "Running test/solvers.jl — steady-state solvers" Circulation
 # Algorithms tested on every toy circulation. CTKAlg is the AIBECS-native
 # solver and works without optional deps. The NonlinearSolve algorithms
 # require the AIBECSNonlinearSolveExt extension to be loaded.

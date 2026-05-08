@@ -15,15 +15,15 @@ using DataDeps
 using Plots
 # Extension trigger packages — load them so every AIBECS extension
 # activates and the data-loader stubs are replaced by real methods.
-using JLD2          # AIBECSJLD2Ext (OCIM0/1/2/OCCA)
-using NCDatasets    # AIBECSNCDatasetsExt (AeolianSources) + AIBECSETOPOExt + AIBECSOCIM2_48LExt
-using Distances     # AIBECSETOPOExt
-using MAT           # AIBECSOCIM2_48LExt
-using Shapefile     # AIBECSShapefileExt (GroundWaters)
+using JLD2           # AIBECSJLD2Ext (OCIM0/1/2/OCCA)
+using NCDatasets     # AIBECSNCDatasetsExt (AeolianSources) + AIBECSETOPOExt + AIBECSOCIM2_48LExt
+using Distances      # AIBECSETOPOExt
+using MAT            # AIBECSOCIM2_48LExt
+using Shapefile      # AIBECSShapefileExt (GroundWaters)
 using Interpolations # AIBECSRecipesBaseExt (RatioAtStation recipe)
-using RecipesBase   # plotting recipes
-using NonlinearSolve   # AIBECSNonlinearSolveExt
-using LinearSolve      # AIBECSNonlinearSolveExt
+using RecipesBase    # plotting recipes
+using NonlinearSolve # AIBECSNonlinearSolveExt
+using LinearSolve    # AIBECSNonlinearSolveExt
 
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
@@ -36,14 +36,23 @@ end
 # Using `include` evaluates at global scope,
 # so `Circulation` must be changed at the global scope too.
 # This is why there is an `eval` in the for loop(s) below
-include(joinpath(@__DIR__, "..", "benchmark", "problems.jl"))
-@testset "setup + sparse Jacobian" for C in test_setup_only
+@testset "test setup.jl only" for C in test_setup_only
     @testset "$C" begin
         eval(:(Circulation = $C))
         include("setup.jl")
         include("particles.jl")
-        include("sparse_jacobian.jl")
     end
+end
+
+
+# Dedicated sparse-Jacobian test on OCCA only — OCIM1 builds a reference
+# Jacobian via SCT+ForwardDiff that is too heavy for GitHub-hosted Linux
+# runners (job 75020877154 in run 25557565007 was killed mid-build).
+include(joinpath(@__DIR__, "..", "benchmark", "problems.jl"))
+@testset "Sparse Jacobian (OCCA)" begin
+    eval(:(Circulation = :OCCA))
+    include("setup.jl")
+    include("sparse_jacobian.jl")
 end
 
 
@@ -72,7 +81,6 @@ test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000, :Haine_and_H
         include("cost_functions.jl")
         include("solvers.jl")
         include("derivatives.jl")
-        include("sparse_jacobian.jl")
     end
 end
 

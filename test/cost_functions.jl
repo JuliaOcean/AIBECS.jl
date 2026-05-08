@@ -1,3 +1,4 @@
+@info "Running test/cost_functions.jl — cost functions" Circulation
 # Hyper parameters
 ωs = [1.0, 0.0, 0.0]
 ωp = 1.0e-7

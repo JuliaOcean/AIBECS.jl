@@ -1,3 +1,4 @@
+@info "Running test/parameters.jl — parameters API"
 import AIBECS: units, @units
 import AIBECS: prior, @prior
 import AIBECS: limits, @limits

@@ -1,3 +1,4 @@
+@info "Running test/setup.jl — circulation, grid, transport matrix" Circulation
 # Load the circulation and grid
 grd, T_Circulation_unit = Circulation.load()
 T_Circulation = ustrip.(T_Circulation_unit) # strip units for now
