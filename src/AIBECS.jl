@@ -15,6 +15,8 @@ using Flatten
 using Unitful: °
 @reexport using MetadataArrays
 using SciMLBase
+using LinearSolve
+using NonlinearSolveBase
 
 
 include("datadeps_cache.jl")

@@ -47,6 +47,7 @@ import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
 import NonlinearSolveBase: AbsNormSafeBestTerminationMode
 import NLsolve               # activates NonlinearSolveNLsolveExt
+import Pardiso               # activates LinearSolvePardisoExt; needed for MKLPardiso* constructors
 
 include(joinpath(@__DIR__, "dimensional_scaling.jl"))
 include(joinpath(@__DIR__, "problems.jl"))
@@ -106,6 +107,20 @@ const TRACER_SETUPS = (
 nlsolve_linsolve_umfpack(x, A, b) =
     (copyto!(x, solve(LinearProblem(A, b), UMFPACKFactorization()).u); x)
 
+# MKL Pardiso rows are platform-conditional. `Pardiso.mkl_is_available()`
+# returns true on Linux (where MKL_jll ships native binaries) and false on
+# macOS, so dev runs on a Mac silently skip the 4 Pardiso rows. `nprocs` is
+# the OMP-thread count for Pardiso; on `ubuntu-latest` runners
+# `Sys.CPU_THREADS` picks up the runner's full core count. `BENCH_NPROCS`
+# overrides if a different value is wanted.
+const PARDISO_AVAILABLE = Pardiso.mkl_is_available()
+const PARDISO_NPROCS = parse(Int, get(ENV, "BENCH_NPROCS", string(Sys.CPU_THREADS)))
+if PARDISO_AVAILABLE
+    vprintln("MKL Pardiso available — adding 4 rows with nprocs = $PARDISO_NPROCS")
+else
+    vprintln("MKL Pardiso not available on this platform — skipping 4 rows")
+end
+
 const ALG_MATRIX = [
     # `supports_nl_kwargs = false` for the NLsolveJL wrapper: it errors with
     # "does not support termination conditions" when `termination_condition`
@@ -117,10 +132,21 @@ const ALG_MATRIX = [
     # matches NewtonRaphson + UMFPACK so the row isolates nonlinear-solver
     # overhead in the comparison; the default `:trust_region` adds J'·J /
     # Cauchy work that's not interesting here.
-    (label = "CTKAlg",                  alg = CTKAlg(),                                         needs_nlprob = false, supports_nl_kwargs = false, max_n = Inf),
+    (label = "CTKAlg + UMFPACK",        alg = CTKAlg(linsolve = UMFPACKFactorization()),        needs_nlprob = false, supports_nl_kwargs = false, max_n = Inf),
+    (label = "CTKAlg + KLU",            alg = CTKAlg(linsolve = KLUFactorization()),            needs_nlprob = false, supports_nl_kwargs = false, max_n = Inf),
     (label = "NewtonRaphson + UMFPACK", alg = NewtonRaphson(linsolve = UMFPACKFactorization()), needs_nlprob = true,  supports_nl_kwargs = true,  max_n = Inf),
     (label = "NewtonRaphson + KLU",     alg = NewtonRaphson(linsolve = KLUFactorization()),     needs_nlprob = true,  supports_nl_kwargs = true,  max_n = Inf),
     (label = "NLsolveJL + Newton/UMFPACK", alg = NLsolveJL(method = :newton, linsolve = nlsolve_linsolve_umfpack), needs_nlprob = true, supports_nl_kwargs = false, max_n = Inf),
+    # MKL Pardiso × {NewtonRaphson, CTKAlg} — appended only when MKL Pardiso
+    # is installed. Both `MKLPardisoFactorize` and `MKLPardisoIterate` accept
+    # an `nprocs` kwarg (LinearSolve src/extension_algs.jl:137,165) that
+    # configures Pardiso's OMP parallelism.
+    (PARDISO_AVAILABLE ? [
+        (label = "NewtonRaphson + MKLPardisoFactorize", alg = NewtonRaphson(linsolve = MKLPardisoFactorize(; nprocs = PARDISO_NPROCS)), needs_nlprob = true,  supports_nl_kwargs = true,  max_n = Inf),
+        (label = "NewtonRaphson + MKLPardisoIterate",   alg = NewtonRaphson(linsolve = MKLPardisoIterate(; nprocs = PARDISO_NPROCS)),   needs_nlprob = true,  supports_nl_kwargs = true,  max_n = Inf),
+        (label = "CTKAlg + MKLPardisoFactorize",        alg = CTKAlg(linsolve = MKLPardisoFactorize(; nprocs = PARDISO_NPROCS)),        needs_nlprob = false, supports_nl_kwargs = false, max_n = Inf),
+        (label = "CTKAlg + MKLPardisoIterate",          alg = CTKAlg(linsolve = MKLPardisoIterate(; nprocs = PARDISO_NPROCS)),          needs_nlprob = false, supports_nl_kwargs = false, max_n = Inf),
+    ] : [])...,
 ]
 
 # === Configuration =========================================================
@@ -161,32 +187,32 @@ const NL_KWARGS_WRAPPER = (;
     trace_level = TraceMinimal(),
 )
 
-# CTKAlg with Inf-norm: `‖ũ‖_∞ / ‖F̃‖_∞ ≥ τstop ⇔ max-rel-drift ≤ 1/τstop`.
-# `τstop = 1e6` aligns with `NL_ABSTOL = 1e-6`. `preprint = "    "` turns on
-# the per-iter `i | |F(x)| | |δx|/|x| | Jac age` table.
+# CTKAlg now goes through NonlinearSolveBase termination, so the abstol +
+# termination_condition match `NL_KWARGS_NATIVE` exactly — the CTK row is
+# truly apples-to-apples with NewtonRaphson on the residual ∞-norm.
+# CTKAlg's iteration cap is `maxItNewton` (not `maxiters`) and its trace
+# knob is `preprint` (not `show_trace`/`trace_level`); otherwise identical.
 const CTK_KWARGS = (;
+    abstol = NL_ABSTOL,
     maxItNewton = 20,
     preprint = "    ",
-    τstop = 1.0e6,
-    nrm = Base.Fix1(maximum, abs),
+    termination_condition = AbsNormSafeBestTerminationMode(
+        Base.Fix1(maximum, abs); max_stalled_steps = 8),
 )
 
 # Per-solve diagnostic that prints, alongside the universal `max-rel-drift`,
 # whatever quantity the solver's *own* internal stopping test consumes —
 # evaluated on the final iterate. Reviewers see at a glance whether each
 # solver's internal termination criterion agrees with the apples-to-apples
-# comparison.
-function format_diagnostic(case, F̃, ũ)
+# comparison. CTKAlg now uses the same `AbsNormSafeBestTerminationMode` as
+# the NewtonRaphson rows, so its diagnostic collapses into the same branch.
+function format_diagnostic(case, F̃)
     Linf = maximum(abs, F̃)
     L2   = norm(F̃, 2)
-    ratio = norm(ũ, Inf) / max(Linf, eps())
-    return if case.label == "CTKAlg"
-        @sprintf("‖ũ‖_∞ / ‖F̃‖_∞ = %.2e ≥ 1e6 ? %s",
-            ratio, ratio ≥ 1e6 ? "✓" : "✗")
-    elseif startswith(case.label, "NLsolveJL")
+    return if startswith(case.label, "NLsolveJL")
         @sprintf("‖F̃‖_2 = %.2e ≤ %.0e ? %s   [L2 (~√n × tighter than the others)]",
             L2, NL_ABSTOL, L2 ≤ NL_ABSTOL ? "✓" : "✗")
-    else  # NewtonRaphson + * — Inf-norm
+    else  # NewtonRaphson + * and CTKAlg + * — Inf-norm + AbsNormSafeBest
         @sprintf("‖F̃‖_∞ = %.2e ≤ %.0e ? %s",
             Linf, NL_ABSTOL, Linf ≤ NL_ABSTOL ? "✓" : "✗")
     end
@@ -294,7 +320,7 @@ for (circ_label, loader) in TIERS[TIER]
             F̃ = sp_fresh.scaled.f.f(sol.u, sp_fresh.scaled.p)
             max_rel_drift = maximum(abs, F̃)
             converged = max_rel_drift < NL_ABSTOL
-            diag = format_diagnostic(case, F̃, sol.u)
+            diag = format_diagnostic(case, F̃)
             # Per-tracer implied steady-state timescale, computed in *original*
             # (unscaled) units so the result is genuinely in seconds (since F
             # is du/dt) and converts to years cleanly. For each tracer block,
