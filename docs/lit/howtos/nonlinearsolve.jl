@@ -13,12 +13,11 @@
 using AIBECS
 using NonlinearSolve
 using LinearSolve
-using JLD2 # required by `OCIM0.load`
 
-# We use the small OCIM0 circulation here so the example stays light;
-# any AIBECS circulation works the same way.
+# We use the toy `Primeau_2x2x2` circulation here so the docs build stays
+# fast; any AIBECS circulation works the same way.
 
-grd, T_OCIM0 = OCIM0.load()
+grd, T = Primeau_2x2x2.load()
 
 # Build the standard ideal-age problem (see the [Ideal age tutorial](@ref idealage)
 # for the full derivation).
@@ -35,7 +34,7 @@ struct IdealAgeParameters{U} <: AbstractParameters{U}
 end
 
 p = IdealAgeParameters(1.0, z[1])
-F = AIBECSFunction(T_OCIM0, G)
+F = AIBECSFunction(T, G)
 nb = sum(iswet(grd))
 x_init = zeros(nb)
 prob = SteadyStateProblem(F, x_init, p)
