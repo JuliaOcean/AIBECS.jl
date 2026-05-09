@@ -8,7 +8,8 @@
 # [Estimate fluxes](@ref fluxes) how-to, which decomposes an existing
 # circulation by direction.
 
-using AIBECS, Plots
+using AIBECS
+using Plots
 using JLD2 # required by `OCIM2.load`
 
 # ## Loading a grid

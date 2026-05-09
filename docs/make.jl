@@ -9,7 +9,9 @@ ENV["GKSwstype"] = "100"
 using Literate
 using AIBECS
 using Plots                 # activate AIBECSRecipesBaseExt so plot-recipe stubs gain methods
-using Distributions, Bijectors, DataFrames  # activate parameter extensions for @docs introspection
+using Distributions  # activate parameter extensions for @docs introspection
+using Bijectors      # activate parameter extensions for @docs introspection
+using DataFrames     # activate parameter extensions for @docs introspection
 
 # generate tutorials and how-to guides using Literate
 src = joinpath(@__DIR__, "src")
@@ -21,7 +23,7 @@ nb = true      # Set to true to generate the notebooks
 for (root, _, files) in walkdir(lit), file in files
     splitext(file)[2] == ".jl" || continue
     ipath = joinpath(root, file)
-    opath = splitdir(replace(ipath, lit=>src))[1]
+    opath = splitdir(replace(ipath, lit => src))[1]
     Literate.markdown(ipath, opath, flavor = Literate.DocumenterFlavor())
     # Literate.script(ipath, opath, execute = execute)
     # nb && Literate.notebook(ipath, notebooks, execute = execute)
@@ -32,7 +34,7 @@ ismd(f) = splitext(f)[2] == ".md"
 pages(folder) = [joinpath(folder, f) for f in readdir(joinpath(src, folder)) if ismd(f)]
 
 makedocs(
-    sitename="AIBECS.jl",
+    sitename = "AIBECS.jl",
     doctest = false, # TODO guessing I should remove that when actually deploying?
     draft = get(ENV, "DRAFT", "false") == "true", # DRAFT=true skips @example/@repl/@setup/@eval blocks for fast markdown iteration
     # options
@@ -44,8 +46,8 @@ makedocs(
         "How-to guides" => pages("howtos"),
         "Explanation" => pages("explanation"),
         "Reference" => pages("reference"),
-        "Publications" => pages("publications")
-        ],
+        "Publications" => pages("publications"),
+    ],
     warnonly = [:missing_docs],   # internals are intentionally omitted from the curated reference page
     format = DocumenterVitepress.MarkdownVitepress(
         repo = "https://github.com/JuliaOcean/AIBECS.jl",

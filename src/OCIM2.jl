@@ -27,7 +27,7 @@ using Reexport
 using MD5                   # for hash checking (MD5 is what Zenodo exposes)
 @reexport using OceanGrids  # To store the grid
 
-const VERSIONS =[
+const VERSIONS = [
     "CTL_He",
     "CTL_noHe",
     "KiHIGH_He",
@@ -38,7 +38,7 @@ const VERSIONS =[
     "KvHIGH_KiHIGH_noHe",
     "KvHIGH_KiLOW_He",
     "KvHIGH_KiLOW_noHe",
-    "KvHIGH_noHe"
+    "KvHIGH_noHe",
 ]
 
 # URLs
@@ -78,8 +78,11 @@ DeVries, T., & Holzer, M. (2019). Radiocarbon and helium isotope constraints on 
 """
 
 
+invalidate_stale_cache(; version = VERSIONS[1]) =
+    parentmodule(@__MODULE__)._invalidate_stale_cache("AIBECS-OCIM2_$version", "OCIM2_$version.jld2", OCIM2_MD5[version])
+
 # Create registry entry for OCIM2 in JLD2 format
-function register_OCIM2(; version=VERSIONS[1])
+function register_OCIM2(; version = VERSIONS[1])
     register(
         DataDep(
             "AIBECS-OCIM2_$version",
@@ -125,6 +128,3 @@ function load(args...; kwargs...)
 end
 
 end # end module
-
-export OCIM2
-

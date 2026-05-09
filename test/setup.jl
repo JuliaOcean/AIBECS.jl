@@ -1,4 +1,4 @@
-
+@info "Running test/setup.jl — circulation, grid, transport matrix" Circulation
 # Load the circulation and grid
 grd, T_Circulation_unit = Circulation.load()
 T_Circulation = ustrip.(T_Circulation_unit) # strip units for now
@@ -27,6 +27,19 @@ Iabove = buildIabove(grd)
         @test T isa SparseMatrixCSC
         println("Divergence timescale: ", norm(ones(nb)) / norm(T * ones(nb)) * u"s" |> u"Myr")
         println("Mass conservation timescale: ", norm(v) / norm(T' * v) * u"s" |> u"Myr")
+        @testset "T 1 = 0 (T is divergence free)" begin
+            # OCCA's `conservemass = true` correction enforces vᵀT = 0 by
+            # subtracting a diagonal that perturbs column sums, so T·1 ≠ 0
+            # by construction — see ext/AIBECSJLD2Ext.jl::OCCA.load.
+            if nameof(Circulation) === :OCCA
+                @test_broken norm(ones(nb)) / norm(T * ones(nb)) > ustrip(upreferred(1u"Myr"))
+            else
+                @test norm(ones(nb)) / norm(T * ones(nb)) > ustrip(upreferred(1u"Myr"))
+            end
+        end
+        @testset "vᵀ T = 0 (T conserves mass)" begin
+            @test norm(v) / norm(T' * v) > ustrip(upreferred(1u"Myr"))
+        end
     end
     # TODO add tests for consistency of wet3D, grid, and T
 end
@@ -55,4 +68,3 @@ end
     @test DIV isa SparseMatrixCSC
     @test Iabove isa SparseMatrixCSC
 end
-

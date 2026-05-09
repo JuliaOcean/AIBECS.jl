@@ -63,8 +63,12 @@ mktempdir() do tmp
     end
     """
 
-    @test success(pipeline(`\$(Base.julia_cmd()) --project=\$(tmp) -e \$aibecs_only_script`,
-                           stdout = stdout, stderr = stderr))
+    @test success(
+        pipeline(
+            `\$(Base.julia_cmd()) --project=\$(tmp) -e \$aibecs_only_script`,
+            stdout = stdout, stderr = stderr
+        )
+    )
 end
 
 # --- Phase 2: extensions activate when triggers are loaded ------------------
@@ -73,14 +77,18 @@ end
 # (per Project.toml [targets].test) has every trigger package loaded.
 # `runtests.jl` already does `using JLD2, NCDatasets, ...` at the top,
 # so the extensions should be live.
-struct ExtOnP{T} <: AIBECS.AbstractParameters{T}; α::T; β::T; end
+struct ExtOnP{T} <: AIBECS.AbstractParameters{T}
+    α::T; β::T
+end
 
 @testset "extensions on (triggers loaded)" begin
-    for ext in (:AIBECSRecipesBaseExt, :AIBECSRecipesParametersExt,
-                :AIBECSBijectorsExt, :AIBECSDistributionsExt,
-                :AIBECSDataFramesExt, :AIBECSShapefileExt,
-                :AIBECSJLD2Ext, :AIBECSNCDatasetsExt,
-                :AIBECSETOPOExt, :AIBECSOCIM2_48LExt)
+    for ext in (
+            :AIBECSRecipesBaseExt, :AIBECSRecipesParametersExt,
+            :AIBECSBijectorsExt, :AIBECSDistributionsExt,
+            :AIBECSDataFramesExt, :AIBECSShapefileExt,
+            :AIBECSJLD2Ext, :AIBECSNCDatasetsExt,
+            :AIBECSETOPOExt, :AIBECSOCIM2_48LExt,
+        )
         @test Base.get_extension(AIBECS, ext) !== nothing
     end
     # `table(p)` returns a DataFrame in this env

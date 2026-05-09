@@ -8,7 +8,7 @@ using DataFrames
 
 function _table(p::T, nf::NamedTuple) where {T <: AbstractParameters}
     t = DataFrame(Symbol = collect(symbols(p)), Value = values(p))
-    for (n,f) in zip(keys(nf), nf)
+    for (n, f) in zip(keys(nf), nf)
         setproperty!(t, n, collect(f(p)))
     end
     return t

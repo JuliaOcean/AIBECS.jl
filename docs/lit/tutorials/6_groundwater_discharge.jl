@@ -1,4 +1,3 @@
-
 #---------------------------------------------------------
 # # [Groundwater discharge](@id groundwater-discharge)
 #---------------------------------------------------------
@@ -23,7 +22,8 @@
 
 using AIBECS
 using JLD2                  # required by `OCIM2.load`
-using Shapefile, DataFrames # required by `GroundWaters.load`
+using Shapefile  # required by `GroundWaters.load`
+using DataFrames # required by `GroundWaters.load`
 grd, T_OCIM2 = OCIM2.load()
 
 # For the radioactive decay, we simply use
@@ -45,10 +45,12 @@ gws[1]
 # We can check the locations with
 
 using Plots
-scatter([x.lon for x in gws], [x.lat for x in gws],
-        zcolor=log10.(ustrip.([x.VFR for x in gws] / u"m^3/s")),
-        colorbartitle="log₁₀(discharge / (1 m³ s⁻¹))",
-        clim=(0,10), fmt=:png)
+scatter(
+    [x.lon for x in gws], [x.lat for x in gws],
+    zcolor = log10.(ustrip.([x.VFR for x in gws] / u"m^3/s")),
+    colorbartitle = "log₁₀(discharge / (1 m³ s⁻¹))",
+    clim = (0, 10), fmt = :png
+)
 
 # We can regrid these into the OCIM2 grid and return the corresponding vector with
 
@@ -70,7 +72,7 @@ end
 
 # We then write the generic $\boldsymbol{G}$ function, which is
 
-G_gw(x,p) = s_gw(p) - decay(x,p)
+G_gw(x, p) = s_gw(p) - decay(x, p)
 
 # ##### Parameters
 
@@ -79,8 +81,8 @@ G_gw(x,p) = s_gw(p) - decay(x,p)
 import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
 @initial_value @units struct GroundWatersParameters{U} <: AbstractParameters{U}
-    τ::U    | 20.0 | u"yr"
-    C_gw::U |  1.0 | u"mol/m^3"
+    τ::U | 20.0 | u"yr"
+    C_gw::U | 1.0 | u"mol/m^3"
 end
 
 # Finally, thanks to the initial values we provided, we can instantiate the parameter vector succinctly as
@@ -105,15 +107,15 @@ sol = solve(prob, CTKAlg()).u * u"mol/m^3"
 # Taking a horizontal slice of the 3D field at 200m gives
 
 cmap = :viridis
-plothorizontalslice(sol, grd, zunit=u"μmol/m^3", depth=200, color=cmap, clim=(0,100))
+plothorizontalslice(sol, grd, zunit = u"μmol/m^3", depth = 200, color = cmap, clim = (0, 100))
 
 # and at 500m:
 
-plothorizontalslice(sol, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,25))
+plothorizontalslice(sol, grd, zunit = u"μmol/m^3", depth = 500, color = cmap, clim = (0, 25))
 
 # Or we can increase the decay timescale (×10) and decrease the groundwater concentration (÷10) to get a different (more well-mixed) tracer distribution:
 
 p = GroundWatersParameters(τ = 200.0u"yr", C_gw = 0.1u"mol/m^3")
 prob = SteadyStateProblem(F, x, p)
 sol_τ50 = solve(prob, CTKAlg()).u * u"mol/m^3"
-plothorizontalslice(sol_τ50, grd, zunit=u"μmol/m^3", depth=500, color=cmap, clim=(0,25))
+plothorizontalslice(sol_τ50, grd, zunit = u"μmol/m^3", depth = 500, color = cmap, clim = (0, 25))

@@ -10,7 +10,8 @@
 
 # Let's start telling Julia we will be using AIBECS and Plots.
 
-using AIBECS, Plots
+using AIBECS
+using Plots
 using JLD2 # required by `OCCA.load` / `Circulation.load`
 
 #-----------------------------------------------
@@ -52,9 +53,9 @@ plotstencil(st)
 plts = Any[]
 for Circulation in [OCIM0, OCIM1, OCIM2, OCCA]
     grd, T = Circulation.load()
-    push!(plts, plotstencil(stencil(grd, T), title=string(Circulation)))
+    push!(plts, plotstencil(stencil(grd, T), title = string(Circulation)))
 end
-plot(plts..., layout=(2,2))
+plot(plts..., layout = (2, 2))
 
 # These stencils are useful to clarify the origin and destination of tracer fluxes we are going to explore in this guide..
 
@@ -83,7 +84,7 @@ T_West = directional_transport(T, grd, dir)
 
 nwet = count(iswet(grd))
 x = ones(nwet)
-plotverticalintegral(-T_West * x * u"mol/m^3/s" .|> u"μmol/m^3/s", grd, mask=depthvec(grd) .< 100, color=:seaborn_icefire_gradient, clim=1e2 .* (-1,1))
+plotverticalintegral(-T_West * x * u"mol/m^3/s" .|> u"μmol/m^3/s", grd, mask = depthvec(grd) .< 100, color = :seaborn_icefire_gradient, clim = 1.0e2 .* (-1, 1))
 
 # To get all the matrices for all directions you can use
 

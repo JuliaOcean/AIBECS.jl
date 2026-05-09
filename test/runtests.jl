@@ -1,12 +1,13 @@
-
-
-using AIBECS, Test
-using SparseArrays, LinearAlgebra
+using AIBECS
+using Test
+using SparseArrays
+using LinearAlgebra
 using Unitful
 using Unitful: °, m, km
 using WorldOceanAtlasTools
 using SciMLBase
-using ForwardDiff, DualNumbers
+using ForwardDiff
+using DualNumbers
 using DataFrames
 using Distributions
 using Bijectors
@@ -14,13 +15,15 @@ using DataDeps
 using Plots
 # Extension trigger packages — load them so every AIBECS extension
 # activates and the data-loader stubs are replaced by real methods.
-using JLD2          # AIBECSJLD2Ext (OCIM0/1/2/OCCA)
-using NCDatasets    # AIBECSNCDatasetsExt (AeolianSources) + AIBECSETOPOExt + AIBECSOCIM2_48LExt
-using Distances     # AIBECSETOPOExt
-using MAT           # AIBECSOCIM2_48LExt
-using Shapefile     # AIBECSShapefileExt (GroundWaters)
+using JLD2           # AIBECSJLD2Ext (OCIM0/1/2/OCCA)
+using NCDatasets     # AIBECSNCDatasetsExt (AeolianSources) + AIBECSETOPOExt + AIBECSOCIM2_48LExt
+using Distances      # AIBECSETOPOExt
+using MAT            # AIBECSOCIM2_48LExt
+using Shapefile      # AIBECSShapefileExt (GroundWaters)
 using Interpolations # AIBECSRecipesBaseExt (RatioAtStation recipe)
-using RecipesBase   # plotting recipes
+using RecipesBase    # plotting recipes
+using NonlinearSolve # AIBECSNonlinearSolveExt
+using LinearSolve    # AIBECSNonlinearSolveExt
 
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
@@ -28,7 +31,7 @@ ENV["DATADEPS_ALWAYS_ACCEPT"] = true
 test_setup_only = if haskey(ENV, "GITHUB_ACTIONS")
     [:OCIM1, :OCIM0, :OCCA] # Don't run 48L on CI
 else
-    [:OCIM2_48L, :OCIM1, :OCIM0, :OCCA]
+    [:OCIM2_48L, :OCIM2, :OCIM1, :OCIM0, :OCCA]
 end
 # Using `include` evaluates at global scope,
 # so `Circulation` must be changed at the global scope too.
@@ -37,7 +40,19 @@ end
     @testset "$C" begin
         eval(:(Circulation = $C))
         include("setup.jl")
+        include("particles.jl")
     end
+end
+
+
+# Dedicated sparse-Jacobian test on OCCA only — OCIM1 builds a reference
+# Jacobian via SCT+ForwardDiff that is too heavy for GitHub-hosted Linux
+# runners (job 75020877154 in run 25557565007 was killed mid-build).
+include(joinpath(@__DIR__, "..", "benchmark", "problems.jl"))
+@testset "Sparse Jacobian (OCCA)" begin
+    eval(:(Circulation = OCCA))
+    include("setup.jl")
+    include("sparse_jacobian.jl")
 end
 
 
@@ -46,6 +61,7 @@ test_plots = [:OCIM2]
     @testset "$C" begin
         eval(:(Circulation = $C))
         include("setup.jl")
+        include("particles.jl")
         include("plots.jl")
         include("sources.jl")
     end
@@ -69,7 +85,3 @@ test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000, :Haine_and_H
 end
 
 include("AO.jl")
-
-
-
-

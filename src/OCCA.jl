@@ -11,6 +11,14 @@ The `OCCA` module is used to load the OCCA matrix and grid for use in AIBECS.
 !!! note
     The files, that are downloaded from a public and persistent URL on Zenodo,
     were created with the code available at https://github.com/briochemc/OceanCirculations.
+
+!!! warning "Mass conservation"
+    The raw OCCA matrix is not mass-conserving, which can cause issues.
+    To avoid these issues, AIBECS's `load()` call will enforce mass conservation
+    by default. This is done by subtracting `Diagonal((Tᵀ v) ./ v)` from
+    `T`. Pass `conservemass = false` to recover the raw matrix; in that case
+    tracer budgets will drift unless the geological restoring is modeled
+    explicitly.
 """
 module OCCA
 
@@ -23,10 +31,10 @@ using MD5                   # for hash checking (MD5 is what Zenodo exposes)
 @reexport using OceanGrids  # To store the grid
 
 # OCCA URLs
-const OCCA_URL = "https://zenodo.org/records/19944605/files/OCCA.jld2"
+const OCCA_URL = "https://zenodo.org/records/20079672/files/OCCA.jld2"
 
 # OCCA Hashes
-const OCCA_MD5 = "f2a2a2d295f85771c2302e6c0eb35f4c"
+const OCCA_MD5 = "bde4109fb20ee876cfdfc68d2a10ba76"
 
 const CITATION = "Forget, G., 2010: Mapping Ocean Observations in a Dynamical Framework: A 2004–06 Ocean Atlas. J. Phys. Oceanogr., 40, 1201–1221, https://doi.org/10.1175/2009JPO4043.1"
 
@@ -40,11 +48,14 @@ function register_OCCA()
             - $CITATION
             """,
             OCCA_URL,
-            (md5, OCCA_MD5);
+            (md5, OCCA_MD5)
         )
     )
     return nothing
 end
+
+invalidate_stale_cache() =
+    parentmodule(@__MODULE__)._invalidate_stale_cache("AIBECS-OCCA", "OCCA.jld2", OCCA_MD5)
 
 """
     grd, T = load()
@@ -60,5 +71,3 @@ function load(args...; kwargs...)
 end
 
 end # end module
-
-export OCCA

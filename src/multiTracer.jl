@@ -1,7 +1,3 @@
-
-
-
-
 #= ============================================
 Generate 𝐹 and ∇ₓ𝐹 from user input
 ============================================ =#
@@ -23,16 +19,16 @@ A * x                          # equivalent to (T1 + T2) * x
 A \\ b                         # equivalent to (T1 + T2) \\ b
 ```
 """
-struct LinearOperators{T<:Tuple}
+struct LinearOperators{T <: Tuple}
     ops::T
 end
 LinearOperators(ops...) = LinearOperators((ops...,))
 SparseArrays.blockdiag(As::LinearOperators...) = blockdiag([sum(A.ops) for A in As]...)
 function LinearAlgebra.mul!(du, A::LinearOperators, u, α, β)
     for (i, op) in enumerate(A.ops)
-        (i==1) ? mul!(du, op, u, α, β) : mul!(du, op, u, α, 1)
+        (i == 1) ? mul!(du, op, u, α, β) : mul!(du, op, u, α, 1)
     end
-    du
+    return du
 end
 LinearAlgebra.factorize(A::LinearOperators) = factorize(sum(A.ops))
 Base.:\(A::LinearOperators, u::AbstractArray) = factorize(A) \ u
@@ -40,7 +36,7 @@ Base.:+(A::LinearOperators, B::AbstractSparseArray) = LinearOperators(A.ops..., 
 Base.:+(B::AbstractSparseArray, A::LinearOperators) = A + B
 function Base.:*(A::LinearOperators, u::AbstractArray) # has to be same type!
     du = similar(u)
-    mul!(du, A, u, 1, 0)
+    return mul!(du, A, u, 1, 0)
 end
 export LinearOperators
 
@@ -78,13 +74,13 @@ AIBECSFunction(T::Function, G::Function, nb::Int) = AIBECSFunction(T, (G,), nb)
 function AIBECSFunction(T::Function, Gs::Tuple, nb::Int)
     nt = length(Gs) # if a single T is given, then nt is given by the number of Gs
     Tidx = ones(Int64, nt) # and all the tracers share the same T
-    AIBECSFunction((T,), Gs, nb, nt, Tidx)
+    return AIBECSFunction((T,), Gs, nb, nt, Tidx)
 end
-function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int=length(Ts), Tidx::AbstractVector=1:nt)
+function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int = length(Ts), Tidx::AbstractVector = 1:nt)
     tracers(u) = state_to_tracers(u, nb, nt)
     tracer(u, i) = state_to_tracer(u, nb, nt, i)
     G(u, p) = reduce(vcat, Gⱼ(tracers(u)..., p) for Gⱼ in Gs)
-    function f(u, p, t=0)
+    function f(u, p, t = 0)
         du = copy(G(u, p))
         for jT in eachindex(Ts)
             op = Ts[jT](p)
@@ -92,27 +88,27 @@ function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int=length(Ts), Tidx:
                 mul!(tracer(du, j), op, tracer(u, j), -1, 1)
             end
         end
-        du
+        return du
     end
     # Jacobian
     ∇ₓG(u, p) = local_jacobian(Gs, u, p, nt, nb)
     function T(p)
         uniqueTs = [Tⱼ(p) for Tⱼ in Ts]
-        blockdiag([uniqueTs[Tidx[j]] for j in 1:nt]...)
+        return blockdiag([uniqueTs[Tidx[j]] for j in 1:nt]...)
     end
-    jac(u, p, t=0) = ∇ₓG(u, p) - T(p)
-    return ODEFunction(f, jac=jac)
+    jac(u, p, t = 0) = ∇ₓG(u, p) - T(p)
+    return ODEFunction(f, jac = jac)
 end
 # AIBECSFunction calls itself to allow for both λ::Vector and p::APar
 function AIBECSFunction(Ts, Gs, nb::Int, ::Type{P}) where {P <: APar}
-    AIBECSFunction(AIBECSFunction(Ts, Gs, nb), P)
+    return AIBECSFunction(AIBECSFunction(Ts, Gs, nb), P)
 end
 function AIBECSFunction(fun::ODEFunction, ::Type{P}) where {P <: APar}
-    jac(u, p::P, t=0) = fun.jac(u, p, t)
-    jac(u, λ::Vector, t=0) = fun.jac(u, λ2p(P, λ), t)
-    f(u, p::P, t=0) = fun.f(u, p, t)
-    f(u, λ::Vector, t=0) = fun.f(u, λ2p(P, λ), t)
-    return ODEFunction{false}(f, jac=jac)
+    jac(u, p::P, t = 0) = fun.jac(u, p, t)
+    jac(u, λ::Vector, t = 0) = fun.jac(u, λ2p(P, λ), t)
+    f(u, p::P, t = 0) = fun.f(u, p, t)
+    f(u, λ::Vector, t = 0) = fun.f(u, λ2p(P, λ), t)
+    return ODEFunction{false}(f, jac = jac)
 end
 
 export AIBECSFunction
@@ -136,8 +132,7 @@ end
 function localderivative(Gᵢ, xs, j, p) # for multiple tracers
     return ForwardDiff.derivative(λ -> Gᵢ(perturb_tracer(xs, j, λ)..., p), 0.0)
 end
-perturb_tracer(xs, j, λ) = (xs[1:j - 1]..., xs[j] .+ λ, xs[j + 1:end]...)
-
+perturb_tracer(xs, j, λ) = (xs[1:(j - 1)]..., xs[j] .+ λ, xs[(j + 1):end]...)
 
 
 """
@@ -192,7 +187,7 @@ function generate_f(ωs, ωp, grd, obs, ::Type{T}; kwargs...) where {T <: APar}
     Ms = [interpolationmatrix(grd, obsⱼ) for obsⱼ in obs]
     cs = get(kwargs, :cs, (collect(identity for i in 1:nt)...,))
     f(x, λorp) = ωp * mismatch(T, λorp) +
-        sum([ωⱼ * mismatch(xⱼ, grd, obsⱼ, M=Mⱼ, c=cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs)])
+        sum([ωⱼ * mismatch(xⱼ, grd, obsⱼ, M = Mⱼ, c = cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs)])
     return f
 end
 function generate_f(ωs, ωp, grd, modify::Function, obs, ::Type{T}) where {T <: APar}
@@ -207,8 +202,6 @@ function generate_f(ωs, ωp, grd, modify::Function, obs, ::Type{T}) where {T <:
 end
 
 
-
-
 function generate_∇ₓf(ωs, μx, σ²x, v)
     nt, nb = length(ωs), length(v)
     tracers(x) = state_to_tracers(x, nb, nt)
@@ -221,7 +214,7 @@ function generate_∇ₓf(ωs, grd, obs; kwargs...)
     tracers(x) = state_to_tracers(x, nb, nt)
     Ms = [interpolationmatrix(grd, obsⱼ) for obsⱼ in obs]
     cs = get(kwargs, :cs, (collect(identity for i in 1:nt)...,))
-    ∇ₓf(x) = reduce(hcat, ωⱼ * ∇mismatch(xⱼ, grd, obsⱼ, M=Mⱼ, c=cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs))
+    ∇ₓf(x) = reduce(hcat, ωⱼ * ∇mismatch(xⱼ, grd, obsⱼ, M = Mⱼ, c = cⱼ) for (ωⱼ, xⱼ, obsⱼ, Mⱼ, cⱼ) in zip(ωs, tracers(x), obs, Ms, cs))
     ∇ₓf(x, p) = ∇ₓf(x)
     return ∇ₓf
 end
@@ -231,7 +224,7 @@ function generate_∇ₓf(ωs, grd, modify::Function, obs)
     iwets = [iswet(grd, obsⱼ) for obsⱼ in obs]
     function ∇ₓf(x)
         xs = unpack_tracers(x, grd)
-        sum([ωᵢ * ∇indirectmismatch(unpack_tracers(x, grd), grd, modify, obs, i, Mᵢ, iwetᵢ) for (i, (ωᵢ, Mᵢ, iwetᵢ)) in enumerate(zip(ωs, Ms, iwets))])
+        return sum([ωᵢ * ∇indirectmismatch(unpack_tracers(x, grd), grd, modify, obs, i, Mᵢ, iwetᵢ) for (i, (ωᵢ, Mᵢ, iwetᵢ)) in enumerate(zip(ωs, Ms, iwets))])
     end
     ∇ₓf(x, p) = ∇ₓf(x)
     return ∇ₓf
@@ -255,13 +248,13 @@ tracers before the misfit is evaluated. Used as the model entry point for
 Newton-style optimisation (see [the parameter-optimisation how-to](@ref parameter-optimization)).
 """
 function f_and_∇ₓf(ωs, μx, σ²x, v, ωp, ::Type{T}) where {T <: APar}
-    generate_f(ωs, μx, σ²x, v, ωp, T), generate_∇ₓf(ωs, μx, σ²x, v)
+    return generate_f(ωs, μx, σ²x, v, ωp, T), generate_∇ₓf(ωs, μx, σ²x, v)
 end
 function f_and_∇ₓf(ωs, ωp, grd, obs, ::Type{T}; kwargs...) where {T <: APar}
-    generate_f(ωs, ωp, grd, obs, T; kwargs...), generate_∇ₓf(ωs, grd, obs; kwargs...)
+    return generate_f(ωs, ωp, grd, obs, T; kwargs...), generate_∇ₓf(ωs, grd, obs; kwargs...)
 end
 function f_and_∇ₓf(ωs, ωp, grd, modify::Function, obs, ::Type{T}) where {T <: APar}
-    generate_f(ωs, ωp, grd, modify, obs, T), generate_∇ₓf(ωs, grd, modify, obs)
+    return generate_f(ωs, ωp, grd, modify, obs, T), generate_∇ₓf(ωs, grd, modify, obs)
 end
 export f_and_∇ₓf
 
@@ -290,18 +283,16 @@ end
 ∇mismatch(x, ::Missing, args...) = transpose(zeros(length(x)))
 
 
-
-
 ## new functions for more generic obs packages
 # TODO Add an optional function argument to transform the data before computingn the mismatch
 # Example if for isotope tracers X where one ususally wants to minimize the mismatch in δ or ε.
-function mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmatrix(grd, obs), iwet=iswet(grd, obs))
+function mismatch(x, grd::OceanGrid, obs; c = identity, W = I, M = interpolationmatrix(grd, obs), iwet = iswet(grd, obs))
     o = view(obs, iwet)
     δx = M * c(x) - o
     return 0.5 * transpose(δx) * W * δx / (transpose(o) * W * o)
 end
 mismatch(x, grd::OceanGrid, ::Missing; kwargs...) = 0
-function ∇mismatch(x, grd::OceanGrid, obs; c=identity, W=I, M=interpolationmatrix(grd, obs), iwet=iswet(grd, obs))
+function ∇mismatch(x, grd::OceanGrid, obs; c = identity, W = I, M = interpolationmatrix(grd, obs), iwet = iswet(grd, obs))
     ∇c = Diagonal(ForwardDiff.derivative(λ -> c(x .+ λ), 0.0))
     o = view(obs, iwet)
     δx = M * c(x) - o
@@ -311,14 +302,14 @@ end
 
 # In case the mismatch is not based on the tracer but on some function of it
 # TODO Add option for correlation matrix for Bayesian inferenece
-function indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M=interpolationmatrix(grd, obs[i]), iwet=iswet(grd, obs[i]))
+function indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M = interpolationmatrix(grd, obs[i]), iwet = iswet(grd, obs[i]))
     x2 = modify(xs...)
     out = 0.0
     o = obs[i][iwet, :value]
     δx = M * x2[i] - o
     return 0.5 * transpose(δx) * δx / (transpose(o) * o)
 end
-function ∇indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M=interpolationmatrix(grd, obs[i]), iwet=iswet(grd, obs[i]))
+function ∇indirectmismatch(xs::Tuple, grd::OceanGrid, modify::Function, obs, i, M = interpolationmatrix(grd, obs[i]), iwet = iswet(grd, obs[i]))
     x2 = modify(xs...)
     o = obs[i][iwet, :value]
     δx = M * x2[i] - o
@@ -381,7 +372,7 @@ end
 Range of indices in the flat state vector that correspond to the `i`th tracer
 of an `nt`-tracer, `nb`-box model.
 """
-tracer_indices(nb, nt, i) = (i - 1) * nb + 1:i * nb
+tracer_indices(nb, nt, i) = ((i - 1) * nb + 1):(i * nb)
 
 """
     tracers_to_state(xs)
@@ -400,7 +391,3 @@ Alias for [`state_to_tracers`](@ref) with a more user-friendly name.
 """
 unpack_tracers(args...) = state_to_tracers(args...)
 export unpack_tracers
-
-
-
-

@@ -33,7 +33,7 @@ end
 # Show method for rivers
 function Base.show(io::IO, r::River)
     lat, lon, name, v = r.lat, r.lon, r.name, r.VFR
-    print(io, name, " ", (lat,lon), " ", round(Int, ustrip(v)) * unit(v))
+    return print(io, name, " ", (lat, lon), " ", round(Int, ustrip(v)) * unit(v))
 end
 Base.show(io::IO, m::MIME"text/plain", r::River) = show(io, r)
 
@@ -264,16 +264,16 @@ uconvert(u, r::River) = River(r.name, r.lon, r.lat, uconvert(u, r.VFR))
 Return the 200 largest rivers as a `Vector{River}`, with volumetric flow rates
 converted to `unit`.
 """
-function load(unit=m^3/s)
+function load(unit = m^3 / s)
     @info """You are about to use the Dai and Trenberth river discharge dataset.
-          If you use it for research, please cite:
+    If you use it for research, please cite:
 
-          $(citation())
+    $(citation())
 
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the "Dai_2017", "Dai_Trenberth_2002", "Dai_etal_2009", and "Dai_2016" keys.)
-          """
+    You can find the corresponding BibTeX entries in the CITATION.bib file
+    at the root of the AIBECS.jl package repository.
+    (Look for the "Dai_2017", "Dai_Trenberth_2002", "Dai_etal_2009", and "Dai_2016" keys.)
+    """
     return uconvert.(unit, RIVERS)
 end
 
@@ -283,7 +283,7 @@ end
 Bin a list of rivers `R` onto the surface boxes of `grd`, returning a vector of
 volumetric flow rates per wet box (zero for boxes with no river).
 """
-function regrid(R::Vector{River{T}}, grd) where T <: Quantity
+function regrid(R::Vector{River{T}}, grd) where {T <: Quantity}
     lats = [r.lat for r in R]
     lons = [r.lon for r in R]
     depths = zeros(length(R))
@@ -293,5 +293,3 @@ end
 export regrid
 
 end # module
-
-export Rivers

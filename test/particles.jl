@@ -1,3 +1,4 @@
+@info "Running test/particles.jl — particle transport operators" Circulation
 @testset "Particles" begin
     @testset "scalar settling velocity" begin
         T = transportoperator(grd, 100.0)
@@ -14,7 +15,7 @@
         end
 
         @testset "fractional sed remin" begin
-            T = transportoperator(grd, w, fsedremin=0.5)
+            T = transportoperator(grd, w, fsedremin = 0.5)
             @test T isa SparseMatrixCSC
             @test norm(v) / norm(T' * v) < ustrip(upreferred(1u"yr"))
         end

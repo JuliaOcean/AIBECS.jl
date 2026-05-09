@@ -14,18 +14,18 @@ function AeolianSources.load_Chien()
         Dict(
             :lat => ds["lat"][:],
             :lon => ds["lon"][:],
-            (t => ds["dep"][:,:,i] for (i,t) in enumerate(Chien_AEROSOLTYPE_NAMES))...
+            (t => ds["dep"][:, :, i] for (i, t) in enumerate(Chien_AEROSOLTYPE_NAMES))...
         )
     end
     @info """You are about to use the Chien et al. (2016) data for aeolian deposition.
-          If you use it for research, please cite:
+    If you use it for research, please cite:
 
-          $(CITATIONS[s])
+    $(CITATIONS[s])
 
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the $(DATASET_LONGNAMES[s]) key.)
-          """
+    You can find the corresponding BibTeX entries in the CITATION.bib file
+    at the root of the AIBECS.jl package repository.
+    (Look for the $(DATASET_LONGNAMES[s]) key.)
+    """
     return s_A_2D
 end
 
@@ -37,18 +37,18 @@ function AeolianSources.load_Kok()
         Dict(
             :lat => ds["lat"][:],
             :lon => ds["lon"][:],
-            (r => ds["Mean"][i,:,:] for (i,r) in enumerate(Kok_REGIONS_NAMES))...
+            (r => ds["Mean"][i, :, :] for (i, r) in enumerate(Kok_REGIONS_NAMES))...
         )
     end
     @info """You are about to use the Kok et al. (2021) data for aeolian deposition.
-          If you use it for research, please cite:
+    If you use it for research, please cite:
 
-          $(CITATIONS[s])
+    $(CITATIONS[s])
 
-          You can find the corresponding BibTeX entries in the CITATION.bib file
-          at the root of the AIBECS.jl package repository.
-          (Look for the $(DATASET_LONGNAMES[s]) key.)
-          """
+    You can find the corresponding BibTeX entries in the CITATION.bib file
+    at the root of the AIBECS.jl package repository.
+    (Look for the $(DATASET_LONGNAMES[s]) key.)
+    """
     return s_A_2D
 end
 

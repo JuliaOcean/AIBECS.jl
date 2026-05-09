@@ -1,4 +1,3 @@
-
 #---------------------------------------------------------
 # # [Radiocarbon](@id radiocarbon)
 #---------------------------------------------------------
@@ -25,7 +24,6 @@
 # where the first term on the right of the equal sign represents the air–sea gas exchange with a piston velocity $λ$ over a depth $h$ and the second term represents the radioactive decay of radiocarbon with timescale $\tau$.
 
 
-
 #md # !!! note
 #md #     We need not specify the value of the atmospheric radiocarbon concentration because it is not important for determining the age of a water parcel — only the relative concentration $\boldsymbol{R}/\overline{\boldsymbol{R}}_\mathsf{atm}$ matters.
 
@@ -47,7 +45,7 @@ grd, T_OCCA = OCCA.load()
 
 # The local sources and sinks are simply given by
 
-function G(R,p)
+function G(R, p)
     @unpack λ, h, Ratm, τ = p
     return @. λ / h * (Ratm - R) * (z ≤ h) - R / τ
 end
@@ -65,9 +63,9 @@ import AIBECS: @units, units
 # We define the parameters using the dedicated API from the AIBECS, including keyword arguments and units this time
 
 @units struct RadiocarbonParameters{U} <: AbstractParameters{U}
-    λ::U    | u"m/yr"
-    h::U    | u"m"
-    τ::U    | u"yr"
+    λ::U | u"m/yr"
+    h::U | u"m"
+    τ::U | u"yr"
     Ratm::U | u"M"
 end
 
@@ -75,10 +73,12 @@ end
 # And for the radioactive decay we use a timescale $\tau$ of 5730/log(2) years.
 #
 
-p = RadiocarbonParameters(λ = 50u"m"/10u"yr",
-                          h = grd.δdepth[1],
-                          τ = 5730u"yr"/log(2),
-                          Ratm = 42.0u"nM")
+p = RadiocarbonParameters(
+    λ = 50u"m" / 10u"yr",
+    h = grd.δdepth[1],
+    τ = 5730u"yr" / log(2),
+    Ratm = 42.0u"nM"
+)
 
 #md # !!! note
 #md #     The parameters are converted to SI units when unpacked.
@@ -103,12 +103,12 @@ C14age = @. log(Ratm / R) * τ * u"s" |> u"yr"
 # and plot it at 700 m using the `horizontalslice` Plots recipe
 
 using Plots
-plothorizontalslice(C14age, grd, depth=700u"m", color=:viridis)
+plothorizontalslice(C14age, grd, depth = 700u"m", color = :viridis)
 
 # look at a zonal average using the `zonalaverage` plot recipe
 
-plotzonalaverage(C14age, grd; color=:viridis)
+plotzonalaverage(C14age, grd; color = :viridis)
 
 # or look at a meridional slice through the Atlantic at 30°W using the `meridionalslice` plot recipe
 
-plotmeridionalslice(C14age, grd, lon=-30, color=:viridis)
+plotmeridionalslice(C14age, grd, lon = -30, color = :viridis)

@@ -52,7 +52,7 @@ until ``\\|F(x + λ δx)\\|`` decreases sufficiently. Not exported.
 function searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint = "")
     preprint ≠ "" ? preprint = preprint * "    │" : nothing
     j = 0 # Armijo iteration counter
-    α = 1e-4 # Armijo parameter from C. T. Kelley [2003] (K03 hereafter)
+    α = 1.0e-4 # Armijo parameter from C. T. Kelley [2003] (K03 hereafter)
     λⱼ₋₁, λⱼ = 1.0, 1.0 # Relative step size
     # Norm of F(xᵢ) never changes
     NFᵢ = nrm(Fᵢ)
@@ -64,7 +64,7 @@ function searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint = "
     xⱼ = xᵢ .+ δxᵢ # Newton step
     Fⱼ = F(xⱼ)
     NFⱼ = nrm(Fⱼ)
-    if (NFⱼ < (1 - α * λⱼ) * NFᵢ) || (nrm(δxᵢ) / nrm(xᵢ) < 1e-10) || eltype(Fᵢ) ≠ Float64
+    if (NFⱼ < (1 - α * λⱼ) * NFᵢ) || (nrm(δxᵢ) / nrm(xᵢ) < 1.0e-10) || eltype(Fᵢ) ≠ Float64
         # Update xᵢ, and Fᵢ
         xᵢ .= xⱼ
         Fᵢ .= Fⱼ
@@ -74,7 +74,7 @@ function searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint = "
         λⱼ = 0.5
         xⱼ .= xᵢ .+ λⱼ .* δxᵢ
         Fⱼ .= F(xⱼ)
-        NFⱼ, NFⱼ₋₁ = nrm(Fⱼ),  NFⱼ
+        NFⱼ, NFⱼ₋₁ = nrm(Fⱼ), NFⱼ
         # Initialize the squares of norms
         N2Fⱼ, N2Fⱼ₋₁ = NFⱼ^2, NFⱼ₋₁^2
         while (NFⱼ >= (1 - α * λⱼ) * NFᵢ) && (j <= maxItArmijo)
@@ -103,29 +103,19 @@ function searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint = "
 end
 
 
-function updateJacobian!(JF, rShamᵢ, rSham₀, ArmijoFail, ∇ₓF, xᵢ)
-    if rShamᵢ ≤ rSham₀ && ~ArmijoFail
-        JF.age += 1
-    else
-        JF.fac = factorize(∇ₓF(xᵢ))
-        JF.age = 0
-    end
-    return JF
-end
-
 """
-    NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop; preprint="", maxItNewton=50)
-    NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint="", maxItNewton=50)
+    NewtonChordShamanskii(F, ∇ₓF, xinit, linsolve_alg, tc_cache;
+                          preprint="", maxItNewton=50)
 
 Newton–Chord–Shamanskii solver for `F(x) = 0`, with Armijo line search and
 lazy Jacobian refresh.
 
 Drives the solver via `F(x)` and `∇ₓF(x)`, recycling factorisations of the
 Jacobian whenever the Newton residual reduces by more than `rSham₀ = 0.5`,
-and refreshing otherwise. The norm `nrm` and the stopping criterion
-``\\|x\\| / \\|F(x)\\| > τ_{stop}`` follow the convention of Kelley (2003).
-The second form lets the caller pass a pre-computed factorisation `Jfinit`
-to skip the first Jacobian factorisation.
+and refreshing otherwise. Linear solves go through a `LinearSolve.LinearCache`
+built once from `linsolve_alg`; convergence is delegated to `tc_cache`, a
+`NonlinearSolveBase` termination-mode cache produced by
+`init(prob, mode, F(xinit), xinit; abstol, reltol)`.
 
 This is the engine behind AIBECS's [`AIBECS.CTKAlg`](@ref) algorithm wrapper
 used by `SciMLBase.solve(::SteadyStateProblem)`.
@@ -133,17 +123,10 @@ used by `SciMLBase.solve(::SteadyStateProblem)`.
 Reference: C. T. Kelley (2003), *Solving Nonlinear Equations with Newton's
 Method*, SIAM, Frontiers in Applied Mathematics 1.
 """
-function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop; preprint="", maxItNewton=50)
-    if preprint ≠ ""
-        println(preprint * "(No initial Jacobian factors fed to Newton solver)")
-    end
-    # Initial Jacobian
-    J = ∇ₓF(xinit)
-    Jfinit = factorize(J) # construct JF
-    return NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=preprint, maxItNewton=maxItNewton)
-end
-
-function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint="", maxItNewton=50)
+function NewtonChordShamanskii(
+        F, ∇ₓF, xinit, linsolve_alg, tc_cache;
+        preprint = "", maxItNewton = 50
+    )
     if preprint ≠ ""
         println(preprint * "Solving F(x) = 0 (using Shamanskii Method)")
         preprint_end = preprint * "└─> "
@@ -151,23 +134,30 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
     end
 
     maxItArmijo = 20 # Max iterations in Armijo line search
-     # Max quasi Newton iterations
     rSham₀ = 0.5     # Shamanskii minimum reduction to keep old J
+
+    # The Armijo line search needs *some* scalar magnitude; use the same norm
+    # the termination mode uses if it exposes one, else default to ∞-norm.
+    nrm = hasproperty(tc_cache.mode, :internalnorm) ?
+        tc_cache.mode.internalnorm : Base.Fix1(maximum, abs)
 
     # Initial values for while loop
     Fᵢ = F(xinit)      ;  Fᵢ₋₁ = copy(Fᵢ)
-    solType = eltype(Fᵢ) # The type of the solution will be that of J (or f)
+    solType = eltype(Fᵢ)
     xᵢ₋₁ = convert(Vector{solType}, xinit)
     xᵢ = copy(xᵢ₋₁)
-    Nxᵢ = nrm(xᵢ)   ;  Nxᵢ₋₁ = Nxᵢ
     NFᵢ = nrm(Fᵢ)   ;  NFᵢ₋₁ = NFᵢ
     δxᵢ = copy(xᵢ₋₁)
 
-    # Initialize the first Jacobian
-    JF = AgedJacobianFactors(Jfinit, 0)
+    # LinearSolve cache: built once. `linsol.A = …` flips `isfresh = true` so
+    # the next `solve!` refactors; `linsol.b = …` reuses the factorization.
+    linsol = init(LinearProblem(∇ₓF(xinit), -copy(Fᵢ)), linsolve_alg)
+    age = 0
+    rShamᵢ = 0.0
+    ArmijoFail = false
 
-    τᵢ = Nxᵢ / NFᵢ
-    rShamᵢ = 0
+    # Initial check: did xinit already converge?
+    terminated = tc_cache(Fᵢ, xᵢ, xᵢ₋₁)
 
     i = 0 # counter of quasi-Newton δxⱼs
     if preprint ≠ ""
@@ -178,12 +168,8 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
         @printf "%5d       %8.1e   %8s   %7s   %7s\n" i NFᵢ "" "" ""
     end
 
-    # Condition on relative tolerance for imaginary part of xᵢ
-    nonrealtolx = true
-    ArmijoFail = false
-
     # main iteration loop
-    while (τᵢ < τstop || nonrealtolx) && (i < maxItNewton)
+    while !terminated && (i < maxItNewton)
         i += 1
         if preprint ≠ ""
             print(preprint)
@@ -192,26 +178,30 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
         # fill containers with current iteration values
         xᵢ₋₁ .= xᵢ
         Fᵢ₋₁ .= Fᵢ
-        Nxᵢ₋₁ = Nxᵢ
         NFᵢ₋₁ = NFᵢ
 
-        # Update Jacobian (or rather its factors, JF)
-        # Shamanski: only update J if |F(xᵢ)| / |F(xᵢ₋₁)| > rSham₀
-        JF = updateJacobian!(JF, rShamᵢ, rSham₀, ArmijoFail, ∇ₓF, xᵢ)
+        # Shamanskii: refresh J only if |F(xᵢ)| / |F(xᵢ₋₁)| > rSham₀ (or
+        # Armijo failed last iter — see end of loop body).
+        if rShamᵢ ≤ rSham₀ && !ArmijoFail
+            age += 1
+        else
+            linsol.A = ∇ₓF(xᵢ)
+            age = 0
+        end
 
-        # Newton Step
-        δxᵢ .= JF.fac \ -Fᵢ
+        # Newton step via the LinearSolve cache.
+        linsol.b = -Fᵢ
+        solve!(linsol)
+        δxᵢ .= linsol.u
 
         # Update δxᵢ, xᵢ, and Fᵢ with an Armijo line search
         δxᵢ, xᵢ, Fᵢ, nArmijo, ArmijoFail = searchLineArmijo!(δxᵢ, xᵢ, Fᵢ, F, maxItArmijo, nrm, preprint)
 
-        Nxᵢ = nrm(xᵢ)
         NFᵢ = nrm(Fᵢ)
-        τᵢ = Nxᵢ / NFᵢ
         rShamᵢ = NFᵢ / NFᵢ₋₁
 
         if ArmijoFail
-            if JF.age > 0 # If Armijo fails and J is old, come back and update J
+            if age > 0 # If Armijo fails and J is old, come back and update J
                 xᵢ .= xᵢ₋₁
                 Fᵢ .= Fᵢ₋₁
             else # else if J is fresh it's a complete failure
@@ -220,46 +210,39 @@ function NewtonChordShamanskii(F, ∇ₓF, nrm, xinit, τstop, Jfinit; preprint=
             end
         end
 
-        Nδxᵢ = nrm(δxᵢ)
-        RNδxᵢ = Nδxᵢ / Nxᵢ₋₁
-
-        # Check that the non-real part is converging
-        # Here I chose to only look at the relative step size, |δx|/|x|
-        if solType == Float64
-            nonrealtolx = false
-        end
+        RNδxᵢ = nrm(δxᵢ) / nrm(xᵢ₋₁)
 
         if preprint ≠ ""
             if ArmijoFail
-                if JF.age > 0
+                if age > 0
                     print(preprint * "Armijo Failure, but old J")
                 else
-                    print(preprint * "Complete Armijo failure (new J): ")
-                    @printf("|x|/|F(x)| = %.2g years\n", τᵢ/(365*24*60*60))
+                    print(preprint * "Complete Armijo failure (new J)\n")
                 end
             end
             nArmijo == 0 ? nothing : print(preprint * "    └─────> ") # alignment thing
             @printf "%8.1e   %8.1e   " NFᵢ RNδxᵢ
-            print_marker(JF.age)
+            print_marker(age)
             println("")
         end
+
+        # Convergence check via the NonlinearSolveBase termination cache.
+        terminated = tc_cache(Fᵢ, xᵢ, xᵢ₋₁)
     end
 
     if preprint ≠ ""
-        (τᵢ < τstop) && print(preprint_end * "Newton has reached max iterations, ")
-        (τᵢ > τstop) && print(preprint_end * "Newton has converged, ")
-        @printf("|x|/|F(x)| = %.2g years\n", τᵢ/(365*24*60*60))
+        (terminated) && print(preprint_end * "Newton has converged, ")
+        (!terminated) && print(preprint_end * "Newton has reached max iterations, ")
+        @printf("‖F(x)‖ = %.2e\n", NFᵢ)
     end
 
     return xᵢ
 end
 
 function print_marker(i)
-    if i==0
+    return if i == 0
         @printf " (!)%2d    " i
     else
         @printf "%6d    " i
     end
 end
-
-

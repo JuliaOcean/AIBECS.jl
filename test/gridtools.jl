@@ -1,3 +1,4 @@
+@info "Running test/gridtools.jl — grid tools" Circulation
 @testset "GridTools" begin
     nt = length(T_all)
     n = nt * nb

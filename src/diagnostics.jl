@@ -1,6 +1,3 @@
-
-
-
 """
     stencil(T, grd)
     stencil(grd, T)
@@ -23,12 +20,12 @@ export stencil
 # Aux functions to center the stencil
 function modcent(x, r)
     x = mod(x, r)
-    return x < r/2 ? x : x - r
+    return x < r / 2 ? x : x - r
 end
-function modcent(x::T, r::T) where {T<:CartesianIndex{3}}
+function modcent(x::T, r::T) where {T <: CartesianIndex{3}}
     return CartesianIndex(modcent(x.I[1], r.I[1]), modcent(x.I[2], r.I[2]), modcent(x.I[3], r.I[3]))
 end
-function modcent!(x::Vector{T}, r::T) where {T<:CartesianIndex{3}}
+function modcent!(x::Vector{T}, r::T) where {T <: CartesianIndex{3}}
     for (i, xᵢ) in enumerate(x)
         x[i] = modcent(xᵢ, r)
     end
@@ -49,7 +46,7 @@ end
 
 # Labelling stencil directions
 label(dir::CartesianIndex) = label(dir.I)
-function label(dir::Tuple{T,T,T} where {T<:Int64})
+function label(dir::Tuple{T, T, T} where {T <: Int64})
     dy, dx, dz = dir
     return string(labelz(dz), labely(dy), labelx(dx))
 end
@@ -68,7 +65,7 @@ function symmetric_IJVVᵀ(T)
     for (k, ij) in enumerate(ijsym)
         i, j = ij[1], ij[2]
         I[k], J[k] = i, j
-        val[k], valᵀ[k] = T[i,j], T[j,i]
+        val[k], valᵀ[k] = T[i, j], T[j, i]
     end
     return I, J, val, valᵀ
 end
@@ -86,7 +83,7 @@ versus the zonal axis.
 function directional_transport(T, grd, dir)
     Isym, Jsym, Vsym, Vᵀsym = symmetric_IJVVᵀ(T)
     dirs = directions(Isym, Jsym, grd)
-    n = size(T,1)
+    n = size(T, 1)
     v = volumevec(grd)
     return _directional_transport(dir, dirs, n, Isym, Jsym, Vsym, Vᵀsym, v)
 end
@@ -113,12 +110,11 @@ function directional_transports(T, grd)
     st = stencil(grd, T)
     Isym, Jsym, Vsym, Vᵀsym = symmetric_IJVVᵀ(T)
     dirs = directions(Isym, Jsym, grd)
-    n = size(T,1)
+    n = size(T, 1)
     v = volumevec(grd)
     return Dict((label(dir), _directional_transport(dir, dirs, n, Isym, Jsym, Vsym, Vᵀsym, v)) for dir in st if !isempty(label(dir)))
 end
 export directional_transport, directional_transports
-
 
 
 """
@@ -129,7 +125,7 @@ a Gaussian Kernel for values, but conserving mass.
 
 This matrix can also likely be used as a covariance matrix for observations in a Bayesian framework.
 """
-function smooth_operator(grd, T; σs=(1.0, 1.0, 0.25))
+function smooth_operator(grd, T; σs = (1.0, 1.0, 0.25))
     weight(dir) = exp(-sum((Tuple(dir) ./ σs) .^ 2) / 2)
     Isym, Jsym, _, _ = symmetric_IJVVᵀ(T)
     dirs = directions(Isym, Jsym, grd)
@@ -138,9 +134,6 @@ function smooth_operator(grd, T; σs=(1.0, 1.0, 0.25))
     # by modifying A column by column such that A conserves mass,
     # i.e., such that vᵀ A x = vᵀ x
     v = volumevec(grd)
-    A * sparse(Diagonal(v ./ (A' * v)))
+    return A * sparse(Diagonal(v ./ (A' * v)))
 end
 export smooth_operator
-
-
-
