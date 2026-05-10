@@ -69,6 +69,7 @@ end
 
 
 include("parameters.jl")
+include("ad_through_solve.jl")
 
 test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000, :Haine_and_Hall_2025]
 @testset "test everything" for C in test_everything
