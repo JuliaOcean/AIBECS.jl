@@ -51,9 +51,59 @@ end
 sms_all = (sms_DIP, sms_DOP, sms_POP) # bundles all the source-sink functions in a tuple
 
 #===========================================
+Analytical pointwise derivatives of the building blocks.
+Each ∂X_∂Y returns the diagonal of ∂X/∂Y as a length-nb vector.
+===========================================#
+function ∂uptake_∂DIP(DIP, p)
+    @unpack τDIP, k = p
+    DIP⁺ = relu(DIP)
+    return @. (DIP ≥ 0) * DIP⁺ * (DIP⁺ + 2k) / (τDIP * (DIP⁺ + k)^2) * (ztop == 0)
+end
+function ∂remineralization_∂DOP(DOP, p)
+    @unpack τDOP = p
+    return fill(1 / τDOP, length(DOP))
+end
+function ∂dissolution_∂POP(POP, p)
+    @unpack τPOP = p
+    return fill(1 / τPOP, length(POP))
+end
+function ∂geores_∂x(x, p)
+    @unpack τgeo = p
+    return fill(-1 / τgeo, length(x))
+end
+
+#===========================================
+Per-block analytical derivatives of sms_*
+===========================================#
+∂sms_DIP_∂DIP(DIP, DOP, POP, p) = -∂uptake_∂DIP(DIP, p) + ∂geores_∂x(DIP, p)
+∂sms_DIP_∂DOP(DIP, DOP, POP, p) = ∂remineralization_∂DOP(DOP, p)
+∂sms_DIP_∂POP(DIP, DOP, POP, p) = zero(POP)
+
+function ∂sms_DOP_∂DIP(DIP, DOP, POP, p)
+    @unpack σ = p
+    return σ * ∂uptake_∂DIP(DIP, p)
+end
+∂sms_DOP_∂DOP(DIP, DOP, POP, p) = -∂remineralization_∂DOP(DOP, p)
+∂sms_DOP_∂POP(DIP, DOP, POP, p) = ∂dissolution_∂POP(POP, p)
+
+function ∂sms_POP_∂DIP(DIP, DOP, POP, p)
+    @unpack σ = p
+    return (1 - σ) * ∂uptake_∂DIP(DIP, p)
+end
+∂sms_POP_∂DOP(DIP, DOP, POP, p) = zero(DOP)
+∂sms_POP_∂POP(DIP, DOP, POP, p) = -∂dissolution_∂POP(POP, p)
+
+∂sms_all = (
+    (∂sms_DIP_∂DIP, ∂sms_DIP_∂DOP, ∂sms_DIP_∂POP),
+    (∂sms_DOP_∂DIP, ∂sms_DOP_∂DOP, ∂sms_DOP_∂POP),
+    (∂sms_POP_∂DIP, ∂sms_POP_∂DOP, ∂sms_POP_∂POP),
+)
+
+#===========================================
 AIBECS F and ∇ₓF
 ===========================================#
 fun = AIBECSFunction(T_all, sms_all, nb)
+fun_analytical = AIBECSFunction(T_all, sms_all, nb; ∂Gs = ∂sms_all)
 
 #===========================================
 AIBECS split operators for CNLF

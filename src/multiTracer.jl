@@ -41,9 +41,9 @@ end
 export LinearOperators
 
 """
-    AIBECSFunction(T, G, nb)
-    AIBECSFunction(Ts, Gs, nb, [nt, Tidx])
-    AIBECSFunction(Ts, Gs, nb, ::Type{P}) where {P <: AbstractParameters}
+    AIBECSFunction(T, G, nb; ∂G = nothing)
+    AIBECSFunction(Ts, Gs, nb, [nt, Tidx]; ∂Gs = nothing)
+    AIBECSFunction(Ts, Gs, nb, ::Type{P}; ∂Gs = nothing) where {P <: AbstractParameters}
 
 Build a `SciMLBase.ODEFunction` for the AIBECS state equation
 
@@ -62,21 +62,41 @@ operators in `Ts` (defaults to one operator per tracer). When a parameter type
 `P <: AbstractParameters` is supplied, the returned function also accepts a
 flat `Vector` parameter (converted internally via [`λ2p`](@ref)).
 
+By default, `∇ₓG` is built with ForwardDiff under the assumption that each
+`∂Gᵢ/∂xⱼ` block is diagonal. To skip AD entirely, pass an analytical `∂Gs`
+(or `∂G` in the single-tracer call): a tuple-of-tuples that mirrors `Gs`,
+where `∂Gs[i][j](x₁, …, xₙₜ, p)` returns the length-`nb` *diagonal vector*
+of ``\\partial G_i / \\partial x_j``. Every `nt × nt` block must be supplied
+(use `zero(xⱼ)` for blocks known to be zero). See [`check_∂Gs`](@ref) to
+validate analytical derivatives against ForwardDiff.
+
+Notation convention: `∇ₓG`, `∇ₓF`, etc. denote *Jacobian matrices*; `∂G`,
+`∂Gs[i][j]` denote the *diagonal vectors* of the corresponding partial
+derivatives — both representations describe the same pointwise dependence,
+just packed differently.
+
 ```julia
 T(p) = transportoperator(grd, OCIM2.load()[2])
 G(x, p) = -x ./ p.τ
-fun = AIBECSFunction(T, G, count(iswet(grd)))
+∂G(x, p) = -inv.(p.τ) .* one.(x)
+fun = AIBECSFunction(T, G, count(iswet(grd)); ∂G = ∂G)
 prob = SteadyStateProblem(fun, x₀, p)
 ```
 """
-AIBECSFunction(T::AbstractSparseArray, G::Function) = AIBECSFunction(p -> T, G, T.n)
-AIBECSFunction(T::Function, G::Function, nb::Int) = AIBECSFunction(T, (G,), nb)
-function AIBECSFunction(T::Function, Gs::Tuple, nb::Int)
+AIBECSFunction(T::AbstractSparseArray, G::Function; ∂G = nothing) =
+    AIBECSFunction(p -> T, G, T.n; ∂G = ∂G)
+AIBECSFunction(T::Function, G::Function, nb::Int; ∂G = nothing) =
+    AIBECSFunction(T, (G,), nb; ∂Gs = ∂G === nothing ? nothing : ((∂G,),))
+function AIBECSFunction(T::Function, Gs::Tuple, nb::Int; ∂Gs = nothing)
     nt = length(Gs) # if a single T is given, then nt is given by the number of Gs
     Tidx = ones(Int64, nt) # and all the tracers share the same T
-    return AIBECSFunction((T,), Gs, nb, nt, Tidx)
+    return AIBECSFunction((T,), Gs, nb, nt, Tidx; ∂Gs = ∂Gs)
 end
-function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int = length(Ts), Tidx::AbstractVector = 1:nt)
+function AIBECSFunction(
+        Ts::Tuple, Gs::Tuple, nb::Int,
+        nt::Int = length(Ts), Tidx::AbstractVector = 1:nt;
+        ∂Gs = nothing,
+    )
     tracers(u) = state_to_tracers(u, nb, nt)
     tracer(u, i) = state_to_tracer(u, nb, nt, i)
     G(u, p) = reduce(vcat, Gⱼ(tracers(u)..., p) for Gⱼ in Gs)
@@ -90,8 +110,13 @@ function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int = length(Ts), Tid
         end
         return du
     end
-    # Jacobian
-    ∇ₓG(u, p) = local_jacobian(Gs, u, p, nt, nb)
+    # Jacobian — analytical when `∂Gs` is supplied, ForwardDiff fallback otherwise
+    ∇ₓG = if ∂Gs === nothing
+        (u, p) -> local_jacobian(Gs, u, p, nt, nb)
+    else
+        validate_∂Gs_shape(∂Gs, nt)
+        (u, p) -> local_jacobian_analytical(∂Gs, u, p, nt, nb)
+    end
     function T(p)
         uniqueTs = [Tⱼ(p) for Tⱼ in Ts]
         return blockdiag([uniqueTs[Tidx[j]] for j in 1:nt]...)
@@ -100,8 +125,8 @@ function AIBECSFunction(Ts::Tuple, Gs::Tuple, nb::Int, nt::Int = length(Ts), Tid
     return ODEFunction(f, jac = jac)
 end
 # AIBECSFunction calls itself to allow for both λ::Vector and p::APar
-function AIBECSFunction(Ts, Gs, nb::Int, ::Type{P}) where {P <: APar}
-    return AIBECSFunction(AIBECSFunction(Ts, Gs, nb), P)
+function AIBECSFunction(Ts, Gs, nb::Int, ::Type{P}; ∂Gs = nothing) where {P <: APar}
+    return AIBECSFunction(AIBECSFunction(Ts, Gs, nb; ∂Gs = ∂Gs), P)
 end
 function AIBECSFunction(fun::ODEFunction, ::Type{P}) where {P <: APar}
     jac(u, p::P, t = 0) = fun.jac(u, p, t)
@@ -169,6 +194,52 @@ function local_jacobian_row(Gᵢ, x, p, nt, nb)
     tracers(x) = state_to_tracers(x, nb, nt)
     return reduce(hcat, sparse(Diagonal(localderivative(Gᵢ, tracers(x), j, p))) for j in 1:nt)
 end
+
+"""
+    local_jacobian_analytical(∂Gs, x, p, nt, nb)
+
+Assemble `∇ₓG` from a tuple-of-tuples of analytical derivatives. Each
+`∂Gs[i][j]` is called with `(x₁, …, xₙₜ, p)` and must return a length-`nb`
+vector representing the diagonal of `∂Gᵢ/∂xⱼ`. The resulting sparse matrix
+has the same block-diagonal structure as [`local_jacobian`](@ref).
+"""
+function local_jacobian_analytical(∂Gs, x, p, nt, nb)
+    xs = state_to_tracers(x, nb, nt)
+    return reduce(
+        vcat,
+        reduce(hcat, sparse(Diagonal(∂Gs[i][j](xs..., p))) for j in 1:nt)
+            for i in 1:nt
+    )
+end
+
+function validate_∂Gs_shape(∂Gs, nt)
+    length(∂Gs) == nt ||
+        throw(ArgumentError("∂Gs must have length nt = $nt, got $(length(∂Gs))"))
+    for (i, row) in enumerate(∂Gs)
+        length(row) == nt ||
+            throw(ArgumentError("∂Gs[$i] must have length nt = $nt, got $(length(row))"))
+    end
+    return nothing
+end
+
+"""
+    check_∂Gs(Gs, ∂Gs, x, p, nb) -> NamedTuple
+
+Compare user-supplied analytical derivatives `∂Gs` against the ForwardDiff
+reference at state `x` and parameters `p`, for a model with `nb` boxes.
+Returns a NamedTuple `(; maxabs, ad_jac, analytical_jac)` with the overall
+max-abs difference and both Jacobian matrices. Use this while developing
+analytical derivatives; it is not called by the solver.
+"""
+function check_∂Gs(Gs::Tuple, ∂Gs::Tuple, x, p, nb)
+    nt = length(Gs)
+    validate_∂Gs_shape(∂Gs, nt)
+    J_ad = local_jacobian(Gs, x, p, nt, nb)
+    J_an = local_jacobian_analytical(∂Gs, x, p, nt, nb)
+    return (maxabs = maximum(abs, J_ad - J_an), ad_jac = J_ad, analytical_jac = J_an)
+end
+check_∂Gs(G::Function, ∂G::Function, x, p, nb) = check_∂Gs((G,), ((∂G,),), x, p, nb)
+export check_∂Gs
 
 #= ============================================
 Generate 𝑓 and derivatives from user input
