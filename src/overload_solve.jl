@@ -94,8 +94,7 @@ export solve, SteadyStateProblem, CTKAlg
 # `SteadyStateProblem` with a Dual-typed `p` does not hit it, so we add the
 # equivalent dispatch here.
 const DualSteadyStateProblem = SciMLBase.SteadyStateProblem{
-    <:Union{Number, <:AbstractArray}, iip,
-    <:Union{<:Dual{T, V, P}, <:AbstractArray{<:Dual{T, V, P}}},
+    <:AbstractArray, iip, <:AbstractArray{<:Dual{T, V, P}},
 } where {iip, T, V, P}
 
 """
@@ -120,13 +119,27 @@ Float64 path.
     with `F1Method`'s analytical gradient/Hessian formula, which reuses a
     cached steady state. Prefer `F1Method` for production-scale Hessians.
 
+!!! warning "Partial-derivative accuracy"
+    The primal Newton iteration terminates when `‖F(u)‖` meets `abstol`/`reltol`
+    — only the *primal* `u*` is guaranteed to that tolerance. The IFT-reconstructed
+    `∂u*/∂p` is evaluated at the not-quite-converged `u_steady` and inherits the
+    primal residual: a sloppy primal produces sloppy partials, and the solver
+    will not run extra iterations on the partials' behalf. To get derivatives to
+    near-machine precision you must force the solver past its own stopping rule,
+    e.g. `abstol = 0, reltol = 0` and let it grind out to `maxItNewton`. AIBECS's
+    `test/ad_through_solve.jl` and the cross-check in F1Method's
+    `bp-claude/ift-cross-check` branch show this pattern on toy problems.
+    **This is not a practical strategy at production grid sizes** — each forced
+    iteration costs a sparse factorisation. Use `F1Method`'s analytical
+    gradient/Hessian for production-scale derivatives.
+
 !!! warning "NonlinearSolveBase coupling"
     This dispatch depends on `NonlinearSolveBase.nodual_value`,
     `nonlinearsolve_∂f_∂p`, and `nonlinearsolve_dual_solution`. They are
     declared public via `@compat(public, …)` in NonlinearSolveBase but live
     in an internal-feeling part of the SciML stack. If they move or change
-    signature, this dispatch breaks; a runtime `@warn` (below) flags every
-    call so the dependency is visible in user logs.
+    signature, this dispatch breaks; a runtime `@warn` (below, gated to
+    one-shot via `maxlog=1`) surfaces the dependency in user logs.
 """
 function SciMLBase.solve(prob::DualSteadyStateProblem, alg::CTKAlg, args...; kwargs...)
     @warn """
@@ -136,7 +149,7 @@ function SciMLBase.solve(prob::DualSteadyStateProblem, alg::CTKAlg, args...; kwa
         declared public but are not on a stable SciML-wide API contract; \
         a breaking change upstream would break this dispatch. For \
         production-scale Hessians prefer `F1Method`.
-        """
+        """ maxlog = 1
 
     # 1. Peel one Dual layer and remake the SteadyStateProblem at the value
     #    eltype.
@@ -151,10 +164,11 @@ function SciMLBase.solve(prob::DualSteadyStateProblem, alg::CTKAlg, args...; kwa
     Jᵤ = prob.f.jac(u_steady, p_val)
     Jₚ = NonlinearSolveBase.nonlinearsolve_∂f_∂p(primal_prob, primal_prob.f, u_steady, p_val)
 
-    # 3. Solve Jᵤ z = -Jₚ. Multiple-dispatch on A's eltype routes Float64
-    #    sparse through UMFPACK and Dual sparse through LinearSolve's
-    #    DualLinearCache splitting (see `ift_solve` below).
-    z = ift_solve(Jᵤ, -Jₚ)
+    # 3. Solve Jᵤ z = -Jₚ via the user-selected `alg.linsolve`. LinearSolve's
+    #    `LinearProblem` machinery routes Float64 sparse through the chosen
+    #    factorisation (default UMFPACK) and Dual sparse through
+    #    `DualLinearCache` splitting (see `ift_solve` below).
+    z = ift_solve(Jᵤ, -Jₚ, alg.linsolve)
 
     # 4. Chain rule: partials(u*[i]) = Σⱼ z[i,j] · partials(prob.p[j]).
     partials = [
@@ -170,19 +184,20 @@ end
 
 # IFT solve dispatch.
 #
-# Float64 sparse → `A \ B` dispatches to UMFPACK's multi-column ldiv natively.
+# Both Float64 and Dual sparse `A` go through the same LinearSolve path so the
+# user's `alg.linsolve` choice (set on `CTKAlg`) is honoured end-to-end —
+# primal Newton iterations and the IFT back-solve use the same factorisation
+# kind. Float64 sparse routes to the chosen factorisation directly; Dual
+# sparse routes through LinearSolve's DualLinearCache, which splits
+# A = A₀ + Σ Aₖεₖ, factorises A₀ once at value eltype, and back-solves for
+# each partial direction reusing the factorisation — sparse all the way
+# down, no densification.
 #
-# Dual sparse → `SparseMatrixCSC{<:Dual}` has no sparse LU (`\` would
-# infinite-recurse via `float(A) → lu(A)`). Route through LinearSolve's
-# DualLinearCache, which splits A = A₀ + Σ Aₖεₖ, factorises A₀ once at value
-# eltype, and back-solves for each partial direction reusing the
-# factorisation — sparse all the way down, no densification. Looped per
-# column of B because UMFPACK's sparse `ldiv!` takes vector RHS only; the
-# DualLinearCache factorisation is reused across columns via `cache.b = …`.
-ift_solve(A, B) = A \ B
-function ift_solve(A::AbstractSparseMatrix{<:Dual}, B::AbstractMatrix)
-    Z = similar(B)
-    cache = init(LinearProblem(A, copy(B[:, 1])))
+# Looped per column of B because LinearSolve's `LinearProblem` takes a vector
+# RHS; the factorisation in `cache` is reused across columns via `cache.b = …`.
+function ift_solve(A, B, linsolve)
+    Z = similar(B, promote_type(eltype(A), eltype(B)))
+    cache = init(LinearProblem(A, copy(B[:, 1])), linsolve)
     Z[:, 1] = solve!(cache).u
     for j in 2:size(B, 2)
         cache.b = copy(B[:, j])

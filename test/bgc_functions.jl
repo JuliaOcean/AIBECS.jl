@@ -61,15 +61,15 @@ function ∂uptake_∂DIP(DIP, p)
 end
 function ∂remineralization_∂DOP(DOP, p)
     @unpack τDOP = p
-    return fill(1 / τDOP, length(DOP))
+    return @. (1 / τDOP) * one(DOP)
 end
 function ∂dissolution_∂POP(POP, p)
     @unpack τPOP = p
-    return fill(1 / τPOP, length(POP))
+    return @. (1 / τPOP) * one(POP)
 end
 function ∂geores_∂x(x, p)
     @unpack τgeo = p
-    return fill(-1 / τgeo, length(x))
+    return @. (-1 / τgeo) * one(x)
 end
 
 #===========================================

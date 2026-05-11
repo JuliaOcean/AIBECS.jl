@@ -68,4 +68,16 @@ using LinearSolve
     g_nl_sparse = ForwardDiff.gradient(obj_nl_sparse, p_ref)
     @test g_nl_sparse ≈ g_fd rtol = 1e-5
     @test g_nl_sparse ≈ g_ctk rtol = 1e-10
+
+    # --- IFT dispatch without analytical `∂Gs`: same setup but the inner
+    #     Jacobian falls back to ForwardDiff. The CTKAlg IFT dispatch only
+    #     touches `prob.f.jac`, so it should be agnostic to how that jac was
+    #     built. Cross-checked against `g_ctk` (analytical) at tight rtol. ---
+    F_ad = AIBECSFunction(T, G)  # no ∂G kwarg → ForwardDiff jac
+    obj_ctk_ad(p) = sum(
+        solve(SteadyStateProblem(F_ad, x0, p), CTKAlg();
+            abstol = 1e-12, maxItNewton = 200).u
+    )
+    g_ctk_ad = ForwardDiff.gradient(obj_ctk_ad, p_ref)
+    @test g_ctk_ad ≈ g_ctk rtol = 1e-10
 end
