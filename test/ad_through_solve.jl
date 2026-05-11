@@ -4,7 +4,6 @@ using ForwardDiff
 using FiniteDiff
 using NonlinearSolve
 using LinearSolve
-using SciMLBase
 
 @testset "AD through solve (IFT)" begin
     grd, T = Primeau_2x2x2.load()
@@ -25,37 +24,30 @@ using SciMLBase
             abstol = 1e-12, maxItNewton = 200).u
     )
 
-    # NL route: production `AIBECS.nonlinearproblem` attaches a *sparse*
-    # `jac_prototype`, which currently triggers a bug in
-    # `LinearSolveForwardDiffExt` on the nested-Dual (Hessian) path
-    # (`MethodError: map!(partial_vals, ::Nothing, ::Vector{Float64})`).
-    # The bug only fires for sparse Float64 prototype + Dual params; with
-    # *dense* or no `jac_prototype` SciML's IFT works through both gradient
-    # and Hessian. For this toy 24-box problem dense is fine — densifying
-    # exercises the IFT logic end-to-end without the upstream sparse bug.
-    function obj_nl(p)
-        ssprob = SteadyStateProblem(F, x0, p)
-        nlprob = SciMLBase.NonlinearProblem(ssprob)
-        f_dense = SciMLBase.NonlinearFunction(
-            nlprob.f.f;
-            jac = nlprob.f.jac,
-            jac_prototype = Matrix{Float64}(undef, length(x0), length(x0)),
-        )
-        prob = SciMLBase.NonlinearProblem(f_dense, nlprob.u0, nlprob.p)
-        return sum(solve(prob, NewtonRaphson(); abstol = 1e-12).u)
-    end
+    # NL route — bare `NonlinearProblem(SteadyStateProblem(...))`, no
+    # `jac_prototype` attached. `AIBECS.nonlinearproblem` would attach a *sparse*
+    # `jac_prototype`, which still trips `LinearSolveForwardDiffExt.setu!` on
+    # the nested-Dual (Hessian) path even after LinearSolve v3.76.0 fixed the
+    # related `setb!` bug (SciML/LinearSolve.jl#972). For this 24-box problem
+    # the no-prototype path costs nothing meaningful; production code that
+    # wants the sparse prototype can still use `AIBECS.nonlinearproblem` for
+    # the primal/gradient case (asserted separately below).
+    obj_nl(p) = sum(
+        solve(NonlinearProblem(SteadyStateProblem(F, x0, p)),
+            NewtonRaphson(); abstol = 1e-12).u
+    )
 
     # FD reference (uses obj_ctk; obj_nl returns the same primal value).
     g_fd = FiniteDiff.finite_difference_gradient(obj_ctk, p_ref)
     H_fd = FiniteDiff.finite_difference_hessian(obj_ctk, p_ref)
 
-    # --- CTKAlg path: AIBECS's IFT dispatch added in src/overload_solve.jl ---
+    # --- CTKAlg path: AIBECS's IFT dispatch in src/overload_solve.jl ---
     g_ctk = ForwardDiff.gradient(obj_ctk, p_ref)
     H_ctk = ForwardDiff.hessian(obj_ctk, p_ref)            # nested Duals → IFT recursion
     @test g_ctk ≈ g_fd rtol = 1e-5
     @test H_ctk ≈ H_fd rtol = 1e-3
 
-    # --- NonlinearSolve path: SciML's IFT dispatch (dense jac_prototype) ---
+    # --- NonlinearSolve path: SciML's IFT dispatch (sparse jac_prototype) ---
     g_nl = ForwardDiff.gradient(obj_nl, p_ref)
     H_nl = ForwardDiff.hessian(obj_nl, p_ref)
     @test g_nl ≈ g_fd rtol = 1e-5
@@ -66,11 +58,9 @@ using SciMLBase
     @test g_ctk ≈ g_nl rtol = 1e-10
     @test H_ctk ≈ H_nl rtol = 1e-8
 
-    # --- Sparse NL gradient: the production path through
-    #     `AIBECS.nonlinearproblem` (sparse jac_prototype) works for the
-    #     single-Dual gradient case. The nested-Dual Hessian via this same
-    #     path is currently broken upstream in LinearSolve (see comment on
-    #     `obj_nl` above) and is therefore not asserted here. ---
+    # --- Sparse `AIBECS.nonlinearproblem` path: works for primal + gradient
+    #     (single-Dual layer). Hessian via this same path still trips
+    #     `LinearSolveForwardDiffExt.setu!` upstream and is not asserted here. ---
     obj_nl_sparse(p) = sum(
         solve(AIBECS.nonlinearproblem(SteadyStateProblem(F, x0, p)),
             AIBECS.recommended_nlalg(); abstol = 1e-12).u

@@ -112,8 +112,32 @@ Reuses `prob.f.jac` for `∂f/∂u` (analytical/sparse from `AIBECSFunction`).
 For nested duals (Hessian path), this dispatch fires recursively — one Dual
 layer is peeled per recursion level, with the innermost solve hitting the
 Float64 path.
+
+!!! note "Production-scale Hessians"
+    `ForwardDiff.hessian` over this dispatch costs `O(N_partials)` Newton
+    solves and uses LinearSolve's `DualLinearCache` splitting (sparse all the
+    way down). It is fine for small/medium circulations but not competitive
+    with `F1Method`'s analytical gradient/Hessian formula, which reuses a
+    cached steady state. Prefer `F1Method` for production-scale Hessians.
+
+!!! warning "NonlinearSolveBase coupling"
+    This dispatch depends on `NonlinearSolveBase.nodual_value`,
+    `nonlinearsolve_∂f_∂p`, and `nonlinearsolve_dual_solution`. They are
+    declared public via `@compat(public, …)` in NonlinearSolveBase but live
+    in an internal-feeling part of the SciML stack. If they move or change
+    signature, this dispatch breaks; a runtime `@warn` (below) flags every
+    call so the dependency is visible in user logs.
 """
 function SciMLBase.solve(prob::DualSteadyStateProblem, alg::CTKAlg, args...; kwargs...)
+    @warn """
+        AIBECS's `solve(::SteadyStateProblem{…,Dual,…}, ::CTKAlg)` IFT dispatch \
+        is exercising NonlinearSolveBase internals (`nodual_value`, \
+        `nonlinearsolve_∂f_∂p`, `nonlinearsolve_dual_solution`). They are \
+        declared public but are not on a stable SciML-wide API contract; \
+        a breaking change upstream would break this dispatch. For \
+        production-scale Hessians prefer `F1Method`.
+        """
+
     # 1. Peel one Dual layer and remake the SteadyStateProblem at the value
     #    eltype.
     p_val = NonlinearSolveBase.nodual_value(prob.p)
@@ -127,10 +151,9 @@ function SciMLBase.solve(prob::DualSteadyStateProblem, alg::CTKAlg, args...; kwa
     Jᵤ = prob.f.jac(u_steady, p_val)
     Jₚ = NonlinearSolveBase.nonlinearsolve_∂f_∂p(primal_prob, primal_prob.f, u_steady, p_val)
 
-    # 3. Solve Jᵤ z = -Jₚ. Multiple-dispatch on eltype routes Float64 sparse
-    #    through UMFPACK (one-shot, not a hot path — fine to bypass the
-    #    `alg.linsolve` indirection) and Dual eltype through dense generic LU
-    #    (UMFPACK is Float64-only, and SparseMatrixCSC{Dual} has no sparse LU).
+    # 3. Solve Jᵤ z = -Jₚ. Multiple-dispatch on A's eltype routes Float64
+    #    sparse through UMFPACK and Dual sparse through LinearSolve's
+    #    DualLinearCache splitting (see `ift_solve` below).
     z = ift_solve(Jᵤ, -Jₚ)
 
     # 4. Chain rule: partials(u*[i]) = Σⱼ z[i,j] · partials(prob.p[j]).
@@ -145,15 +168,28 @@ function SciMLBase.solve(prob::DualSteadyStateProblem, alg::CTKAlg, args...; kwa
     return SciMLBase.build_solution(prob, alg, dual_u, sol.resid; retcode = sol.retcode)
 end
 
-# IFT solve dispatch. Float64 sparse → UMFPACK via `\`. Dual sparse →
-# densify and use Julia's generic dense LU (UMFPACK is Float64-only and
-# `SparseMatrixCSC{<:Dual}` has no sparse LU implementation, so `\` would
-# infinite-recurse). Densification is O(n²) memory and only hit on the nested
-# -Dual Hessian path, which already pays an `O(n)`-partials overhead — this is
-# acceptable for the small/medium circulations where Hessian-via-AD is even
-# tractable; production-scale Hessians should use F1Method's analytical formula.
+# IFT solve dispatch.
+#
+# Float64 sparse → `A \ B` dispatches to UMFPACK's multi-column ldiv natively.
+#
+# Dual sparse → `SparseMatrixCSC{<:Dual}` has no sparse LU (`\` would
+# infinite-recurse via `float(A) → lu(A)`). Route through LinearSolve's
+# DualLinearCache, which splits A = A₀ + Σ Aₖεₖ, factorises A₀ once at value
+# eltype, and back-solves for each partial direction reusing the
+# factorisation — sparse all the way down, no densification. Looped per
+# column of B because UMFPACK's sparse `ldiv!` takes vector RHS only; the
+# DualLinearCache factorisation is reused across columns via `cache.b = …`.
 ift_solve(A, B) = A \ B
-ift_solve(A::AbstractSparseMatrix{<:Dual}, B) = Matrix(A) \ B
+function ift_solve(A::AbstractSparseMatrix{<:Dual}, B::AbstractMatrix)
+    Z = similar(B)
+    cache = init(LinearProblem(A, copy(B[:, 1])))
+    Z[:, 1] = solve!(cache).u
+    for j in 2:size(B, 2)
+        cache.b = copy(B[:, j])
+        Z[:, j] = solve!(cache).u
+    end
+    return Z
+end
 
 # ── NonlinearSolve / LinearSolve extension hooks ──────────────────────────────
 # Bodies live in ext/AIBECSNonlinearSolveExt.jl and only become callable when
