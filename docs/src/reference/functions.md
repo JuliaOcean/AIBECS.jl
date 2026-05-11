@@ -4,6 +4,7 @@
 
 ```@docs
 AIBECSFunction
+check_∂Gs
 split_state_function_and_Jacobian
 LinearOperators
 ```
