@@ -46,4 +46,48 @@ solver_cases = [
         residual = fun.f(s.u, testp, 0)
         @test norm(residual) ≤ 1.0e-8 * norm([residual; s.u])
     end
+
+    @testset "CTKAlg retcode" begin
+        testp = p
+        ssprob = SteadyStateProblem(fun, x, testp)
+
+        s_ok = solve(ssprob, CTKAlg())
+        @test SciMLBase.successful_retcode(s_ok.retcode)
+
+        s_short = solve(ssprob, CTKAlg(); maxItNewton = 1)
+        @test s_short.retcode == SciMLBase.ReturnCode.MaxIters
+    end
+
+    @testset "CTKAlg warm-start via linear_cache" begin
+        testp = p
+        ssprob = SteadyStateProblem(fun, x, testp)
+
+        # Cold solve as reference.
+        s_cold = solve(ssprob, CTKAlg())
+
+        # Build a vector-RHS LinearCache at the converged Jacobian and force
+        # factorisation. After solve!, isfresh = false and cacheval holds the
+        # UMFPACK factors — exactly the state a warm-start caller would set up.
+        lc = init(
+            LinearProblem(fun.jac(s_cold.u, testp), similar(s_cold.u)),
+            UMFPACKFactorization(),
+        )
+        solve!(lc)
+
+        # Same-point warm-start: residual is similarly small. State agreement
+        # is bounded by the solver tolerance (~1e-6 here) — both Newton runs
+        # terminate at a finite residual norm, not at machine precision, so
+        # iterates can drift at that scale.
+        s_warm = solve(ssprob, CTKAlg(); linear_cache = lc)
+        @test maximum(abs, fun.f(s_warm.u, testp, 0)) ≤ 1.0e-6
+        @test maximum(abs, s_warm.u - s_cold.u) ≤ 1.0e-5
+
+        # Nearby-parameter warm-start: re-solve at a perturbed p with the
+        # same (now slightly stale) factors. Shamanskii will refresh if the
+        # ratio check fires; either way convergence must still happen.
+        testp2 = AIBECS.reconstruct(TestParameters, 1.05 * vec(p))
+        ssprob2 = SteadyStateProblem(fun, s_cold.u, testp2)
+        s_warm2 = solve(ssprob2, CTKAlg(); linear_cache = lc)
+        @test maximum(abs, fun.f(s_warm2.u, testp2, 0)) ≤ 1.0e-6
+    end
 end
