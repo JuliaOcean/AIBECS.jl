@@ -1,6 +1,7 @@
 [deps]
 AIBECS = "ace601d6-714c-11e9-04e5-89b7fad23838"
 Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
@@ -19,6 +20,7 @@ Shapefile = "8e980c4a-a4fe-5da2-b3a7-4b4b0353a2f4"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
+CairoMakie = "0.15"
 Documenter = "1.11"
 DocumenterVitepress = "0.3"
 LinearSolve = "3"

@@ -8,7 +8,6 @@ ENV["GKSwstype"] = "100"
 
 using Literate
 using AIBECS
-using Plots                 # activate AIBECSRecipesBaseExt so plot-recipe stubs gain methods
 using Distributions  # activate parameter extensions for @docs introspection
 using Bijectors      # activate parameter extensions for @docs introspection
 using DataFrames     # activate parameter extensions for @docs introspection
@@ -73,6 +72,7 @@ makedocs(
         "How-to guides" => [
             "howtos/1_parameters.md",
             "howtos/2_plot.md",
+            "howtos/2b_plot_makie.md",
             "howtos/3_cruiseplot.md",
             "howtos/4_fluxes.md",
             "howtos/5_parameter_optimization.md",
