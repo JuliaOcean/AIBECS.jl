@@ -94,15 +94,9 @@ too small to time meaningfully, so it's not in the benchmark tier.)
 
 ```@eval
 import Markdown
-raw = read(joinpath(@__DIR__, "latest_timings_small.md"), String)
-# Strip the autogen HTML comment, drop the "# Tier: small" metadata
-# header (the surrounding section already covers it), then shift all
-# remaining headings down one level so they nest under the
-# "Latest benchmark results" section.
-raw = replace(raw, r"<!--[^\n]*-->\n?" => "")
-raw = replace(raw, r"^# Tier:[^\n]*\n+"m => "")
-raw = replace(raw, r"^(#+) "m => s"#\1 ")
-Markdown.parse(raw)
+# Pre-computed in docs/make.jl (read/strip/shift happens there because `@__DIR__`
+# inside an @eval block resolves to the build directory, not the source dir).
+Markdown.parse(Main.__LATEST_TIMINGS_SMALL_MD)
 ```
 
 ## GPU execution (untested)

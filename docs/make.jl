@@ -33,6 +33,26 @@ end
 ismd(f) = splitext(f)[2] == ".md"
 pages(folder) = [joinpath(folder, f) for f in readdir(joinpath(src, folder)) if ismd(f)]
 
+# Pre-compute the inline benchmark-table markdown so `explanation/solvers.md`'s
+# `@eval` block can embed it. Documenter changes cwd / `@__DIR__` to the build
+# directory when evaluating `@eval` blocks, so reading the source file from
+# inside the block fails on a fresh build. Read it here, then:
+#   1. strip the autogen HTML comment,
+#   2. drop the "# Tier: small" metadata header (the surrounding section in
+#      solvers.md already covers it),
+#   3. demote the per-circulation `##` headings to bold lead-in paragraphs.
+# Step 3 is a workaround for DocumenterVitepress: it flattens parsed-MD
+# heading levels to H1 when emitting the rendered .md, which would
+# collide with the page-title H1. Bold paragraphs keep the visual
+# hierarchy without the level collision.
+const __LATEST_TIMINGS_SMALL_MD = let
+    raw = read(joinpath(src, "explanation", "latest_timings_small.md"), String)
+    raw = replace(raw, r"<!--[^\n]*-->\n?" => "")
+    raw = replace(raw, r"^# Tier:[^\n]*\n+"m => "")
+    raw = replace(raw, r"^## (.+)$"m => s"**\1**")
+    raw
+end
+
 makedocs(
     sitename = "AIBECS.jl",
     doctest = false, # TODO guessing I should remove that when actually deploying?
