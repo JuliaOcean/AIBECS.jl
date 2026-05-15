@@ -59,6 +59,7 @@ makedocs(
             "howtos/6_sinking_particles.md",
             "howtos/7_etopo.md",
             "howtos/8_nonlinearsolve.md",
+            "howtos/analytical_derivatives.md",
         ],
         "Explanation" => [
             "explanation/1_concept.md",
