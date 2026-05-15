@@ -6,6 +6,7 @@ docs/build/
 docs/src/tutorials/
 docs/src/howtos/
 docs/src/notebooks/
+docs/experiments/*.png
 
 settings.json
 settings.local.json
