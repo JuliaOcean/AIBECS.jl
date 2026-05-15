@@ -45,7 +45,11 @@ default. Two reasons it's the recommendation:
 If `CTKAlg` fails to converge on a pathological problem, the standard
 fallback is `NewtonRaphson` (still with UMFPACK) via the NonlinearSolve
 route below — fresh Jacobian every iteration, slower but more
-forgiving.
+forgiving. More robust schemes still — for example pseudo-transient
+continuation (`NonlinearSolve.PseudoTransient`), which embeds the
+steady-state problem in a fictitious time evolution and is known to
+help on stiff systems — may also be worth trying; we have not
+benchmarked them on AIBECS systems.
 
 ## When to use the NonlinearSolve route instead
 
@@ -82,9 +86,11 @@ allocate sparse buffers instead of erroring on a dense default.
 
 Auto-generated from `benchmark/solvers.jl`; the timings below are wall
 clock for one steady-state solve on each circulation/tracer pair, on
-the maintainer's laptop. The small-tier suite covers `Primeau_2x2x2`,
-`OCCA`, and `OCIM0` — enough for relative comparisons across the
-available algorithm/factorisation pairs without needing a workstation.
+the maintainer's laptop. The small-tier suite covers `OCCA` and
+`OCIM0` — enough for relative comparisons across the available
+algorithm/factorisation pairs without needing a workstation.
+(`Primeau_2x2x2` is used elsewhere as a smoke-test circulation but is
+too small to time meaningfully, so it's not in the benchmark tier.)
 
 ```@eval
 import Markdown
@@ -98,6 +104,16 @@ raw = replace(raw, r"^# Tier:[^\n]*\n+"m => "")
 raw = replace(raw, r"^(#+) "m => s"#\1 ")
 Markdown.parse(raw)
 ```
+
+## GPU execution (untested)
+
+The underlying call chain — `SteadyStateProblem` → AIBECS state
+function → LinearSolve factorisation — has no inherently CPU-only
+piece. Moving the sparse Jacobian and state vector to a GPU array
+type (via e.g. CUDA.jl) and using a GPU-aware factorisation from
+LinearSolve should in principle just work, but we have not exercised
+this path. Anyone interested in a GPU run should expect to discover
+and fix a few rough edges on the way.
 
 ## Krylov solvers
 
