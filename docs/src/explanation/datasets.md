@@ -110,3 +110,24 @@ loading AIBECS. The DataDep names this package registers are:
 
 To force a re-download (e.g. after a checksum mismatch or to test a URL
 change), delete the corresponding directory and call `Module.load()` again.
+
+## AWESOME OCIM toolbox
+
+The [AWESOME OCIM (AO)](https://github.com/hengdiliang/AWESOME-OCIM) is a
+MATLAB toolbox by John, Liang, Weber, DeVries, Primeau, Moore, Holzer, and
+Mahowald (2020) that bundles the OCIM1 transport matrix alongside auxiliary
+GEOTRACES, WOA, and Weber–John datasets. AIBECS does not expose AO contents
+directly but can fetch and unpack the toolbox so you can browse the files
+yourself:
+
+```julia
+using AIBECS
+AO_path = AO.download_and_unpack()
+# AO_path/OCIM1/  — MATLAB transport matrices and grid info
+# AO_path/data/   — bundled observational fields (GEOTRACES, WOA, Weber–John)
+# AO_path/util/   — MATLAB helper scripts
+```
+
+See the [`AO`](@ref) docstring for the citation. The toolbox is distributed
+as a GitHub archive zip, so downloads depend on GitHub's availability;
+mirror it to your own storage if you plan heavy use.

@@ -42,10 +42,31 @@ makedocs(
     # organisation
     pages = Any[
         "Home" => "index.md",
-        "Tutorials" => pages("tutorials"),
-        "How-to guides" => pages("howtos"),
-        "Explanation" => pages("explanation"),
-        "Reference" => pages("reference"),
+        "Tutorials" => [
+            "tutorials/1_ideal_age.md",
+            "tutorials/2_radiocarbon.md",
+            "tutorials/3_Pmodel.md",
+            "tutorials/4_dustmodel.md",
+            "tutorials/5_river_discharge.md",
+            "tutorials/6_groundwater_discharge.md",
+        ],
+        "How-to guides" => [
+            "howtos/1_parameters.md",
+            "howtos/2_plot.md",
+            "howtos/3_cruiseplot.md",
+            "howtos/4_fluxes.md",
+            "howtos/5_parameter_optimization.md",
+            "howtos/6_sinking_particles.md",
+            "howtos/7_etopo.md",
+            "howtos/8_nonlinearsolve.md",
+        ],
+        "Explanation" => [
+            "explanation/1_concept.md",
+            "explanation/2_tracer_transport_operators.md",
+            "explanation/solvers.md",
+            "explanation/datasets.md",
+        ],
+        "Reference" => ["reference/functions.md"],
         "Publications" => pages("publications"),
     ],
     warnonly = [:missing_docs],   # internals are intentionally omitted from the curated reference page
