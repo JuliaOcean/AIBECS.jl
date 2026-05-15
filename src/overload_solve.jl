@@ -31,7 +31,8 @@ CTKAlg(; linsolve = UMFPACKFactorization()) = CTKAlg(linsolve)
           abstol = nothing,
           reltol = nothing,
           preprint = "",
-          maxItNewton = 50)
+          maxItNewton = 50,
+          linear_cache = nothing)
 
 Solves `prob` using an AIBECS-customized Newton–Chord–Shamanskii method with
 Armijo line search. Convergence is delegated to NonlinearSolveBase termination
@@ -40,6 +41,26 @@ modes — the default mirrors `NonlinearSolve`'s `:regular` algorithm default
 `abstol`/`reltol` to tighten or loosen, or pass any
 `AbstractNonlinearTerminationMode` (e.g. `NormTerminationMode(norm)`,
 `RelNormTerminationMode(norm)`) to swap criteria.
+
+# Warm-starting via `linear_cache`
+
+`linear_cache` (advanced) accepts a `LinearSolve.LinearCache` from a previous
+solve. When supplied it replaces the internal `init(LinearProblem(…))` call,
+so the caller's factorisation is reused on the first Newton iteration. This
+matters in two settings:
+
+1. Outer optimisers (e.g. `F1Method`, `Optimization.jl`) that already hold a
+   factorised Jacobian for the current parameter point — feeding it back in
+   skips the most expensive operation of the inner Newton solve.
+2. Parameter sweeps where adjacent grid cells share most of the Jacobian's
+   numerical content — the previous cell's factor is a useful warm-start.
+
+The caller is responsible for setting `linear_cache.A`,
+`linear_cache.cacheval`, and `linear_cache.isfresh` to a coherent triple
+before the call. The cache's RHS must be a vector (length `nb`). Shamanskii's
+ratio check + Armijo's line-search are the safety net if the supplied
+factors turn out to be too stale — a bad warm-start slows convergence by at
+most one Newton iteration before the factorisation is refreshed.
 """
 function SciMLBase.solve(
         prob::SciMLBase.AbstractSteadyStateProblem,
@@ -50,7 +71,8 @@ function SciMLBase.solve(
         abstol = nothing,
         reltol = nothing,
         preprint = "",
-        maxItNewton = 50
+        maxItNewton = 50,
+        linear_cache = nothing,
     )
     # Define the functions according to SciMLBase.SteadyStateProblem type
     p = prob.p
@@ -76,13 +98,12 @@ function SciMLBase.solve(
     # `alg.linsolve` is set eagerly to `UMFPACKFactorization()` by the default
     # constructor — see `CTKAlg(; linsolve = UMFPACKFactorization())` above —
     # so no `=== nothing` branch is needed here.
-    x_steady = NewtonChordShamanskii(
+    x_steady, retcode = NewtonChordShamanskii(
         F, ∇ₓF, x0, alg.linsolve, tc_cache;
-        preprint = preprint, maxItNewton = maxItNewton
+        preprint = preprint, maxItNewton = maxItNewton, linear_cache = linear_cache
     )
     resid = F(x_steady)
-    # Return the common SciMLBase solution type
-    return SciMLBase.build_solution(prob, alg, x_steady, resid; retcode = SciMLBase.ReturnCode.Success)
+    return SciMLBase.build_solution(prob, alg, x_steady, resid; retcode = retcode)
 end
 
 export solve, SteadyStateProblem, CTKAlg
