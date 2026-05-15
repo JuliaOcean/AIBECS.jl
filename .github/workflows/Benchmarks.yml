@@ -53,7 +53,7 @@ jobs:
         run: julia --project=benchmark benchmark/solvers.jl
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bench-results-${{ env.BENCH_TIER }}-${{ github.run_id }}
           path: |
@@ -105,7 +105,7 @@ jobs:
       # current timings table without scrolling Actions logs.
       - name: Post latest timings on PR
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: bench-timings-${{ env.BENCH_TIER }}
           path: benchmark/results/latest_timings_${{ env.BENCH_TIER }}.md

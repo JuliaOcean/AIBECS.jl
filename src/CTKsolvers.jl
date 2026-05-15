@@ -125,7 +125,7 @@ Method*, SIAM, Frontiers in Applied Mathematics 1.
 """
 function NewtonChordShamanskii(
         F, ∇ₓF, xinit, linsolve_alg, tc_cache;
-        preprint = "", maxItNewton = 50
+        preprint = "", maxItNewton = 50, linear_cache = nothing
     )
     if preprint ≠ ""
         println(preprint * "Solving F(x) = 0 (using Shamanskii Method)")
@@ -149,9 +149,18 @@ function NewtonChordShamanskii(
     NFᵢ = nrm(Fᵢ)   ;  NFᵢ₋₁ = NFᵢ
     δxᵢ = copy(xᵢ₋₁)
 
-    # LinearSolve cache: built once. `linsol.A = …` flips `isfresh = true` so
-    # the next `solve!` refactors; `linsol.b = …` reuses the factorization.
-    linsol = init(LinearProblem(∇ₓF(xinit), -copy(Fᵢ)), linsolve_alg)
+    # LinearSolve cache: built once unless the caller supplied one via
+    # `linear_cache`. `linsol.A = …` flips `isfresh = true` so the next
+    # `solve!` refactors; `linsol.b = …` reuses the factorization. A
+    # supplied cache is used as-is — the caller is expected to have set
+    # `cacheval` (the factors) and `isfresh = false` to skip the iter-1
+    # factorisation; Shamanskii's ratio check + Armijo's "old J → back off
+    # and refactor" branch are the safety net if the warm-start is stale.
+    linsol = if linear_cache === nothing
+        init(LinearProblem(∇ₓF(xinit), -copy(Fᵢ)), linsolve_alg)
+    else
+        linear_cache
+    end
     age = 0
     rShamᵢ = 0.0
     ArmijoFail = false
@@ -206,7 +215,7 @@ function NewtonChordShamanskii(
                 Fᵢ .= Fᵢ₋₁
             else # else if J is fresh it's a complete failure
                 preprint ≠ "" ? println("Complete Failure") : nothing
-                return xᵢ
+                return xᵢ, SciMLBase.ReturnCode.Unstable
             end
         end
 
@@ -236,7 +245,18 @@ function NewtonChordShamanskii(
         @printf("‖F(x)‖ = %.2e\n", NFᵢ)
     end
 
-    return xᵢ
+    # Mirror NonlinearSolveBase: prefer the termination cache's verdict (so
+    # callers see `StalledSuccess` / `Stalled` from `AbsNormSafeBest`),
+    # else `MaxIters` if the Newton budget ran out.
+    retcode = if terminated
+        tc_cache.retcode == SciMLBase.ReturnCode.Default ?
+            SciMLBase.ReturnCode.Success : tc_cache.retcode
+    elseif i ≥ maxItNewton
+        SciMLBase.ReturnCode.MaxIters
+    else
+        SciMLBase.ReturnCode.Default
+    end
+    return xᵢ, retcode
 end
 
 function print_marker(i)
