@@ -1,81 +1,119 @@
 # [Steady-state solvers](@id solvers)
 
-AIBECS exposes two routes to the steady state of a tracer system
-$\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$:
+Finding a steady state of $\boldsymbol{F}(\boldsymbol{x}, \boldsymbol{p}) = 0$
+runs an outer **nonlinear solver** that calls an inner **linear solver** at
+every Jacobian-update / Newton-step iteration. AIBECS lets you pick each
+component independently:
 
-1. **`CTKAlg()`** — AIBECS's native Newton-Krylov solver, ported from
-   C. T. Kelley's textbook implementations. It ships inside AIBECS,
-   pulls in no extra dependencies, and is the algorithm used by every
-   tutorial.
-2. **NonlinearSolve.jl + LinearSolve.jl** — an opt-in integration that
-   gives access to the broader [SciML](https://sciml.ai) nonlinear
-   solver ecosystem. The wiring lives in `ext/AIBECSNonlinearSolveExt.jl`
-   and only loads once the user runs `using NonlinearSolve, LinearSolve`.
+- The outer nonlinear solver can be any algorithm from
+  [NonlinearSolve.jl](https://docs.sciml.ai/NonlinearSolve/stable/)
+  (`NewtonRaphson`, `TrustRegion`, `LimitedMemoryBroyden`, …), *or*
+  AIBECS's own [`CTKAlg`](@ref AIBECS.CTKAlg) — a bespoke
+  Newton–Chord–Shamanskii method adapted from C. T. Kelley's MATLAB
+  implementations ([Kelley, 2003](https://doi.org/10.1137/1.9780898718898))
+  and specialised to the AIBECS state Jacobian.
+- The inner linear solver can be any factorisation from
+  [LinearSolve.jl](https://docs.sciml.ai/LinearSolve/stable/) — usually a
+  sparse direct factorisation (`UMFPACKFactorization`,
+  `KLUFactorization`, `MKLPardisoFactorize`).
 
 The [NonlinearSolve how-to](@ref nonlinearsolve) walks through the call
-pattern; this page explains *when* you might want one path over the other
-and lists the algorithm/factorisation pairs that have been verified.
+pattern for the SciML side. For `CTKAlg` the call is just
+`solve(prob, CTKAlg())`.
 
-## When to use which
+## Recommended pairing: `CTKAlg() + UMFPACKFactorization()`
 
-- **Use `CTKAlg()` if** you want the smallest possible install, you're
-  running the tutorials as written, or you need a stable baseline to
-  compare against. It is the zero-dependency default.
-- **Use NonlinearSolve if** you want to swap in a different LinearSolve
-  factorisation (UMFPACK, KLU, …) or benchmark several algorithms
-  against `CTKAlg`. Activating the integration costs the load-time of
-  NonlinearSolve.jl and LinearSolve.jl plus their transitive deps.
+Calling `CTKAlg()` with no arguments yields
+`CTKAlg(linsolve = UMFPACKFactorization())` — the AIBECS-recommended
+default. Two reasons it's the recommendation:
 
-Switching between the two paths is a one-line change at the call site —
-the underlying `SteadyStateProblem` and its sparse Jacobian are reused.
+1. **CTKAlg uses a Shamanskii update.** The Newton iteration only
+   refreshes the Jacobian when the residual stops shrinking fast enough
+   (`r > rSham₀ = 0.5`). On AIBECS systems where the steady-state
+   Jacobian changes slowly between iterations, one factorisation
+   typically covers several Newton steps — generally faster in our
+   experience than the "refresh every iteration" baseline that
+   `NewtonRaphson` uses. The tradeoff is robustness: when the Jacobian
+   does drift, Shamanskii's stale factors can take an extra Newton step
+   to recover. Armijo line search is the safety net.
+2. **`UMFPACKFactorization` reuses its factors.** `CTKAlg` runs the
+   linear solve through a `LinearSolve.LinearCache`, so when Shamanskii
+   recycles the Jacobian, UMFPACK's LU factors are reused directly —
+   no refactorisation. Pairing CTKAlg with a factorisation that
+   supports cache reuse is what makes the Shamanskii win compound.
 
-## Algorithms
+If `CTKAlg` fails to converge on a pathological problem, the standard
+fallback is `NewtonRaphson` (still with UMFPACK) via the NonlinearSolve
+route below — fresh Jacobian every iteration, slower but more
+forgiving. More robust schemes still — for example pseudo-transient
+continuation (`NonlinearSolve.PseudoTransient`), which embeds the
+steady-state problem in a fictitious time evolution and is known to
+help on stiff systems — may also be worth trying; we have not
+benchmarked them on AIBECS systems.
 
-The combinations below have been verified on the toy `Primeau_2x2x2`
+## When to use the NonlinearSolve route instead
+
+- You want a different outer algorithm (`TrustRegion`,
+  `LimitedMemoryBroyden`, …).
+- You want to benchmark several algorithms against `CTKAlg` on your
+  own circulation.
+- You need NonlinearSolve features that `CTKAlg` does not surface
+  (custom termination modes, callbacks, sensitivity hooks).
+
+The cost is the load-time of NonlinearSolve.jl and LinearSolve.jl plus
+their transitive deps — neither is a hard AIBECS dependency. The
+underlying `SteadyStateProblem` and sparse Jacobian are reused across
+both routes; switching is a one-line change at the call site.
+
+## Verified algorithm/factorisation pairs
+
+The combinations below have been checked on the toy `Primeau_2x2x2`
 circulation and converge to the same root as `CTKAlg()`.
 
 | Solver call | Match vs `CTKAlg()` | Notes |
 |---|---|---|
-| `solve(prob, CTKAlg())` | (baseline) | Native AIBECS Newton-Krylov; consumes the `SteadyStateProblem`. |
-| `solve(nlprob, NewtonRaphson(linsolve = UMFPACKFactorization()))` | exact | Recommended default. |
-| `solve(nlprob, NewtonRaphson(linsolve = KLUFactorization()))` | 1e-10 | KLU may be faster on very-sparse Jacobians. |
-| `solve(nlprob, AIBECS.recommended_nlalg())` | exact | NewtonRaphson + UMFPACK. |
+| `solve(prob, CTKAlg())` | (baseline) | Native AIBECS Newton–Chord–Shamanskii; CTKAlg + UMFPACK default. |
+| `solve(nlprob, NewtonRaphson(linsolve = UMFPACKFactorization()))` | exact | Recommended NonlinearSolve fallback. |
+| `solve(nlprob, NewtonRaphson(linsolve = KLUFactorization()))` | 1e-10 | KLU may win on very-sparse Jacobians. |
+| `solve(nlprob, AIBECS.recommended_nlalg())` | exact | Convenience for `NewtonRaphson + UMFPACK`. |
 
 For the NonlinearSolve rows, `nlprob = AIBECS.nonlinearproblem(prob)` —
 see the how-to for the full pattern. The helper attaches the sparse
 Jacobian buffer type so LinearSolve's UMFPACK / KLU factorisations
 allocate sparse buffers instead of erroring on a dense default.
 
-## Latest benchmark results (auto-updated)
+## Latest benchmark results
 
-A placeholder until the benchmark workflow lands and starts committing
-fresh numbers.
-
-| Circulation | Tracers | Algorithm | n | Time (s) | Allocs (MB) | Residual | Converged |
-|---|---|---|---:|---:|---:|---|:---:|
-| _Pending first benchmark run_ | | | | | | | |
+Auto-generated from `benchmark/solvers.jl`; the timings below are wall
+clock for one steady-state solve on each circulation/tracer pair, on
+the maintainer's laptop. The small-tier suite covers `OCCA` and
+`OCIM0` — enough for relative comparisons across the available
+algorithm/factorisation pairs without needing a workstation.
+(`Primeau_2x2x2` is used elsewhere as a smoke-test circulation but is
+too small to time meaningfully, so it's not in the benchmark tier.)
 
 ```@eval
-# Future: replace this stub with a Documenter `include` of
-# docs/src/explanation/latest_timings.md once the benchmark workflow
-# commits it. For now, the table above is a static placeholder.
+import Markdown
+# Pre-computed in docs/make.jl (read/strip/shift happens there because `@__DIR__`
+# inside an @eval block resolves to the build directory, not the source dir).
+Markdown.parse(Main.__LATEST_TIMINGS_SMALL_MD)
 ```
 
-## Recommendations
+## GPU execution (untested)
 
-Recommendations will firm up once benchmark numbers are in. In the
-meantime:
-
-- **UMFPACK is the safe sparse default.** Mature, well-tested, and the
-  factorisation used by the AIBECS-recommended algorithm.
-- **KLU may win on very-sparse Jacobians.** Worth trying if a profile
-  shows the linear solve dominating.
+The underlying call chain — `SteadyStateProblem` → AIBECS state
+function → LinearSolve factorisation — has no inherently CPU-only
+piece. Moving the sparse Jacobian and state vector to a GPU array
+type (via e.g. CUDA.jl) and using a GPU-aware factorisation from
+LinearSolve should in principle just work, but we have not exercised
+this path. Anyone interested in a GPU run should expect to discover
+and fix a few rough edges on the way.
 
 ## Krylov solvers
 
 Iterative Krylov backends from LinearSolve (e.g. `KrylovJL_GMRES`,
-`KrylovJL_BICGSTAB`) are intentionally not in the supported matrix yet:
-AIBECS does not currently ship a preconditioner suited to the
+`KrylovJL_BICGSTAB`) are intentionally not in the supported matrix
+above: AIBECS does not ship a preconditioner suited to the
 steady-state advection–diffusion–reaction system, and unpreconditioned
 Krylov on these operators is uncompetitive with the sparse direct
-factorisations above. Adding a preconditioner is a future direction.
+factorisations. Adding a preconditioner is a future direction.

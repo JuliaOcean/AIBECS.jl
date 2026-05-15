@@ -33,6 +33,26 @@ end
 ismd(f) = splitext(f)[2] == ".md"
 pages(folder) = [joinpath(folder, f) for f in readdir(joinpath(src, folder)) if ismd(f)]
 
+# Pre-compute the inline benchmark-table markdown so `explanation/solvers.md`'s
+# `@eval` block can embed it. Documenter changes cwd / `@__DIR__` to the build
+# directory when evaluating `@eval` blocks, so reading the source file from
+# inside the block fails on a fresh build. Read it here, then:
+#   1. strip the autogen HTML comment,
+#   2. drop the "# Tier: small" metadata header (the surrounding section in
+#      solvers.md already covers it),
+#   3. demote the per-circulation `##` headings to bold lead-in paragraphs.
+# Step 3 is a workaround for DocumenterVitepress: it flattens parsed-MD
+# heading levels to H1 when emitting the rendered .md, which would
+# collide with the page-title H1. Bold paragraphs keep the visual
+# hierarchy without the level collision.
+const __LATEST_TIMINGS_SMALL_MD = let
+    raw = read(joinpath(src, "explanation", "latest_timings_small.md"), String)
+    raw = replace(raw, r"<!--[^\n]*-->\n?" => "")
+    raw = replace(raw, r"^# Tier:[^\n]*\n+"m => "")
+    raw = replace(raw, r"^## (.+)$"m => s"**\1**")
+    raw
+end
+
 makedocs(
     sitename = "AIBECS.jl",
     doctest = false, # TODO guessing I should remove that when actually deploying?
@@ -42,10 +62,32 @@ makedocs(
     # organisation
     pages = Any[
         "Home" => "index.md",
-        "Tutorials" => pages("tutorials"),
-        "How-to guides" => pages("howtos"),
-        "Explanation" => pages("explanation"),
-        "Reference" => pages("reference"),
+        "Tutorials" => [
+            "tutorials/1_ideal_age.md",
+            "tutorials/2_radiocarbon.md",
+            "tutorials/3_Pmodel.md",
+            "tutorials/4_dustmodel.md",
+            "tutorials/5_river_discharge.md",
+            "tutorials/6_groundwater_discharge.md",
+        ],
+        "How-to guides" => [
+            "howtos/1_parameters.md",
+            "howtos/2_plot.md",
+            "howtos/3_cruiseplot.md",
+            "howtos/4_fluxes.md",
+            "howtos/5_parameter_optimization.md",
+            "howtos/6_sinking_particles.md",
+            "howtos/7_etopo.md",
+            "howtos/8_nonlinearsolve.md",
+            "howtos/analytical_derivatives.md",
+        ],
+        "Explanation" => [
+            "explanation/1_concept.md",
+            "explanation/2_tracer_transport_operators.md",
+            "explanation/solvers.md",
+            "explanation/datasets.md",
+        ],
+        "Reference" => ["reference/functions.md"],
         "Publications" => pages("publications"),
     ],
     warnonly = [:missing_docs],   # internals are intentionally omitted from the curated reference page
