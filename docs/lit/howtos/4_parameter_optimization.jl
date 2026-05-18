@@ -268,34 +268,36 @@
 #     F_grid[i, j] = f(sol.u, λ)
 # end
 
-# # ## Diagnostics — a single composed Makie figure
-# #
-# # We pull in `CairoMakie` (the headless backend used elsewhere in the
-# # docs build — see the [Makie how-to](@ref plots-makie)) and bundle
-# # every diagnostic into one `Figure` with four nested `GridLayout`s:
-# #
-# # - **G1** (top-left) — density-coloured scatter of optimised vs WOA
-# #   PO₄: each wet box is plotted at `(WOA, optimised)`, coloured by a
-# #   bivariate KDE of the point cloud (`cgrad(:viridis; rev = true)` so
-# #   dense regions read dark), with a 1:1 reference line.
-# # - **G2** (top-right) — `contourf!` of `√f(p)` in `(τ_DIP, τ_POP)`
-# #   space on log axes, with the recorded Newton trajectory drawn on
-# #   top (red line + markers, white-star initial point, red-star
-# #   optimum).
-# # - **G3** (middle row) — horizontal slices at 1000 m: optimised | WOA
-# #   | difference, with `colorrange = (0, 3)` μM under viridis for the
-# #   first two and `(-3, 3)` μM under `cgrad(:RdBu; rev = true)` for
-# #   the difference.
-# # - **G4** (bottom block) — 3-row × 4-column basin diagnostics grid:
-# #   - Cols 1–3: per-basin (Pacific / Atlantic / Indian, each extended
-# #     to the pole via its Southern Ocean sector) zonal-mean
-# #     `contourf!`.
-# #   - Col 4: a profile axis with one line per basin (depth profile
-# #     across the basin's wet boxes).
-# #   - Rows: optimised / WOA / optimised − WOA. The model and WOA rows
-# #     share the `(0, 3)` μM viridis colorbar; the diff row gets its
-# #     own `(-3, 3)` μM `:RdBu` (reversed) colorbar. Row identity is
-# #     marked by a rotated `Label` in column 0.
+# ## Diagnostics — a single composed Makie figure
+#
+# We pull in `CairoMakie` (the headless backend used elsewhere in the
+# docs build — see the [Makie how-to](@ref plots-makie)) and bundle
+# every diagnostic into one `Figure` with five nested `GridLayout`s:
+#
+# - **G1** (top-left) — density-coloured scatter of optimised vs WOA
+#   PO₄ on a `DataAspect()` axis with `(0, 3)` μM limits on both
+#   sides; each wet box is plotted at `(WOA, optimised)`, coloured by
+#   a bivariate KDE of the point cloud (`:plasma`), with a 1:1
+#   reference line.
+# - **G2** (top-right) — `contourf!` of `√f(p)` in `(τ_DIP, τ_POP)`
+#   space on log axes (`:BrBG`), with the recorded Newton trajectory
+#   drawn on top (red line + markers, red-star optimum). The first
+#   iterate and the optimum are tagged via `annotation!`.
+# - **G3** (middle row) — horizontal slices at 1000 m: optimised | WOA
+#   | difference, with `colorrange = (0, 3)` μM under viridis for the
+#   first two and `(-1, 1)` μM under `cgrad(:RdBu; rev = true)` for
+#   the difference.
+# - **G4** (zonal-mean block) — 3-row × 3-column basin diagnostics
+#   grid: rows are optimised / WOA / optimised − WOA; columns are
+#   Pacific / Atlantic / Indian, each extended to the pole via its
+#   Southern Ocean sector. Each column is cropped to its wet-cell
+#   latitude span (`wetlatrange`, as in the Makie how-to) and sized
+#   proportionally. The model and WOA rows share the `(0, 3)` μM
+#   viridis colorbar; the diff row gets its own `(-1, 1)` μM `:RdBu`
+#   (reversed) colorbar. Row identity is marked by a rotated `Label`
+#   in column 0.
+# - **G5** (bottom row) — one depth-profile axis per basin showing
+#   the optimised vs WOA basin mean (no diff).
 
 using CairoMakie
 using OceanBasins
@@ -328,7 +330,7 @@ sl_opt  = AIBECS.horizontalslice(DIPopt_μM, grd; depth = 1000)
 sl_obs  = AIBECS.horizontalslice(μWOA_μM,   grd; depth = 1000)
 sl_diff = sl_opt .- sl_obs
 
-# G4 — per-basin (extended-to-pole) masks for zonal means + profiles.
+# G4 / G5 — per-basin (extended-to-pole) masks for zonal means and profiles.
 OCEANS = oceanpolygons()
 lat_grd, lon_grd = latvec(grd), lonvec(grd)
 mPAC = ispacific2(lat_grd, lon_grd, OCEANS)  .| isSOpacific(lat_grd, lon_grd, OCEANS)
@@ -344,48 +346,49 @@ basin_specs = [
 # zonal panel uses the same bins.
 dip_levels  = 0:0.25:3.0
 dip_cmap    = cgrad(:viridis, length(dip_levels) - 1; categorical = true)
-diff_levels = -3.0:0.5:3.0
+diff_levels = -1.0:0.2:1.0
 diff_cmap   = cgrad(:RdBu, length(diff_levels) - 1; categorical = true, rev = true)
 
 # Tick / label helpers.
 latticks = (-90:30:90, ["90°S", "60°S", "30°S", "0°", "30°N", "60°N", "90°N"])
 lonticks = (0:60:360, ["0°", "60°E", "120°E", "180°", "120°W", "60°W", "0°"])
 gcdepthticks = (0:1000:maxdepth_round, string.(Int.(0:1000:maxdepth_round)))
-plus_minus_ticks = (-3:1:3, ["−3", "−2", "−1", "0", "+1", "+2", "+3"])
+plus_minus_ticks = (-1:0.5:1, ["−1", "−0.5", "0", "+0.5", "+1"])
 
-fig = Figure(size = (1600, 1700))
+fig = Figure(size = (1600, 1900))
 g1 = fig[1, 1]   = GridLayout()
 g2 = fig[1, 2]   = GridLayout()
 g3 = fig[2, 1:2] = GridLayout()
 g4 = fig[3, 1:2] = GridLayout()
+g5 = fig[4, 1:2] = GridLayout()
 rowsize!(fig.layout, 1, Auto(1.0))
 rowsize!(fig.layout, 2, Auto(0.85))
-rowsize!(fig.layout, 3, Auto(2.4))
+rowsize!(fig.layout, 3, Auto(2.0))
+rowsize!(fig.layout, 4, Auto(0.7))
 
 ## ── G1: density-coloured scatter ────────────────────────────────
 ax_sc = Axis(g1[1, 1];
     xlabel = "WOA PO₄ (μM)", ylabel = "optimised PO₄ (μM)",
     xgridvisible = false, ygridvisible = false,
-    title = "optimised vs WOA (KDE-coloured)")
+    title = "optimised vs WOA (KDE-coloured)",
+    aspect = DataAspect(),
+    limits = (0, 3, 0, 3))
 ## `kde` builds the gridded density; wrap it once in `InterpKDE` and
 ## broadcast on its underlying interpolator. The naïve
 ## `[pdf(d_kde, xi, yi) for (xi, yi) in ...]` rebuilds the InterpKDE
 ## (incl. the quadratic B-spline extrapolator) on *every* call —
 ## ~hundreds of seconds for ~84k points. Broadcasting `ik.itp` once
 ## is the same numerical result and runs in ~30 ms here.
-d_kde = kde((μWOA_μM, DIPopt_μM))
+d_kde = kde((μWOA_μM, DIPopt_μM); weights = v ./ sum(v))
 ik = InterpKDE(d_kde)
-c_dens = ik.itp.(μWOA_μM, DIPopt_μM)
+c_dens = log.(max.(0, ik.itp.(μWOA_μM, DIPopt_μM)))
 sc = scatter!(ax_sc, μWOA_μM, DIPopt_μM;
-    markersize = 2, color = c_dens,
-    colormap = cgrad(:viridis; rev = true))
-let xy_max = max(maximum(μWOA_μM), maximum(DIPopt_μM))
-    lines!(ax_sc, [0, xy_max], [0, xy_max];
-        color = :black, linestyle = :dash, label = "1:1")
-end
+    markersize = 2, color = c_dens, colormap = :plasma, colorrange = (-5, 1))
+lines!(ax_sc, [0, 3], [0, 3];
+    color = :black, linestyle = :dash, label = "1:1")
 axislegend(ax_sc; position = :lt, framevisible = false)
 Colorbar(g1[2, 1], sc; vertical = false, flipaxis = false,
-    label = "point density (KDE)")
+    label = "volume-weighted density")
 
 ## ── G2: cost surface + Newton trajectory ────────────────────────
 ax_cs = Axis(g2[1, 1];
@@ -393,18 +396,15 @@ ax_cs = Axis(g2[1, 1];
     xscale = log10, yscale = log10,
     title = "√f(p) cost surface + Newton trajectory")
 co_cs = contourf!(ax_cs, τDIP_grid, τPOP_grid, sqrt.(F_grid);
-    levels = 20, colormap = :viridis)
+    levels = 20, colormap = cgrad(:BrBG; rev = true))
 lines!(ax_cs, τDIP_traj, τPOP_traj; color = :red, linewidth = 2)
-scatter!(ax_cs, τDIP_traj, τPOP_traj;
-    color = :red, marker = :circle, markersize = 7,
-    strokecolor = :white, strokewidth = 0.5)
-scatter!(ax_cs, [τDIP_traj[1]], [τPOP_traj[1]];
-    marker = :star5, markersize = 22, color = :white,
-    strokecolor = :black, strokewidth = 1.5, label = "p₀")
 scatter!(ax_cs, [τDIP_traj[end]], [τPOP_traj[end]];
     marker = :star5, markersize = 22, color = :red,
-    strokecolor = :black, strokewidth = 1.5, label = "p_opt")
-axislegend(ax_cs; position = :rt, framevisible = false)
+    strokecolor = :black, strokewidth = 1.5)
+annotation!(ax_cs, 70, 40, τDIP_traj[1], τPOP_traj[1];
+    text = "first iterate", style = Ann.Styles.LineArrow())
+annotation!(ax_cs, -70, -40, τDIP_traj[end], τPOP_traj[end];
+    text = "optimal solution", style = Ann.Styles.LineArrow())
 Colorbar(g2[1, 2], co_cs; label = "√f(p)")
 
 ## ── G3: horizontal slices at 1000 m ─────────────────────────────
@@ -441,8 +441,30 @@ cb_g3_d = Colorbar(g3[2, 3], co_sl_d; vertical = false, flipaxis = false,
     label = "optimised − WOA (μM)", ticks = plus_minus_ticks)
 cb_g3_d.width = Relative(0.85)
 
-## ── G4: per-basin zonal means + per-row basin profile (3×4) ─────
-function zonal_axis_g4(grid_pos; ylabel = "", title = "")
+## ── G4: per-basin zonal means (3×3) ─────────────────────────────
+row_specs = [
+    (label = "model",         field = DIPopt_μM, levels = dip_levels,  cmap = dip_cmap),
+    (label = "WOA",           field = μWOA_μM,   levels = dip_levels,  cmap = dip_cmap),
+    (label = "model − WOA",   field = diff_μM,   levels = diff_levels, cmap = diff_cmap),
+]
+
+## Pre-compute the zonal means once so the per-basin wet-latitude
+## range (mirroring `wetlatrange` from the Makie how-to) can crop and
+## size each column proportionally to the data it actually covers.
+zm_grid = [
+    [AIBECS.zonalmean(spec.field, grd, basin.mask) for basin in basin_specs]
+    for spec in row_specs
+]
+function wetlatrange(zm, pad = 5)
+    haswet = [any(!isnan, view(zm, i, :)) for i in eachindex(lat)]
+    wetidx = findall(haswet)
+    isempty(wetidx) && return (-90.0, 90.0)
+    return (max(-90, lat[first(wetidx)] - pad),
+            min( 90, lat[last(wetidx)]  + pad))
+end
+xlim_per_basin = [wetlatrange(zm_grid[1][c]) for c in eachindex(basin_specs)]
+
+function zonal_axis_g4(grid_pos, xlim; ylabel = "", title = "")
     Axis(grid_pos;
         backgroundcolor = :lightgray,
         xgridvisible = false, ygridvisible = false,
@@ -450,15 +472,9 @@ function zonal_axis_g4(grid_pos; ylabel = "", title = "")
         xticks = latticks, yticks = gcdepthticks,
         yreversed = true,
         title = title,
-        limits = (-90, 90, 0, maxdepth_round),
+        limits = (xlim[1], xlim[2], 0, maxdepth_round),
         ylabel)
 end
-
-row_specs = [
-    (label = "model",         field = DIPopt_μM, levels = dip_levels,  cmap = dip_cmap),
-    (label = "WOA",           field = μWOA_μM,   levels = dip_levels,  cmap = dip_cmap),
-    (label = "model − WOA",   field = diff_μM,   levels = diff_levels, cmap = diff_cmap),
-]
 
 ## Representative contourf handles for the two colorbars below — we
 ## fill them inside the loop. Using `Ref{Any}` (instead of plain
@@ -471,11 +487,10 @@ co_g4_d = Ref{Any}()
 
 for (r, spec) in enumerate(row_specs)
     for (c, basin) in enumerate(basin_specs)
-        ax = zonal_axis_g4(g4[r, c];
+        ax = zonal_axis_g4(g4[r, c], xlim_per_basin[c];
             ylabel = c == 1 ? "depth (m)" : "",
             title  = r == 1 ? basin.name : "")
-        zm = AIBECS.zonalmean(spec.field, grd, basin.mask)
-        co = contourf!(ax, lat, depth, zm;
+        co = contourf!(ax, lat, depth, zm_grid[r][c];
             levels = spec.levels, colormap = spec.cmap, nan_color = :lightgray,
             extendlow = spec.cmap[1], extendhigh = spec.cmap[end])
         r == 1 && c == 1 && (co_g4_v[] = co)
@@ -485,24 +500,6 @@ for (r, spec) in enumerate(row_specs)
         r < 3 && hidexdecorations!(ax;
             ticklabels = true, label = true, ticks = false, grid = false)
     end
-    ## Profile axis in col 4 — one line per basin, depth on the right
-    ## y-axis (the zonal column already shows depth on the left).
-    ax_p = Axis(g4[r, 4];
-        xgridvisible = false, ygridvisible = false,
-        xlabel = r == 3 ? "PO₄ (μM)" : "",
-        ylabel = "",
-        yreversed = true,
-        yticks = gcdepthticks,
-        title = r == 1 ? "by basin" : "",
-        limits = (nothing, (0, maxdepth_round)))
-    for basin in basin_specs
-        prof = AIBECS.horizontalmean(spec.field, grd, basin.mask)
-        lines!(ax_p, prof, depth;
-            color = basin.color, linewidth = 2, label = basin.name)
-    end
-    r == 1 && axislegend(ax_p; position = :rb, framevisible = false)
-    r < 3 && hidexdecorations!(ax_p;
-        ticklabels = true, label = true, ticks = false, grid = false)
 end
 
 ## Row identity labels in column 0.
@@ -511,26 +508,48 @@ Label(g4[2, 0], "WOA";          rotation = π/2, font = :bold, fontsize = 16, te
 Label(g4[3, 0], "model − WOA";  rotation = π/2, font = :bold, fontsize = 16, tellheight = false)
 
 ## Shared vertical colorbars — viridis spans rows 1+2, RdBu sits under row 3.
-cb_g4_v = Colorbar(g4[1:2, 5], co_g4_v[];
+cb_g4_v = Colorbar(g4[1:2, length(basin_specs) + 1], co_g4_v[];
     label = "PO₄ (μM)", ticks = 0:1:3)
 cb_g4_v.height = Relative(0.85)
-cb_g4_d = Colorbar(g4[3, 5], co_g4_d[];
+cb_g4_d = Colorbar(g4[3, length(basin_specs) + 1], co_g4_d[];
     label = "model − WOA (μM)", ticks = plus_minus_ticks)
 cb_g4_d.height = Relative(0.85)
 
-## Column sizing — narrow row-label / colorbar cols, equal zonal cols,
-## slightly narrower profile col.
+## Column sizing — narrow row-label / colorbar cols, basin columns
+## sized in proportion to their wet-latitude span (the same trick the
+## Makie how-to uses to avoid wasting plot width on dry latitudes).
 colsize!(g4, 0, Auto(0.15))
-colsize!(g4, 1, Auto(2.0))
-colsize!(g4, 2, Auto(2.0))
-colsize!(g4, 3, Auto(2.0))
-colsize!(g4, 4, Auto(1.2))
-colsize!(g4, 5, Auto(0.2))
+for (c, xlim) in enumerate(xlim_per_basin)
+    colsize!(g4, c, Auto(xlim[2] - xlim[1]))
+end
+colsize!(g4, length(basin_specs) + 1, Auto(0.2))
 
-## Breathing room between the four outer grid blocks.
+## ── G5: per-basin depth profiles — model vs WOA ─────────────────
+for (c, basin) in enumerate(basin_specs)
+    ax_p = Axis(g5[1, c];
+        xgridvisible = false, ygridvisible = false,
+        xlabel = "PO₄ (μM)",
+        ylabel = c == 1 ? "depth (m)" : "",
+        yreversed = true,
+        yticks = gcdepthticks,
+        title = basin.name,
+        limits = (nothing, (0, maxdepth_round)))
+    prof_model = AIBECS.horizontalmean(DIPopt_μM, grd, basin.mask)
+    prof_obs   = AIBECS.horizontalmean(μWOA_μM,   grd, basin.mask)
+    lines!(ax_p, prof_model, depth;
+        color = basin.color, linewidth = 2, label = "model")
+    lines!(ax_p, prof_obs, depth;
+        color = basin.color, linewidth = 2, linestyle = :dash, label = "WOA")
+    c == 1 && axislegend(ax_p; position = :rb, framevisible = false)
+    c > 1 && hideydecorations!(ax_p;
+        ticklabels = true, label = true, ticks = false, grid = false)
+end
+
+## Breathing room between the five outer grid blocks.
 colgap!(fig.layout, 1, 30)
 rowgap!(fig.layout, 1, 30)
 rowgap!(fig.layout, 2, 30)
+rowgap!(fig.layout, 3, 30)
 
 fig
 
