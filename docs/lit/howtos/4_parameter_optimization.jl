@@ -361,7 +361,7 @@ g2 = fig[1, 2]   = GridLayout()
 g3 = fig[2, 1:2] = GridLayout()
 g4 = fig[3, 1:2] = GridLayout()
 g5 = fig[4, 1:2] = GridLayout()
-rowsize!(fig.layout, 1, Auto(1.0))
+rowsize!(fig.layout, 1, Auto(1.2))
 rowsize!(fig.layout, 2, Auto(0.85))
 rowsize!(fig.layout, 3, Auto(2.0))
 rowsize!(fig.layout, 4, Auto(0.7))
@@ -379,16 +379,34 @@ ax_sc = Axis(g1[1, 1];
 ## (incl. the quadratic B-spline extrapolator) on *every* call —
 ## ~hundreds of seconds for ~84k points. Broadcasting `ik.itp` once
 ## is the same numerical result and runs in ~30 ms here.
-d_kde = kde((μWOA_μM, DIPopt_μM); weights = v ./ sum(v))
+bandwidth = 0.25 .* KernelDensity.default_bandwidth((μWOA_μM, DIPopt_μM))
+d_kde = kde((μWOA_μM, DIPopt_μM); bandwidth, weights = v ./ sum(v))
 ik = InterpKDE(d_kde)
-c_dens = log.(max.(0, ik.itp.(μWOA_μM, DIPopt_μM)))
+
+## Map each density value (point or contour) to its mass-weighted density
+## rank: the fraction of (volume-weighted) probability mass at lower density.
+## Sort cells ascending, cumulate, and look up either the density at a target
+## quantile (contour levels) or the quantile at a point density (scatter
+## colors). Walking ascending puts the peak at q ≈ 1 (almost all mass is at
+## lower density than the peak) so it lights up plasma's bright end.
+dx, dy = step(d_kde.x), step(d_kde.y)
+ρ_asc = sort(vec(d_kde.density))
+cum_asc = cumsum(ρ_asc) .* (dx * dy)
+cum_asc ./= cum_asc[end]   # normalise away the small mass lost outside the grid
+mass_qs = 0.1:0.1:0.9
+levels = [ρ_asc[searchsortedfirst(cum_asc, q)] for q in mass_qs]
+point_q = [(i = searchsortedlast(ρ_asc, d);
+            i == 0 ? 0.0 : cum_asc[i]) for d in ik.itp.(μWOA_μM, DIPopt_μM)]
+
 sc = scatter!(ax_sc, μWOA_μM, DIPopt_μM;
-    markersize = 2, color = c_dens, colormap = :plasma, colorrange = (-5, 1))
+    markersize = 2, color = point_q, colormap = :plasma, colorrange = (0, 1))
+contour!(ax_sc, d_kde.x, d_kde.y, d_kde.density;
+    levels = levels, color = (:black, 0.5), linewidth = 1.2)
 lines!(ax_sc, [0, 3], [0, 3];
-    color = :black, linestyle = :dash, label = "1:1")
-axislegend(ax_sc; position = :lt, framevisible = false)
-Colorbar(g1[2, 1], sc; vertical = false, flipaxis = false,
-    label = "volume-weighted density")
+    color = :red, linestyle = :dash)
+Colorbar(g1[1, 2], sc; vertical = true, flipaxis = true,
+    label = "density", ticks = mass_qs)
+colsize!(g1, 1, Aspect(1, 1.0))
 
 ## ── G2: cost surface + Newton trajectory ────────────────────────
 ax_cs = Axis(g2[1, 1];
@@ -397,14 +415,14 @@ ax_cs = Axis(g2[1, 1];
     title = "√f(p) cost surface + Newton trajectory")
 co_cs = contourf!(ax_cs, τDIP_grid, τPOP_grid, sqrt.(F_grid);
     levels = 20, colormap = cgrad(:BrBG; rev = true))
-lines!(ax_cs, τDIP_traj, τPOP_traj; color = :red, linewidth = 2)
+scatterlines!(ax_cs, τDIP_traj, τPOP_traj; color = :red, linewidth = 2, linestyle = :dash, marker = :circle, markersize = 4)
 scatter!(ax_cs, [τDIP_traj[end]], [τPOP_traj[end]];
-    marker = :star5, markersize = 22, color = :red,
+    marker = :star5, markersize = 22, color = :yellow,
     strokecolor = :black, strokewidth = 1.5)
-annotation!(ax_cs, 70, 40, τDIP_traj[1], τPOP_traj[1];
-    text = "first iterate", style = Ann.Styles.LineArrow())
-annotation!(ax_cs, -70, -40, τDIP_traj[end], τPOP_traj[end];
-    text = "optimal solution", style = Ann.Styles.LineArrow())
+annotation!(ax_cs, 70, -40, τDIP_traj[1], τPOP_traj[1];
+    text = "first iterate", path = Ann.Paths.Corner())
+annotation!(ax_cs, -70, +40, τDIP_traj[end], τPOP_traj[end];
+    text = "optimal solution", path = Ann.Paths.Corner(), color = :white)
 Colorbar(g2[1, 2], co_cs; label = "√f(p)")
 
 ## ── G3: horizontal slices at 1000 m ─────────────────────────────
