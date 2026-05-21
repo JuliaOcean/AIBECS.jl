@@ -1,272 +1,272 @@
-# #---------------------------------------------------------
-# # # [Parameter optimisation](@id parameter-optimization)
-# #---------------------------------------------------------
+#---------------------------------------------------------
+# # [Parameter optimisation](@id parameter-optimization)
+#---------------------------------------------------------
 
-# # In this how-to we fit two parameters of the coupled PO₄–POP model
-# # (`τ_DIP`, `τ_POP`) to PO₄ observations from
-# # [WorldOceanAtlasTools.jl](https://github.com/briochemc/WorldOceanAtlasTools.jl)
-# # on the OCCA circulation. Restricting the fit to two parameters lets
-# # us also sweep the cost function in a 2D grid around the optimiser
-# # trajectory and visualise the loss landscape directly.
-# #
-# # We use the SciML [Optimization.jl][1] frontend, with [F1Method.jl][2]
-# # supplying the cached steady-state gradient and Hessian, and share an
-# # UMFPACK factorisation between F1Method's adjoint solve and AIBECS's
-# # inner Newton step (warm-start trick) so the sweep stays cheap.
-# #
-# # The API surface we touch:
-# #
-# # - `@flattenable @bounds @logscaled @prior` — declare which parameters
-# #   are optimised and supply their priors;
-# # - [`p2λ`](@ref) / [`λ2p`](@ref) — transform a parameter struct to/from
-# #   an unconstrained flat vector;
-# # - [`f_and_∇ₓf`](@ref) — build the volume-weighted mismatch objective
-# #   and its analytical state Jacobian;
-# # - `F1Method` — cached steady-state solve plus adjoint gradient and
-# #   Hessian ([Pasquier et al., 2019](https://doi.org/10.5194/gmd-12-3537-2019));
-# # - `Optimization.jl` — the SciML optimisation frontend, in the same way
-# #   `LinearSolve.jl` is the SciML linear-solver frontend used elsewhere
-# #   in AIBECS;
-# # - [`LinearSolve.jl`](https://docs.sciml.ai/LinearSolve/stable/) — we
-# #   share an UMFPACK factorisation between F1Method's adjoint solve and
-# #   AIBECS's inner Newton step.
-# #
-# # See the [coupled PO₄–POP tutorial](@ref P-model) for the model
-# # equations and [GNOM](https://github.com/MTEL-USC/GNOM) for the
-# # converged multi-tracer / isotope fit this example is a thin slice of.
-# #
-# # [1]: https://docs.sciml.ai/Optimization/stable/
-# # [2]: https://github.com/briochemc/F1Method.jl
+# In this how-to we fit two parameters of the coupled PO₄–POP model
+# (`τ_DIP`, `τ_POP`) to PO₄ observations from
+# [WorldOceanAtlasTools.jl](https://github.com/briochemc/WorldOceanAtlasTools.jl)
+# on the OCCA circulation. Restricting the fit to two parameters lets
+# us also sweep the cost function in a 2D grid around the optimiser
+# trajectory and visualise the loss landscape directly.
+#
+# We use the SciML [Optimization.jl][1] frontend, with [F1Method.jl][2]
+# supplying the cached steady-state gradient and Hessian, and share an
+# UMFPACK factorisation between F1Method's adjoint solve and AIBECS's
+# inner Newton step (warm-start trick) so the sweep stays cheap.
+#
+# The API surface we touch:
+#
+# - `@flattenable @bounds @logscaled @prior` — declare which parameters
+#   are optimised and supply their priors;
+# - [`p2λ`](@ref) / [`λ2p`](@ref) — transform a parameter struct to/from
+#   an unconstrained flat vector;
+# - [`f_and_∇ₓf`](@ref) — build the volume-weighted mismatch objective
+#   and its analytical state Jacobian;
+# - `F1Method` — cached steady-state solve plus adjoint gradient and
+#   Hessian ([Pasquier et al., 2019](https://doi.org/10.5194/gmd-12-3537-2019));
+# - `Optimization.jl` — the SciML optimisation frontend, in the same way
+#   `LinearSolve.jl` is the SciML linear-solver frontend used elsewhere
+#   in AIBECS;
+# - [`LinearSolve.jl`](https://docs.sciml.ai/LinearSolve/stable/) — we
+#   share an UMFPACK factorisation between F1Method's adjoint solve and
+#   AIBECS's inner Newton step.
+#
+# See the [coupled PO₄–POP tutorial](@ref P-model) for the model
+# equations and [GNOM](https://github.com/MTEL-USC/GNOM) for the
+# converged multi-tracer / isotope fit this example is a thin slice of.
+#
+# [1]: https://docs.sciml.ai/Optimization/stable/
+# [2]: https://github.com/briochemc/F1Method.jl
 
-# # ## Re-build the P-model on OCCA
+# ## Re-build the P-model on OCCA
 
-# # We reuse the source/sink terms from the P-model tutorial verbatim, just
-# # swapping the circulation to OCCA so the resolution stays moderate
-# # (~170k wet boxes × 2 tracers).
+# We reuse the source/sink terms from the P-model tutorial verbatim, just
+# swapping the circulation to OCCA so the resolution stays moderate
+# (~170k wet boxes × 2 tracers).
 
-# using AIBECS
-# using JLD2 # required by `OCCA.load`
-# grd, T_OCIM = OCCA.load()
-# T_DIP(p) = T_OCIM
-# T_POP(p) = transportoperator(grd, z -> w(z, p))
+using AIBECS
+using JLD2 # required by `OCCA.load`
+grd, T_OCIM = OCCA.load()
+T_DIP(p) = T_OCIM
+T_POP(p) = transportoperator(grd, z -> w(z, p))
 
-# function w(z, p)
-#     @unpack w₀, w′ = p
-#     return @. w₀ + w′ * z
-# end
+function w(z, p)
+    @unpack w₀, w′ = p
+    return @. w₀ + w′ * z
+end
 
-# z = depthvec(grd)
-# function U(x, p)
-#     @unpack τ_DIP, k, z₀ = p
-#     return @. x / τ_DIP * x / (x + k) * (z ≤ z₀) * (x ≥ 0)
-# end
+z = depthvec(grd)
+function U(x, p)
+    @unpack τ_DIP, k, z₀ = p
+    return @. x / τ_DIP * x / (x + k) * (z ≤ z₀) * (x ≥ 0)
+end
 
-# function R(x, p)
-#     @unpack τ_POP = p
-#     return x / τ_POP
-# end
+function R(x, p)
+    @unpack τ_POP = p
+    return x / τ_POP
+end
 
-# function G_DIP(DIP, POP, p)
-#     @unpack DIP_geo, τ_geo = p
-#     return @. -$U(DIP, p) + $R(POP, p) + (DIP_geo - DIP) / τ_geo
-# end
-# function G_POP(DIP, POP, p)
-#     @unpack τ_geo = p
-#     return @. $U(DIP, p) - $R(POP, p) - POP / τ_geo
-# end
+function G_DIP(DIP, POP, p)
+    @unpack DIP_geo, τ_geo = p
+    return @. -$U(DIP, p) + $R(POP, p) + (DIP_geo - DIP) / τ_geo
+end
+function G_POP(DIP, POP, p)
+    @unpack τ_geo = p
+    return @. $U(DIP, p) - $R(POP, p) - POP / τ_geo
+end
 
-# # ## Optimisable parameter struct
+# ## Optimisable parameter struct
 
-# # We layer the full optimisation metadata stack on top of the tutorial's
-# # `PmodelParameters`. The leftmost macro consumes the leftmost column
-# # (canonical example at `src/Parameters.jl`); the columns therefore are
-# # `initial_value | units | flattenable | bounds | logscaled`. Only two
-# # fields — `τ_DIP` and `τ_POP` — carry `flattenable = true`, so the
-# # unconstrained vector `λ` has length 2 and the cost-surface sweep
-# # below is a 2D contour plot.
+# We layer the full optimisation metadata stack on top of the tutorial's
+# `PmodelParameters`. The leftmost macro consumes the leftmost column
+# (canonical example at `src/Parameters.jl`); the columns therefore are
+# `initial_value | units | flattenable | bounds | logscaled`. Only two
+# fields — `τ_DIP` and `τ_POP` — carry `flattenable = true`, so the
+# unconstrained vector `λ` has length 2 and the cost-surface sweep
+# below is a 2D contour plot.
 
-# import AIBECS: @initial_value, initial_value
-# import AIBECS: @units, units
-# import AIBECS: @flattenable, flattenable
-# import AIBECS: @bounds, bounds
-# import AIBECS: @logscaled, logscaled
-# import AIBECS: prior
-# using Unitful: m, d, s, yr, kyr, Myr, mol, mmol, μmol, μM
-# using Distributions
-# using Bijectors    # activates the `AIBECSBijectorsExt` extension (p2λ, λ2p)
-# using DataFrames   # activates the `AIBECSDataFramesExt` extension (AIBECS.table)
+import AIBECS: @initial_value, initial_value
+import AIBECS: @units, units
+import AIBECS: @flattenable, flattenable
+import AIBECS: @bounds, bounds
+import AIBECS: @logscaled, logscaled
+import AIBECS: prior
+using Unitful: m, d, s, yr, kyr, Myr, mol, mmol, μmol, μM
+using Distributions
+using Bijectors    # activates the `AIBECSBijectorsExt` extension (p2λ, λ2p)
+using DataFrames   # activates the `AIBECSDataFramesExt` extension (AIBECS.table)
 
-# const ∞ = Inf
+const ∞ = Inf
 
-# @initial_value @units @flattenable @bounds @logscaled struct OptParams{U} <: AbstractParameters{U}
-#     w₀::U      |   5.0  | m/d      | false | (0, ∞) | true
-#     w′::U      |  0.035 | m/d/m    | false | (0, ∞) | true
-#     τ_DIP::U   | 100.0  | d        | true  | (0, ∞) | true
-#     k::U       |  10.0  | μmol/m^3 | false | (0, ∞) | true
-#     z₀::U      |  80.0  | m        | false | (0, ∞) | false
-#     τ_POP::U   |  30.0  | d        | true  | (0, ∞) | true
-#     τ_geo::U   |   1.0  | kyr      | false | (0, ∞) | true
-#     DIP_geo::U |   2.12 | mmol/m^3 | false | (0, ∞) | false
-# end
+@initial_value @units @flattenable @bounds @logscaled struct OptParams{U} <: AbstractParameters{U}
+    w₀::U      |   5.0  | m/d      | false | (0, ∞) | true
+    w′::U      |  0.035 | m/d/m    | false | (0, ∞) | true
+    τ_DIP::U   | 100.0  | d        | true  | (0, ∞) | true
+    k::U       |  10.0  | μmol/m^3 | false | (0, ∞) | true
+    z₀::U      |  80.0  | m        | false | (0, ∞) | false
+    τ_POP::U   |  30.0  | d        | true  | (0, ∞) | true
+    τ_geo::U   |   1.0  | kyr      | false | (0, ∞) | true
+    DIP_geo::U |   2.12 | mmol/m^3 | false | (0, ∞) | false
+end
 
-# # Derive priors from `(lb, ub) = bounds(T, s)` and the initial value, matching
-# # the convention in `test/parameters.jl` and GNOM: positive half-line gets a
-# # LogNormal, the real line a wide Normal, and finite-interval parameters get a
-# # LogitNormal stretched onto `(lb, ub)`.
+# Derive priors from `(lb, ub) = bounds(T, s)` and the initial value, matching
+# the convention in `test/parameters.jl` and GNOM: positive half-line gets a
+# LogNormal, the real line a wide Normal, and finite-interval parameters get a
+# LogitNormal stretched onto `(lb, ub)`.
 
-# function prior(::Type{T}, s::Symbol) where {T <: OptParams}
-#     flattenable(T, s) || return nothing
-#     lb, ub = bounds(T, s)
-#     if (lb, ub) == (0, ∞)
-#         return LogNormal(log(initial_value(T, s)), 1.0)
-#     elseif (lb, ub) == (-∞, ∞)
-#         return Normal(initial_value(T, s), 10.0)
-#     else
-#         m = initial_value(T, s)
-#         f = (m - lb) / (ub - lb)
-#         return LocationScale(lb, ub - lb, LogitNormal(log(f / (1 - f)), 1.0))
-#     end
-# end
+function prior(::Type{T}, s::Symbol) where {T <: OptParams}
+    flattenable(T, s) || return nothing
+    lb, ub = bounds(T, s)
+    if (lb, ub) == (0, ∞)
+        return LogNormal(log(initial_value(T, s)), 1.0)
+    elseif (lb, ub) == (-∞, ∞)
+        return Normal(initial_value(T, s), 10.0)
+    else
+        m = initial_value(T, s)
+        f = (m - lb) / (ub - lb)
+        return LocationScale(lb, ub - lb, LogitNormal(log(f / (1 - f)), 1.0))
+    end
+end
 
-# p₀ = OptParams()
+p₀ = OptParams()
 
-# # Two fields (`τ_DIP`, `τ_POP`) carry `flattenable = true`; the rest
-# # are held fixed at their initial value. The metadata table:
+# Two fields (`τ_DIP`, `τ_POP`) carry `flattenable = true`; the rest
+# are held fixed at their initial value. The metadata table:
 
-# AIBECS.table(p₀)
+AIBECS.table(p₀)
 
-# # ## State function in parameter-type form
+# ## State function in parameter-type form
 
-# # Using the `AIBECSFunction(Ts, Gs, nb, ::Type{P})` form lets the SciML
-# # solvers feed in a flat unconstrained vector `λ`; AIBECS will call
-# # `λ2p(OptParams, λ)` internally to reconstruct the struct.
+# Using the `AIBECSFunction(Ts, Gs, nb, ::Type{P})` form lets the SciML
+# solvers feed in a flat unconstrained vector `λ`; AIBECS will call
+# `λ2p(OptParams, λ)` internally to reconstruct the struct.
 
-# nb = sum(iswet(grd))
-# F = AIBECSFunction((T_DIP, T_POP), (G_DIP, G_POP), nb, OptParams)
-# x0 = p₀.DIP_geo * ones(2nb)
+nb = sum(iswet(grd))
+F = AIBECSFunction((T_DIP, T_POP), (G_DIP, G_POP), nb, OptParams)
+x0 = p₀.DIP_geo * ones(2nb)
 
-# # ## Load WOA PO₄ observations
+# ## Load WOA PO₄ observations
 
-# # `WorldOceanAtlasTools.fit_to_grid` returns the mean and variance of
-# # WOA PO₄ regridded onto our `grd` as 3D fields. There is a subtle
-# # unit gotcha: the WOA 2018 PO₄ file's `units` attribute is
-# # `"micromoles_per_kilogram"`, and `WorldOceanAtlasTools.convert_to_SI_unit!`
-# # does `χ_3D .*= ustrip(upreferred(1.0u"μmol/kg"))`, which gives
-# # `1.0e-6 mol/kg` — kg is already SI, so `upreferred` does **not**
-# # convert to `mol/m³`. The returned array is therefore in `mol/kg`
-# # (mean ≈ 1.6e-6), a factor of ~1000 smaller than the AIBECS model
-# # state. We close the gap with a nominal seawater density before
-# # anything downstream consumes these arrays.
+# `WorldOceanAtlasTools.fit_to_grid` returns the mean and variance of
+# WOA PO₄ regridded onto our `grd` as 3D fields. There is a subtle
+# unit gotcha: the WOA 2018 PO₄ file's `units` attribute is
+# `"micromoles_per_kilogram"`, and `WorldOceanAtlasTools.convert_to_SI_unit!`
+# does `χ_3D .*= ustrip(upreferred(1.0u"μmol/kg"))`, which gives
+# `1.0e-6 mol/kg` — kg is already SI, so `upreferred` does **not**
+# convert to `mol/m³`. The returned array is therefore in `mol/kg`
+# (mean ≈ 1.6e-6), a factor of ~1000 smaller than the AIBECS model
+# state. We close the gap with a nominal seawater density before
+# anything downstream consumes these arrays.
 
-# using WorldOceanAtlasTools
-# μDIPobs3D, σ²DIPobs3D = WorldOceanAtlasTools.fit_to_grid(grd, "PO₄")
-# iwet = iswet(grd)
+using WorldOceanAtlasTools
+μDIPobs3D, σ²DIPobs3D = WorldOceanAtlasTools.fit_to_grid(grd, "PO₄")
+iwet = iswet(grd)
 
-# ρ_factor = ustrip(upreferred(1.035u"kg/L"))   # = 1035.0 kg/m³
-# μDIPobs  = μDIPobs3D[iwet]  .* ρ_factor       # mol/kg → mol/m³
-# σ²DIPobs = σ²DIPobs3D[iwet] .* ρ_factor^2     # (mol/kg)² → (mol/m³)²
-# v = volumevec(grd)
+ρ_factor = ustrip(upreferred(1.035u"kg/L"))   # = 1035.0 kg/m³
+μDIPobs  = μDIPobs3D[iwet]  .* ρ_factor       # mol/kg → mol/m³
+σ²DIPobs = σ²DIPobs3D[iwet] .* ρ_factor^2     # (mol/kg)² → (mol/m³)²
+v = volumevec(grd)
 
-# # ## Build the objective `(f, ∇ₓf)`
+# ## Build the objective `(f, ∇ₓf)`
 
-# # We weight the DIP misfit at 1, ignore POP (no direct observations),
-# # and add a small parameter-prior penalty.
+# We weight the DIP misfit at 1, ignore POP (no direct observations),
+# and add a small parameter-prior penalty.
 
-# ωs = (1.0, 0.0)
-# ωp = 1.0e-4
-# μx  = (μDIPobs,  missing)
-# σ²x = (σ²DIPobs, missing)
-# f, ∇ₓf = f_and_∇ₓf(ωs, μx, σ²x, v, ωp, OptParams)
+ωs = (1.0, 0.0)
+ωp = 1.0e-4
+μx  = (μDIPobs,  missing)
+σ²x = (σ²DIPobs, missing)
+f, ∇ₓf = f_and_∇ₓf(ωs, μx, σ²x, v, ωp, OptParams)
 
-# # ## F-1 memory cache + warm-started linear solve
+# ## F-1 memory cache + warm-started linear solve
 
-# # `F1Method.initialize_mem` solves the steady-state problem once and
-# # stashes the factorised Jacobian plus the state-parameter sensitivity
-# # `∇s`; subsequent objective / gradient / Hessian calls reuse this
-# # cache whenever the parameter vector has not moved. The
-# # `F1MethodOptimizationExt` (loaded the moment `using Optimization`
-# # runs) wraps the cached triple into a
-# # `SciMLBase.OptimizationFunction`, exactly the way `LinearSolve.jl`
-# # wraps UMFPACK into a SciML `LinearProblem` solver.
-# #
-# # We route F1Method's internal linear algebra through `LinearSolve.jl`
-# # via the `linsolve` kwarg so the factorised Jacobian lives in a
-# # `LinearSolve.LinearCache` we can share with AIBECS's inner Newton
-# # solver. F1Method's `mem.linear_cache` carries a matrix RHS (the
-# # parameter Jacobian `-∇ₚF`); AIBECS needs a vector RHS, so we keep a
-# # sibling cache (`AIBECScache`) and share the UMFPACK factors via
-# # `cacheval`. Threading this through *every* downstream `CTKAlg`
-# # solve makes the cost-surface sweep below ~10× faster. When the
-# # warm-started factors get too stale, CTKAlg's Shamanskii ratio check
-# # + Armijo line search refresh them automatically.
+# `F1Method.initialize_mem` solves the steady-state problem once and
+# stashes the factorised Jacobian plus the state-parameter sensitivity
+# `∇s`; subsequent objective / gradient / Hessian calls reuse this
+# cache whenever the parameter vector has not moved. The
+# `F1MethodOptimizationExt` (loaded the moment `using Optimization`
+# runs) wraps the cached triple into a
+# `SciMLBase.OptimizationFunction`, exactly the way `LinearSolve.jl`
+# wraps UMFPACK into a SciML `LinearProblem` solver.
+#
+# We route F1Method's internal linear algebra through `LinearSolve.jl`
+# via the `linsolve` kwarg so the factorised Jacobian lives in a
+# `LinearSolve.LinearCache` we can share with AIBECS's inner Newton
+# solver. F1Method's `mem.linear_cache` carries a matrix RHS (the
+# parameter Jacobian `-∇ₚF`); AIBECS needs a vector RHS, so we keep a
+# sibling cache (`AIBECScache`) and share the UMFPACK factors via
+# `cacheval`. Threading this through *every* downstream `CTKAlg`
+# solve makes the cost-surface sweep below ~10× faster. When the
+# warm-started factors get too stale, CTKAlg's Shamanskii ratio check
+# + Armijo line search refresh them automatically.
 
-# using F1Method, Optimization, OptimizationOptimJL, ADTypes
-# using LinearSolve
+using F1Method, Optimization, OptimizationOptimJL, ADTypes
+using LinearSolve
 
-# solver_kwargs = (; maxItNewton = 15)
+solver_kwargs = (; maxItNewton = 15)
 
-# λ₀ = p2λ(p₀)
-# mem = F1Method.initialize_mem(F, ∇ₓf, x0, λ₀, CTKAlg();
-#     ad = AutoForwardDiff(),
-#     linsolve = UMFPACKFactorization(),
-#     solver_kwargs...)
+λ₀ = p2λ(p₀)
+mem = F1Method.initialize_mem(F, ∇ₓf, x0, λ₀, CTKAlg();
+    ad = AutoForwardDiff(),
+    linsolve = UMFPACKFactorization(),
+    solver_kwargs...)
 
-# AIBECScache = init(
-#     LinearProblem(F.jac(x0, λ2p(OptParams, λ₀)), similar(x0)),
-#     UMFPACKFactorization(),
-# )
-# AIBECScache.cacheval = mem.linear_cache.cacheval
-# AIBECScache.isfresh  = false
+AIBECScache = init(
+    LinearProblem(F.jac(x0, λ2p(OptParams, λ₀)), similar(x0)),
+    UMFPACKFactorization(),
+)
+AIBECScache.cacheval = mem.linear_cache.cacheval
+AIBECScache.isfresh  = false
 
-# solver_kwargs = (; solver_kwargs..., linear_cache = AIBECScache)
+solver_kwargs = (; solver_kwargs..., linear_cache = AIBECScache)
 
-# optfn = F1Method.optimization_function(f, F, ∇ₓf, mem, CTKAlg(); solver_kwargs...)
+optfn = F1Method.optimization_function(f, F, ∇ₓf, mem, CTKAlg(); solver_kwargs...)
 
-# # ## Run the optimiser
+# ## Run the optimiser
 
-# # `maxiters = 20` is plenty to watch the outer Newton trust-region
-# # trace drive the gradient norm down by several decades. We attach a
-# # callback that records the parameter vector at each iteration so the
-# # diagnostics figure below can overlay the Newton trajectory on the
-# # cost-surface contourf.
+# `maxiters = 20` is plenty to watch the outer Newton trust-region
+# trace drive the gradient norm down by several decades. We attach a
+# callback that records the parameter vector at each iteration so the
+# diagnostics figure below can overlay the Newton trajectory on the
+# cost-surface contourf.
 
-# λ_trajectory = Vector{Vector{Float64}}()
-# push!(λ_trajectory, copy(λ₀))
-# trajectory_cb = function (state, _)
-#     push!(λ_trajectory, copy(state.u))
-#     return false
-# end
+λ_trajectory = Vector{Vector{Float64}}()
+push!(λ_trajectory, copy(λ₀))
+trajectory_cb = function (state, _)
+    push!(λ_trajectory, copy(state.u))
+    return false
+end
 
-# prob = OptimizationProblem(optfn, copy(λ₀))
-# results = solve(prob, NewtonTrustRegion();
-#     maxiters = 20, callback = trajectory_cb, show_trace = true)
-# p_opt = λ2p(OptParams, results.u)
+prob = OptimizationProblem(optfn, copy(λ₀))
+results = solve(prob, NewtonTrustRegion();
+    maxiters = 20, callback = trajectory_cb, show_trace = true)
+p_opt = λ2p(OptParams, results.u)
 
-# # ## Cost-function sweep around the trajectory
+# ## Cost-function sweep around the trajectory
 
-# # To visualise the loss landscape we evaluate `f(x_ss, λ)` on a 2D
-# # grid in λ-space centred on the Newton trajectory, padded by ±0.2.
-# # Each cell solves the steady-state PO₄ system independently from the
-# # same cold-start `x0`, warm-started by the shared UMFPACK cache from
-# # the previous section. The retcode is ignored — even when Newton
-# # hits `maxItNewton` without fully converging, the residual is small
-# # enough that `f(u, λ)` is a fine approximation of the true cost for a
-# # coarse contour. With 10×10 = 100 solves this typically takes a
-# # couple of minutes.
+# To visualise the loss landscape we evaluate `f(x_ss, λ)` on a 2D
+# grid in λ-space centred on the Newton trajectory, padded by ±0.2.
+# Each cell solves the steady-state PO₄ system independently from the
+# same cold-start `x0`, warm-started by the shared UMFPACK cache from
+# the previous section. The retcode is ignored — even when Newton
+# hits `maxItNewton` without fully converging, the residual is small
+# enough that `f(u, λ)` is a fine approximation of the true cost for a
+# coarse contour. With 10×10 = 100 solves this typically takes a
+# couple of minutes.
 
-# n_grid = 10
-# pad    = 0.2
-# λ1_lo, λ1_hi = extrema(λ[1] for λ in λ_trajectory) .+ (-pad, pad)
-# λ2_lo, λ2_hi = extrema(λ[2] for λ in λ_trajectory) .+ (-pad, pad)
-# λ1_vec = range(λ1_lo, λ1_hi; length = n_grid)
-# λ2_vec = range(λ2_lo, λ2_hi; length = n_grid)
+n_grid = 10
+pad    = 0.2
+λ1_lo, λ1_hi = extrema(λ[1] for λ in λ_trajectory) .+ (-pad, pad)
+λ2_lo, λ2_hi = extrema(λ[2] for λ in λ_trajectory) .+ (-pad, pad)
+λ1_vec = range(λ1_lo, λ1_hi; length = n_grid)
+λ2_vec = range(λ2_lo, λ2_hi; length = n_grid)
 
-# F_grid = Matrix{Float64}(undef, n_grid, n_grid)
-# for j in 1:n_grid, i in 1:n_grid
-#     λ = [λ1_vec[i], λ2_vec[j]]
-#     sol = solve(SteadyStateProblem(F, x0, λ), CTKAlg(); solver_kwargs...)
-#     F_grid[i, j] = f(sol.u, λ)
-# end
+F_grid = Matrix{Float64}(undef, n_grid, n_grid)
+for j in 1:n_grid, i in 1:n_grid
+    λ = [λ1_vec[i], λ2_vec[j]]
+    sol = solve(SteadyStateProblem(F, x0, λ), CTKAlg(); solver_kwargs...)
+    F_grid[i, j] = f(sol.u, λ)
+end
 
 # ## Diagnostics — a single composed Makie figure
 #
