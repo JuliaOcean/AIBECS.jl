@@ -173,3 +173,26 @@ end
         @test ∇ₓF2(x, p) ≈ ∇ₓL(p) + ∇ₓNL(x, p) - T(p) rtol = 1.0e-10
     end
 end
+
+@testset "AIBECSSplitFunction" begin
+    nt = length(T_all)
+    n = nt * nb
+    @unpack xgeo = p
+    x = xgeo * ones(n) .* exp.(cos.(collect(1:n)) / 10)
+    splitfun = AIBECSSplitFunction(T_all, L_all, NL_all, nb)
+    @testset "f1 + f2 ≈ full F" begin
+        @test splitfun.f1(x, p, 0) + splitfun.f2(x, p, 0) ≈ fun(x, p) rtol = 1.0e-10
+    end
+    @testset "f1 = L - T·x" begin
+        @test splitfun.f1(x, p, 0) ≈ L(x, p) - T(p) * x rtol = 1.0e-10
+    end
+    @testset "f2 = NL" begin
+        @test splitfun.f2(x, p, 0) ≈ NL(x, p) rtol = 1.0e-10
+    end
+    @testset "splitfun.jac = ∇ₓL - T (constant in u)" begin
+        # Linear part's Jacobian is u-independent by construction.
+        x2 = randn(n)
+        @test splitfun.jac(x, p, 0) ≈ ∇ₓL(p) - T(p) rtol = 1.0e-10
+        @test splitfun.jac(x2, p, 0) ≈ splitfun.jac(x, p, 0)
+    end
+end

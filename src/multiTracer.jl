@@ -166,14 +166,9 @@ perturb_tracer(xs, j, λ) = (xs[1:(j - 1)]..., xs[j] .+ λ, xs[(j + 1):end]...)
 Returns the state function `F` and its jacobian, `∇ₓF`, as well as a collection of split operators. This is experimental. Use at your own risk!
 """
 function split_state_function_and_Jacobian(Ts::Tuple, Ls::Tuple, NLs::Tuple, nb)
-    nt = length(Ts)
-    tracers(x) = state_to_tracers(x, nb, nt)
-    T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...) # Big T (linear part)
-    NL(x, p) = reduce(vcat, NLⱼ(tracers(x)..., p) for NLⱼ in NLs) # nonlinear part
-    L(x, p) = reduce(vcat, Lⱼ(tracers(x)..., p) for Lⱼ in Ls) # nonlinear part
+    parts = _build_split(Ts, Ls, NLs, nb)
+    (; T, L, NL, ∇ₓL, ∇ₓNL) = parts
     F(x, p) = NL(x, p) + L(x, p) - T(p) * x                     # full 𝐹(𝑥) = -T 𝑥 + 𝐺(𝑥)
-    ∇ₓNL(x, p) = local_jacobian(NLs, x, p, nt, nb)     # Jacobian of nonlinear part
-    ∇ₓL(p) = local_jacobian(Ls, zeros(nt * nb), p, nt, nb)     # Jacobian of nonlinear part
     ∇ₓF(x, p) = ∇ₓNL(x, p) + ∇ₓL(p) - T(p)       # full Jacobian ∇ₓ𝐹(𝑥) = -T + ∇ₓ𝐺(𝑥)
     return F, L, NL, ∇ₓF, ∇ₓL, ∇ₓNL, T
 end
@@ -185,6 +180,60 @@ function split_state_function_and_Jacobian(T, L, NL, nb)
     return F, L, NL, ∇ₓF, ∇ₓL, ∇ₓNL, T
 end
 export split_state_function_and_Jacobian
+
+# Internal helper shared by `split_state_function_and_Jacobian` and
+# `AIBECSSplitFunction`. Returns the per-piece closures (transport `T`, linear
+# sources `L`, nonlinear sources `NL`, and their Jacobians) without committing
+# to a particular packaging.
+function _build_split(Ts::Tuple, Ls::Tuple, NLs::Tuple, nb)
+    nt = length(Ts)
+    tracers(x) = state_to_tracers(x, nb, nt)
+    T(p) = blockdiag([Tⱼ(p) for Tⱼ in Ts]...)
+    L(x, p) = reduce(vcat, Lⱼ(tracers(x)..., p) for Lⱼ in Ls)
+    NL(x, p) = reduce(vcat, NLⱼ(tracers(x)..., p) for NLⱼ in NLs)
+    ∇ₓL(p) = local_jacobian(Ls, zeros(nt * nb), p, nt, nb)
+    ∇ₓNL(x, p) = local_jacobian(NLs, x, p, nt, nb)
+    return (; nt, T, L, NL, ∇ₓL, ∇ₓNL)
+end
+
+"""
+    AIBECSSplitFunction(Ts, Ls, NLs, nb)
+    AIBECSSplitFunction(T, L, NL, nb)
+
+Build a `SciMLBase.SplitFunction` exposing AIBECS's linear / nonlinear / transport
+decomposition in the form expected by IMEX integrators (`SBDF2`, `KenCarp47`,
+`IMEXEuler`, `ARS232`, …):
+
+```math
+\\partial_t \\boldsymbol{x} = \\underbrace{-\\mathbf{T}(\\boldsymbol{p}) \\, \\boldsymbol{x} + \\boldsymbol{L}(\\boldsymbol{x}, \\boldsymbol{p})}_{f_1\\ \\text{(stiff, linear in }u\\text{)}}
+ + \\underbrace{\\boldsymbol{NL}(\\boldsymbol{x}, \\boldsymbol{p})}_{f_2\\ \\text{(nonstiff)}}
+```
+
+`Ts`/`Ls`/`NLs` are tuples mirroring [`AIBECSFunction`](@ref) for multi-tracer
+models; the 4-argument form accepts plain functions/operators for the
+single-tracer case. The Jacobian attached to the returned function is
+``\\nabla_x L(\\boldsymbol{p}) - \\mathbf{T}(\\boldsymbol{p})``, which by
+construction does not depend on `u` — see [`AIBECS.splitodeproblem`](@ref) for
+how this is exploited to reuse the W-matrix factorisation across time steps.
+
+```julia
+splitfun = AIBECSSplitFunction(Ts, Ls, NLs, nb)
+sprob    = AIBECS.splitodeproblem(splitfun, x₀, (0.0, 3.15e13), p)   # 1 Myr
+sol      = solve(sprob, SBDF2(linsolve = UMFPACKFactorization()); dt = 3.15e10)
+```
+"""
+function AIBECSSplitFunction(Ts::Tuple, Ls::Tuple, NLs::Tuple, nb)
+    parts = _build_split(Ts, Ls, NLs, nb)
+    (; T, L, NL, ∇ₓL) = parts
+    f1(u, p, t = 0) = L(u, p) - T(p) * u
+    f2(u, p, t = 0) = NL(u, p)
+    jac(u, p, t = 0) = ∇ₓL(p) - T(p)
+    return SciMLBase.SplitFunction{false}(f1, f2; jac = jac)
+end
+AIBECSSplitFunction(T, L::Function, NL::Function, nb) =
+    AIBECSSplitFunction((T isa Function ? T : p -> T,), (L,), (NL,), nb)
+
+export AIBECSSplitFunction
 
 function local_jacobian(Gs, x, p, nt, nb)
     return reduce(vcat, local_jacobian_row(Gⱼ, x, p, nt, nb) for Gⱼ in Gs)

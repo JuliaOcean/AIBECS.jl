@@ -227,6 +227,85 @@ function ift_solve(A, B, linsolve)
     return Z
 end
 
+# ── Time-stepping helpers: ODEProblem / SplitODEProblem builders ─────────────
+# These attach the sparse Jacobian prototype users need to plug into
+# OrdinaryDiffEq's stiff & IMEX solvers without dense-buffer blow-ups. They
+# require only SciMLBase (already a direct dep); OrdinaryDiffEq itself is the
+# user's choice of loaded solver package.
+
+# Accept plain `Real` or `Unitful.Quantity` for tspan/dt; strip to seconds.
+_to_seconds(x::Real) = float(x)
+_to_seconds(x) = ustrip(upreferred(x))
+
+"""
+    AIBECS.odeproblem(fun::ODEFunction, u0, tspan, p; jac_constant_in_u = false) -> ODEProblem
+
+Wrap an AIBECS [`AIBECSFunction`](@ref) into a `SciMLBase.ODEProblem` with the
+sparse Jacobian buffer type attached as `jac_prototype`. Without this, stiff
+OrdinaryDiffEq solvers (`ImplicitEuler`, `Trapezoid`, `KenCarp4`, …) allocate
+a dense `N×N` Jacobian buffer — fatal at AIBECS production scale (~80 GB
+at `nb = 1e5`).
+
+`tspan` may be given in seconds (`Real`) or with `Unitful` time units; in
+both cases the underlying integration runs in seconds.
+
+When `jac_constant_in_u = true`, the Jacobian is evaluated once at `(u0, p)`,
+cached, and returned by a closure that ignores its `u` argument. This signals
+to the integrator that the W matrix `I/dt - J` can be factorised once and
+reused across all time steps. Use this **only** when you know `G(u,p)` is
+affine in `u` (e.g. ideal age, radiocarbon, any linear tracer); for nonlinear
+sources leave it `false` so the Jacobian is re-evaluated as the integrator
+expects.
+
+```julia
+fun  = AIBECSFunction(T, G, nb)
+prob = AIBECS.odeproblem(fun, x₀, (0.0u"s", 1.0u"Myr"), p; jac_constant_in_u = true)
+sol  = solve(prob, ImplicitEuler(linsolve = UMFPACKFactorization()); dt = ustrip(upreferred(1u"kyr")))
+```
+"""
+function odeproblem(
+        fun::SciMLBase.ODEFunction, u0, tspan, p;
+        jac_constant_in_u::Bool = false,
+    )
+    tspan_s = (_to_seconds(tspan[1]), _to_seconds(tspan[2]))
+    p_val = NonlinearSolveBase.nodual_value(p)
+    u0_val = NonlinearSolveBase.nodual_value(u0)
+    J0 = fun.jac(u0_val, p_val)
+    if jac_constant_in_u
+        const_jac(u, p, t = 0) = J0
+        f = SciMLBase.ODEFunction(fun.f; jac = const_jac, jac_prototype = J0)
+    else
+        f = SciMLBase.ODEFunction(fun.f; jac = fun.jac, jac_prototype = J0)
+    end
+    return SciMLBase.ODEProblem(f, u0, tspan_s, p)
+end
+
+"""
+    AIBECS.splitodeproblem(splitfun::SplitFunction, u0, tspan, p) -> SplitODEProblem
+
+Wrap an AIBECS [`AIBECSSplitFunction`](@ref) into a `SciMLBase.SplitODEProblem`
+with the linear part's Jacobian attached as `jac_prototype` and cached as a
+`u`-independent closure. The linear part's Jacobian is constant in `u` by
+construction (`-T(p) + ∇ₓL(p)`), so the W matrix `I/dt - ∂f₁/∂u` can be
+factorised once and reused across the integration when `dt` is held fixed —
+the key performance win of the IMEX path on AIBECS-scale problems.
+
+```julia
+splitfun = AIBECSSplitFunction(Ts, Ls, NLs, nb)
+sprob    = AIBECS.splitodeproblem(splitfun, x₀, (0.0u"s", 1.0u"Myr"), p)
+sol      = solve(sprob, SBDF2(linsolve = UMFPACKFactorization()); dt = ustrip(upreferred(1u"kyr")))
+```
+"""
+function splitodeproblem(splitfun::SciMLBase.SplitFunction, u0, tspan, p)
+    tspan_s = (_to_seconds(tspan[1]), _to_seconds(tspan[2]))
+    p_val = NonlinearSolveBase.nodual_value(p)
+    u0_val = NonlinearSolveBase.nodual_value(u0)
+    J0 = splitfun.jac(u0_val, p_val)
+    const_jac(u, p, t = 0) = J0
+    f = SciMLBase.SplitFunction{false}(splitfun.f1, splitfun.f2; jac = const_jac, jac_prototype = J0)
+    return SciMLBase.SplitODEProblem(f, u0, tspan_s, p)
+end
+
 # ── NonlinearSolve / LinearSolve extension hooks ──────────────────────────────
 # Bodies live in ext/AIBECSNonlinearSolveExt.jl and only become callable when
 # the user has loaded NonlinearSolve and LinearSolve.

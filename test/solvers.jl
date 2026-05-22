@@ -91,3 +91,74 @@ solver_cases = [
         @test maximum(abs, fun.f(s_warm2.u, testp2, 0)) ≤ 1.0e-6
     end
 end
+
+@testset "Time-stepping" begin
+    nt = length(T_all)
+    n = nt * nb
+    @unpack xgeo = p
+    x0 = xgeo * ones(n)
+    testp = p
+
+    # Reference steady state via CTKAlg.
+    ssprob = SteadyStateProblem(fun, x0, testp)
+    u_ss = solve(ssprob, CTKAlg()).u
+
+    # Long-time integration window: ~10× the slowest model timescale (τgeo
+    # = 1 Myr) is enough that ImplicitEuler's L-stable damping reaches the
+    # steady state to ~percent relative accuracy on toy circulations.
+    t_end = ustrip(upreferred(10.0u"Myr"))
+    dt    = ustrip(upreferred(100.0u"kyr"))
+
+    @testset "ODEProblem → AIBECS.odeproblem attaches sparse jac_prototype" begin
+        odeprob = AIBECS.odeproblem(fun, x0, (0.0, t_end), testp)
+        @test odeprob isa SciMLBase.ODEProblem
+        @test odeprob.f.jac_prototype isa SparseMatrixCSC
+    end
+
+    @testset "ImplicitEuler long-time → CTKAlg steady state" begin
+        odeprob = AIBECS.odeproblem(fun, x0, (0.0, t_end), testp)
+        sol = solve(
+            odeprob, ImplicitEuler(linsolve = UMFPACKFactorization());
+            dt = dt, saveat = [t_end],
+        )
+        @test SciMLBase.successful_retcode(sol.retcode)
+        @test maximum(abs, sol.u[end] - u_ss) ≤ 1.0e-2 * maximum(abs, u_ss)
+    end
+
+    @testset "splitodeproblem jac is constant in u" begin
+        # Use the bgc L/NL split to confirm the structural promise:
+        # the linear part's Jacobian (-T + ∇ₓL) does not depend on u.
+        splitfun = AIBECSSplitFunction(T_all, L_all, NL_all, nb)
+        sprob = AIBECS.splitodeproblem(splitfun, x0, (0.0, t_end), testp)
+        x_alt = x0 .* (1.0 .+ 0.1 .* randn(n))
+        @test sprob.f.jac(x0, testp, 0.0) === sprob.f.jac(x_alt, testp, 0.0)
+    end
+
+    # IMEX cross-check on a linear-only model.
+    #
+    # The bgc test model puts Michaelis-Menten uptake (stiff, τDIP ≈ 30 days)
+    # into the *nonlinear* part of the split — which IMEX schemes like SBDF2
+    # treat explicitly. On a 100-kyr step that's catastrophically unstable
+    # (the explicit dt would have to be a fraction of τDIP). To verify the
+    # IMEX wiring honestly, we build an inline single-tracer linear model
+    # where all reactive dynamics live in L and NL is zero. SBDF2 then
+    # reduces to a stable implicit-multistep march, and we can cross-check
+    # against the same circulation's steady-state solver.
+    @testset "SBDF2 (IMEX) on linear model → CTKAlg steady state" begin
+        τ_lin = ustrip(upreferred(1.0u"yr"))
+        Llin(x, p) = (xgeo .- x) / τ_lin
+        NLzero(x, p) = zero(x)
+        Glin(x, p) = Llin(x, p)
+        funL = AIBECSFunction(T_D, Glin, nb)
+        splitfunL = AIBECSSplitFunction(T_D, Llin, NLzero, nb)
+        x0L = xgeo * ones(nb)
+        u_ss_L = solve(SteadyStateProblem(funL, x0L, testp), CTKAlg()).u
+        sprobL = AIBECS.splitodeproblem(splitfunL, x0L, (0.0, t_end), testp)
+        sol = solve(
+            sprobL, SBDF2(linsolve = UMFPACKFactorization());
+            dt = dt, saveat = [t_end],
+        )
+        @test SciMLBase.successful_retcode(sol.retcode)
+        @test maximum(abs, sol.u[end] - u_ss_L) ≤ 1.0e-2 * maximum(abs, u_ss_L)
+    end
+end

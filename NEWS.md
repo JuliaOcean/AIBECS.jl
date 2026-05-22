@@ -1,5 +1,27 @@
 # AIBECS.jl release notes
 
+## Unreleased — Time-stepping support
+
+AIBECS models can now be **time-stepped** with any
+[OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) scheme, in
+addition to the existing steady-state solver path (`CTKAlg`,
+`NewtonRaphson`). The steady-state API is unchanged.
+
+Two new public entry points:
+
+- `AIBECSSplitFunction(Ts, Ls, NLs, nb)` — builds a
+  `SciMLBase.SplitODEFunction` from AIBECS's linear / nonlinear / transport
+  decomposition, ready for IMEX integrators (`SBDF2`, `KenCarp4`, …).
+- `AIBECS.odeproblem(fun, u0, tspan, p; jac_constant_in_u = false)` and
+  `AIBECS.splitodeproblem(splitfun, u0, tspan, p)` — wrappers that attach
+  the sparse Jacobian buffer type (`jac_prototype`) so stiff solvers
+  don't fall back to dense `N×N` allocations. With
+  `jac_constant_in_u = true`, the Jacobian is cached so that the W-matrix
+  factorisation can be reused across steps — a large speed-up for affine
+  models (ideal age, radiocarbon, linear restoring).
+
+See [How-to: Time-stepping](@ref timestepping) for the recipes.
+
 ## v0.15.0 — Package extensions
 
 This release moves a large fraction of AIBECS's heavy dependencies from

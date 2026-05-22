@@ -24,6 +24,8 @@ using Interpolations # AIBECSRecipesBaseExt (RatioAtStation recipe)
 using RecipesBase    # plotting recipes
 using NonlinearSolve # AIBECSNonlinearSolveExt
 using LinearSolve    # AIBECSNonlinearSolveExt
+using OrdinaryDiffEqSDIRK         # ImplicitEuler, Trapezoid, TRBDF2, KenCarp4
+using OrdinaryDiffEqBDF           # SBDF2, IMEXEuler, FBDF
 
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
