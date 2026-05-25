@@ -17,7 +17,7 @@ like to see explored:
 
 - **Probabilistic programming via [Turing.jl](https://turinglang.org/).**
   AIBECS lets you declare priors with `@prior` (or by
-  overloading [`prior`](@ref AIBECS.prior) directly), and the optimiser
+  overloading `prior` directly), and the optimiser
   in the how-to minimises `-log posterior` up to a constant. But this is
   bespoke code and not a careful, expert-written Bayesian workflow. Wiring
   AIBECS parameters into a Turing `@model` would unlock full
