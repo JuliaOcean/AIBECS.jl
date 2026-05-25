@@ -107,32 +107,29 @@ Two natural extensions:
 
 ## Non-ocean components
 
-Several biogeochemical problems need state variables that aren't 3-D
+Several biogeochemical problems need state variables that aren't 3D
 ocean tracers:
 
 - **Slab atmospheres.** A single well-mixed atmospheric reservoir for
   CO₂ (or O₂) is required to close the carbon cycle — pCO₂(atm) evolves
   in time and exchanges with surface DIC via air–sea flux. See
-  `~/Projects/MatrixMarineCarbonCycleModel/src/F_PCO2.m` for a working
-  reference: `pCO2atm` is carried as a 0-D state variable alongside the
-  3-D tracers, with a global-conservation equation
-  `(mu_C - v' * (DIC + PIC + DOC + POCf + POCs)) / mu_air`.
+  [PCO2 model](https://github.com/briochemc/MatrixMarineCarbonCycleModel/blob/main/src/F_PCO2.m) for an example
+  reference where `pCO2atm` is carried as a 0D state variable alongside the
+  3D tracers.
 - **Surface-mean intermediates.** Quantities like a surface-mean DIC or
-  ALK (the `DICsrf`/`ALKsrf` variables in `F_PCO2.m`, restored on
-  `tau_srf`) are useful to apply precipitation/evaporation virtual
+  ALK (like the `DICsrf`/`ALKsrf` variables in the PCO2 model) are useful to apply precipitation/evaporation virtual
   fluxes consistently across the surface without recomputing the mean
   inside every right-hand-side call.
 - **Other "auxiliary" state.** Sediment pools, ice reservoirs, simple
-  land boxes — anything that couples to the 3-D field through a small
+  land boxes — anything that couples to the 3D field through a small
   number of boundary fluxes.
 
 The common requirement is letting AIBECS's
 [`AIBECSFunction`](@ref AIBECS.AIBECSFunction) carry state vectors that
 aren't shaped like a tracer-on-the-grid, with the Jacobian assembly
-extended to handle the resulting block-sparse couplings (3-D ↔ surface,
-3-D ↔ 0-D atmosphere). The Jacobian rows/columns for these blocks are
-already worked out in the MATLAB reference — porting the bookkeeping
-across is the bulk of the work.
+extended to handle the resulting block-sparse couplings (3D ↔ 2D surface,
+3D ↔ 0D atmosphere). Writing the automatic scaffolding for building
+the Jacobian rows/columns for these different-sized blocks is the bulk of the work.
 
 ## Coarsening via lump-and-spray
 
@@ -143,18 +140,15 @@ provides `lump_and_spray(wet3D, vol, T; di, dj, dk)` which returns
 (and `LUMP * x` / `SPRAY * x_c` move tracer fields between the two
 grids). Wiring this into AIBECS so any shipped circulation can be
 coarsened on demand would unlock fast iteration on parameter sweeps and
-sensitivity studies before refining on the native grid. The natural
-surface is something like `coarsen(circulation; di=2, dj=2, dk=1)`
-returning a circulation object with the same fields plus the `LUMP` /
-`SPRAY` pair for moving observations or initial conditions across.
+sensitivity studies before refining on the native grid.
 
 ## Iterative linear solvers and preconditioners
 
-Steady-state solves currently rely on sparse LU through
+Steady-state solves currently rely on direct sparse solvers on the CPU
 [LinearSolve.jl](https://docs.sciml.ai/LinearSolve/stable/) (UMFPACK by
-default). That is the right choice for OCIM-sized problems on a CPU,
-but it does not scale — both memory and factorisation time grow quickly
-as resolution increases, and there is no GPU path. Krylov-subspace
+default). That is the right choice for OCIM-sized problems,
+but it does not scale well, as both memory and factorisation time grow quickly
+with increasing resolution, and there is no GPU path (like CUDSS). Krylov-subspace
 solvers (GMRES, BiCGStab) from
 [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) or
 [IterativeSolvers.jl](https://github.com/JuliaLinearAlgebra/IterativeSolvers.jl)
