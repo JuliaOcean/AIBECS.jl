@@ -180,25 +180,14 @@ f, ∇ₓf = f_and_∇ₓf(ωs, μx, σ²x, v, ωp, OptParams)
 
 # ## F-1 memory cache + warm-started linear solve
 
-# `F1Method.initialize_mem` solves the steady-state problem once and
-# stashes the factorised Jacobian plus the state-parameter sensitivity
-# `∇s`; subsequent objective / gradient / Hessian calls reuse this
-# cache whenever the parameter vector has not moved. The
-# `F1MethodOptimizationExt` (loaded the moment `using Optimization`
-# runs) wraps the cached triple into a
-# `SciMLBase.OptimizationFunction`, exactly the way `LinearSolve.jl`
-# wraps UMFPACK into a SciML `LinearProblem` solver.
-#
-# We route F1Method's internal linear algebra through `LinearSolve.jl`
-# via the `linsolve` kwarg so the factorised Jacobian lives in a
-# `LinearSolve.LinearCache` we can share with AIBECS's inner Newton
-# solver. F1Method's `mem.linear_cache` carries a matrix RHS (the
-# parameter Jacobian `-∇ₚF`); AIBECS needs a vector RHS, so we keep a
-# sibling cache (`AIBECScache`) and share the UMFPACK factors via
-# `cacheval`. Threading this through *every* downstream `CTKAlg`
-# solve makes the cost-surface sweep below ~10× faster. When the
-# warm-started factors get too stale, CTKAlg's Shamanskii ratio check
-# + Armijo line search refresh them automatically.
+# `F1Method.initialize_mem` solves the steady state once and caches the
+# factorised Jacobian; later objective / gradient / Hessian calls reuse it
+# whenever the parameter vector has not moved. We route F1Method's linear
+# algebra through `LinearSolve.jl` and share its UMFPACK factors with a
+# sibling cache that AIBECS's inner Newton step uses
+# (`AIBECScache.cacheval = mem.linear_cache.cacheval`) — this makes the
+# cost-surface sweep below ~10× faster. `CTKAlg`'s Shamanskii + Armijo
+# logic refreshes the factors automatically when they go stale.
 
 using F1Method, Optimization, OptimizationOptimJL, ADTypes
 using LinearSolve
@@ -244,15 +233,10 @@ p_opt = λ2p(OptParams, results.u)
 
 # ## Cost-function sweep around the trajectory
 
-# To visualise the loss landscape we evaluate `f(x_ss, λ)` on a 2D
-# grid in λ-space centred on the Newton trajectory, padded by ±0.2.
-# Each cell solves the steady-state PO₄ system independently from the
-# same cold-start `x0`, warm-started by the shared UMFPACK cache from
-# the previous section. The retcode is ignored — even when Newton
-# hits `maxItNewton` without fully converging, the residual is small
-# enough that `f(u, λ)` is a fine approximation of the true cost for a
-# coarse contour. With 10×10 = 100 solves this typically takes a
-# couple of minutes.
+# Evaluate `f(x_ss, λ)` on a 10×10 grid in λ-space centred on the trajectory
+# (padded by ±0.2). Each cell solves the steady state from the same
+# cold-start `x0`, warm-started by the shared UMFPACK cache from the previous
+# section. Takes a couple of minutes.
 
 n_grid = 10
 pad    = 0.2
@@ -268,47 +252,21 @@ for j in 1:n_grid, i in 1:n_grid
     F_grid[i, j] = f(sol.u, λ)
 end
 
-# ## Diagnostics — a single composed Makie figure
+# ## Diagnostics — setup
 #
-# We pull in `CairoMakie` (the headless backend used elsewhere in the
-# docs build — see the [Makie how-to](@ref plots-makie)) and bundle
-# every diagnostic into one `Figure` with five nested `GridLayout`s:
-#
-# - **G1** (top-left) — density-coloured scatter of optimised vs WOA
-#   PO₄ on a `DataAspect()` axis with `(0, 3)` μM limits on both
-#   sides; each wet box is plotted at `(WOA, optimised)`, coloured by
-#   a bivariate KDE of the point cloud (`:plasma`), with a 1:1
-#   reference line.
-# - **G2** (top-right) — `contourf!` of `√f(p)` in `(τ_DIP, τ_POP)`
-#   space on log axes (`:BrBG`), with the recorded Newton trajectory
-#   drawn on top (red line + markers, red-star optimum). The first
-#   iterate and the optimum are tagged via `annotation!`.
-# - **G3** (middle row) — horizontal slices at 1000 m: optimised | WOA
-#   | difference, with `colorrange = (0, 3)` μM under viridis for the
-#   first two and `(-1, 1)` μM under `cgrad(:RdBu; rev = true)` for
-#   the difference.
-# - **G4** (zonal-mean block) — 3-row × 3-column basin diagnostics
-#   grid: rows are optimised / WOA / optimised − WOA; columns are
-#   Pacific / Atlantic / Indian, each extended to the pole via its
-#   Southern Ocean sector. Each column is cropped to its wet-cell
-#   latitude span (`wetlatrange`, as in the Makie how-to) and sized
-#   proportionally. The model and WOA rows share the `(0, 3)` μM
-#   viridis colorbar; the diff row gets its own `(-1, 1)` μM `:RdBu`
-#   (reversed) colorbar. Row identity is marked by a rotated `Label`
-#   in column 0.
-# - **G5** (bottom row) — one depth-profile axis per basin showing
-#   the optimised vs WOA basin mean (no diff).
+# We use `CairoMakie` (the headless backend used elsewhere in the docs
+# build — see the [Makie how-to](@ref plots-makie)), solve once at the
+# optimum, strip units, and pre-compute basin masks and the shared colour
+# scales that the figures below reuse.
 
 using CairoMakie
 using OceanBasins
 using KernelDensity
 CairoMakie.activate!(type = "png")
 
-# Solve once more at the optimum to get the optimised DIP field.
 prob_opt = SteadyStateProblem(F, x0, p_opt)
 DIPopt, _ = state_to_tracers(solve(prob_opt, CTKAlg(); solver_kwargs...).u, grd)
 
-# Strip units so the plotting calls work with plain numbers in μM.
 DIPopt_μM = ustrip.(μM, DIPopt  .* (mol/m^3))
 μWOA_μM   = ustrip.(μM, μDIPobs .* (mol/m^3))
 diff_μM   = DIPopt_μM .- μWOA_μM
@@ -318,19 +276,17 @@ lat   = ustrip.(grd.lat)
 lon   = ustrip.(grd.lon)
 maxdepth_round = ceil(maximum(depth) / 1000) * 1000
 
-# G2 — convert sweep grid and trajectory from λ-space to physical
-# units. `λ2p` handles the inverse bijector per-parameter.
-τDIP_grid = [λ2p(OptParams, [λ1, λ₀[2]]).τ_DIP for λ1 in λ1_vec]
-τPOP_grid = [λ2p(OptParams, [λ₀[1], λ2]).τ_POP for λ2 in λ2_vec]
-τDIP_traj = [λ2p(OptParams, λ).τ_DIP for λ in λ_trajectory]
-τPOP_traj = [λ2p(OptParams, λ).τ_POP for λ in λ_trajectory]
+dip_levels  = 0:0.25:3.0
+dip_cmap    = cgrad(:viridis, length(dip_levels) - 1; categorical = true)
+diff_levels = -1.0:0.2:1.0
+diff_cmap   = cgrad(:RdBu, length(diff_levels) - 1; categorical = true, rev = true)
 
-# G3 — horizontal slices at 1000 m.
-sl_opt  = AIBECS.horizontalslice(DIPopt_μM, grd; depth = 1000)
-sl_obs  = AIBECS.horizontalslice(μWOA_μM,   grd; depth = 1000)
-sl_diff = sl_opt .- sl_obs
+latticks = (-90:30:90, ["90°S", "60°S", "30°S", "0°", "30°N", "60°N", "90°N"])
+lonticks = (0:60:360, ["0°", "60°E", "120°E", "180°", "120°W", "60°W", "0°"])
+gcdepthticks = (0:1000:maxdepth_round, string.(Int.(0:1000:maxdepth_round)))
+plus_minus_ticks = (-1:0.5:1, ["−1", "−0.5", "0", "+0.5", "+1"])
 
-# G4 / G5 — per-basin (extended-to-pole) masks for zonal means and profiles.
+# Basin masks, each extended to the pole via its Southern Ocean sector.
 OCEANS = oceanpolygons()
 lat_grd, lon_grd = latvec(grd), lonvec(grd)
 mPAC = ispacific2(lat_grd, lon_grd, OCEANS)  .| isSOpacific(lat_grd, lon_grd, OCEANS)
@@ -342,133 +298,72 @@ basin_specs = [
     (name = "Indian",   mask = mIND, color = :darkorange),
 ]
 
-# Shared colour scales — fixed at user-requested ranges so every map /
-# zonal panel uses the same bins.
-dip_levels  = 0:0.25:3.0
-dip_cmap    = cgrad(:viridis, length(dip_levels) - 1; categorical = true)
-diff_levels = -1.0:0.2:1.0
-diff_cmap   = cgrad(:RdBu, length(diff_levels) - 1; categorical = true, rev = true)
+# ## Optimised vs WOA scatter
+#
+# Each wet box at `(WOA, optimised)`, coloured by its mass-weighted density
+# quantile under a volume-weighted bivariate KDE. Walking the sorted
+# cumulative density once gives both the iso-mass contour levels and the
+# per-point colours.
 
-# Tick / label helpers.
-latticks = (-90:30:90, ["90°S", "60°S", "30°S", "0°", "30°N", "60°N", "90°N"])
-lonticks = (0:60:360, ["0°", "60°E", "120°E", "180°", "120°W", "60°W", "0°"])
-gcdepthticks = (0:1000:maxdepth_round, string.(Int.(0:1000:maxdepth_round)))
-plus_minus_ticks = (-1:0.5:1, ["−1", "−0.5", "0", "+0.5", "+1"])
-
-fig = Figure(size = (1600, 1900))
-g1 = fig[1, 1]   = GridLayout()
-g2 = fig[1, 2]   = GridLayout()
-g3 = fig[2, 1:2] = GridLayout()
-g4 = fig[3, 1:2] = GridLayout()
-g5 = fig[4, 1:2] = GridLayout()
-rowsize!(fig.layout, 1, Auto(1.2))
-rowsize!(fig.layout, 2, Auto(0.85))
-rowsize!(fig.layout, 3, Auto(2.0))
-rowsize!(fig.layout, 4, Auto(0.7))
-
-## ── G1: density-coloured scatter ────────────────────────────────
-ax_sc = Axis(g1[1, 1];
-    xlabel = "WOA PO₄ (μM)", ylabel = "optimised PO₄ (μM)",
-    xgridvisible = false, ygridvisible = false,
-    title = "optimised vs WOA (KDE-coloured)",
-    aspect = DataAspect(),
-    limits = (0, 3, 0, 3))
-## `kde` builds the gridded density; wrap it once in `InterpKDE` and
-## broadcast on its underlying interpolator. The naïve
-## `[pdf(d_kde, xi, yi) for (xi, yi) in ...]` rebuilds the InterpKDE
-## (incl. the quadratic B-spline extrapolator) on *every* call —
-## ~hundreds of seconds for ~84k points. Broadcasting `ik.itp` once
-## is the same numerical result and runs in ~30 ms here.
 bandwidth = 0.25 .* KernelDensity.default_bandwidth((μWOA_μM, DIPopt_μM))
 d_kde = kde((μWOA_μM, DIPopt_μM); bandwidth, weights = v ./ sum(v))
 ik = InterpKDE(d_kde)
 
-## Map each density value (point or contour) to its mass-weighted density
-## rank: the fraction of (volume-weighted) probability mass at lower density.
-## Sort cells ascending, cumulate, and look up either the density at a target
-## quantile (contour levels) or the quantile at a point density (scatter
-## colors). Walking ascending puts the peak at q ≈ 1 (almost all mass is at
-## lower density than the peak) so it lights up plasma's bright end.
 dx, dy = step(d_kde.x), step(d_kde.y)
 ρ_asc = sort(vec(d_kde.density))
 cum_asc = cumsum(ρ_asc) .* (dx * dy)
-cum_asc ./= cum_asc[end]   # normalise away the small mass lost outside the grid
+cum_asc ./= cum_asc[end]
 mass_qs = 0.1:0.1:0.9
 levels = [ρ_asc[searchsortedfirst(cum_asc, q)] for q in mass_qs]
 point_q = [(i = searchsortedlast(ρ_asc, d);
             i == 0 ? 0.0 : cum_asc[i]) for d in ik.itp.(μWOA_μM, DIPopt_μM)]
 
-sc = scatter!(ax_sc, μWOA_μM, DIPopt_μM;
+fig = Figure()
+ax = Axis(fig[1, 1];
+    xlabel = "WOA PO₄ (μM)", ylabel = "optimised PO₄ (μM)",
+    xgridvisible = false, ygridvisible = false,
+    aspect = DataAspect(), limits = (0, 3, 0, 3))
+sc = scatter!(ax, μWOA_μM, DIPopt_μM;
     markersize = 2, color = point_q, colormap = :plasma, colorrange = (0, 1))
-contour!(ax_sc, d_kde.x, d_kde.y, d_kde.density;
+contour!(ax, d_kde.x, d_kde.y, d_kde.density;
     levels = levels, color = (:black, 0.5), linewidth = 1.2)
-lines!(ax_sc, [0, 3], [0, 3];
-    color = :red, linestyle = :dash)
-Colorbar(g1[1, 2], sc; vertical = true, flipaxis = true,
-    label = "density", ticks = mass_qs)
-colsize!(g1, 1, Aspect(1, 1.0))
+lines!(ax, [0, 3], [0, 3]; color = :red, linestyle = :dash)
+Colorbar(fig[1, 2], sc; label = "density quantile", ticks = mass_qs)
+fig
 
-## ── G2: cost surface + Newton trajectory ────────────────────────
-ax_cs = Axis(g2[1, 1];
-    xlabel = "τ_DIP (d)", ylabel = "τ_POP (d)",
-    xscale = log10, yscale = log10,
-    title = "√f(p) cost surface + Newton trajectory")
-co_cs = contourf!(ax_cs, τDIP_grid, τPOP_grid, sqrt.(F_grid);
-    levels = 20, colormap = cgrad(:BrBG; rev = true))
-scatterlines!(ax_cs, τDIP_traj, τPOP_traj; color = :red, linewidth = 2, linestyle = :dash, marker = :circle, markersize = 4)
-scatter!(ax_cs, [τDIP_traj[end]], [τPOP_traj[end]];
-    marker = :star5, markersize = 22, color = :yellow,
-    strokecolor = :black, strokewidth = 1.5)
-annotation!(ax_cs, 70, -40, τDIP_traj[1], τPOP_traj[1];
-    text = "first iterate", path = Ann.Paths.Corner())
-annotation!(ax_cs, -70, +40, τDIP_traj[end], τPOP_traj[end];
-    text = "optimal solution", path = Ann.Paths.Corner(), color = :white)
-Colorbar(g2[1, 2], co_cs; label = "√f(p)")
+# ## Per-basin depth profiles — model vs WOA
 
-## ── G3: horizontal slices at 1000 m ─────────────────────────────
-function map_axis(grid_pos; title = "")
-    Axis(grid_pos;
-        backgroundcolor = :lightgray,
+fig = Figure(size = (900, 350))
+for (c, basin) in enumerate(basin_specs)
+    ax = Axis(fig[1, c];
         xgridvisible = false, ygridvisible = false,
-        xticks = lonticks, yticks = latticks,
-        title = title,
-        limits = (0, 360, -90, 90))
+        xlabel = "PO₄ (μM)",
+        ylabel = c == 1 ? "depth (m)" : "",
+        yreversed = true, yticks = gcdepthticks,
+        title = basin.name,
+        limits = (nothing, (0, maxdepth_round)))
+    prof_model = AIBECS.horizontalmean(DIPopt_μM, grd, basin.mask)
+    prof_obs   = AIBECS.horizontalmean(μWOA_μM,   grd, basin.mask)
+    lines!(ax, prof_model, depth;
+        color = basin.color, linewidth = 2, label = "model")
+    lines!(ax, prof_obs, depth;
+        color = basin.color, linewidth = 2, linestyle = :dash, label = "WOA")
+    c == 1 && axislegend(ax; position = :rb, framevisible = false)
+    c > 1 && hideydecorations!(ax;
+        ticklabels = true, label = true, ticks = false, grid = false)
 end
+fig
 
-ax_sl_m = map_axis(g3[1, 1]; title = "optimised")
-co_sl_m = contourf!(ax_sl_m, lon, lat, sl_opt';
-    levels = dip_levels, colormap = dip_cmap, nan_color = :lightgray,
-    extendlow = dip_cmap[1], extendhigh = dip_cmap[end])
-ax_sl_o = map_axis(g3[1, 2]; title = "WOA")
-contourf!(ax_sl_o, lon, lat, sl_obs';
-    levels = dip_levels, colormap = dip_cmap, nan_color = :lightgray,
-    extendlow = dip_cmap[1], extendhigh = dip_cmap[end])
-ax_sl_d = map_axis(g3[1, 3]; title = "optimised − WOA")
-co_sl_d = contourf!(ax_sl_d, lon, lat, sl_diff';
-    levels = diff_levels, colormap = diff_cmap, nan_color = :lightgray,
-    extendlow = diff_cmap[1], extendhigh = diff_cmap[end])
+# ## Per-basin zonal means — model / WOA / model − WOA
+#
+# Columns cropped to each basin's wet-cell latitude span and sized
+# proportionally — same trick as in [the Makie how-to](@ref plots-makie).
 
-linkyaxes!(ax_sl_m, ax_sl_o, ax_sl_d)
-hideydecorations!(ax_sl_o; ticklabels = true, label = false, ticks = false, grid = false)
-hideydecorations!(ax_sl_d; ticklabels = true, label = false, ticks = false, grid = false)
-
-cb_g3_v = Colorbar(g3[2, 1:2], co_sl_m; vertical = false, flipaxis = false,
-    label = "PO₄ @ 1000 m (μM)", ticks = 0:1:3)
-cb_g3_v.width = Relative(0.7)
-cb_g3_d = Colorbar(g3[2, 3], co_sl_d; vertical = false, flipaxis = false,
-    label = "optimised − WOA (μM)", ticks = plus_minus_ticks)
-cb_g3_d.width = Relative(0.85)
-
-## ── G4: per-basin zonal means (3×3) ─────────────────────────────
 row_specs = [
     (label = "model",         field = DIPopt_μM, levels = dip_levels,  cmap = dip_cmap),
     (label = "WOA",           field = μWOA_μM,   levels = dip_levels,  cmap = dip_cmap),
     (label = "model − WOA",   field = diff_μM,   levels = diff_levels, cmap = diff_cmap),
 ]
-
-## Pre-compute the zonal means once so the per-basin wet-latitude
-## range (mirroring `wetlatrange` from the Makie how-to) can crop and
-## size each column proportionally to the data it actually covers.
 zm_grid = [
     [AIBECS.zonalmean(spec.field, grd, basin.mask) for basin in basin_specs]
     for spec in row_specs
@@ -482,96 +377,84 @@ function wetlatrange(zm, pad = 5)
 end
 xlim_per_basin = [wetlatrange(zm_grid[1][c]) for c in eachindex(basin_specs)]
 
-function zonal_axis_g4(grid_pos, xlim; ylabel = "", title = "")
-    Axis(grid_pos;
+## Documenter `@example` blocks run at module scope, where bare
+## `co_v = co` inside a `for` would shadow the outer binding; `Ref` sidesteps it.
+co_v = Ref{Any}()
+co_d = Ref{Any}()
+
+fig = Figure(size = (1400, 900))
+for (r, spec) in enumerate(row_specs), (c, basin) in enumerate(basin_specs)
+    xlim = xlim_per_basin[c]
+    ax = Axis(fig[r, c];
         backgroundcolor = :lightgray,
         xgridvisible = false, ygridvisible = false,
         xticksmirrored = true, yticksmirrored = true,
         xticks = latticks, yticks = gcdepthticks,
         yreversed = true,
-        title = title,
-        limits = (xlim[1], xlim[2], 0, maxdepth_round),
-        ylabel)
-end
-
-## Representative contourf handles for the two colorbars below — we
-## fill them inside the loop. Using `Ref{Any}` (instead of plain
-## `co_g4_v = nothing`) because Documenter `@example` blocks run at
-## module scope, where bare `co_g4_v = co` inside a `for` would shadow
-## the outer binding; `Ref` is mutated via `[]`, which sidesteps the
-## issue.
-co_g4_v = Ref{Any}()
-co_g4_d = Ref{Any}()
-
-for (r, spec) in enumerate(row_specs)
-    for (c, basin) in enumerate(basin_specs)
-        ax = zonal_axis_g4(g4[r, c], xlim_per_basin[c];
-            ylabel = c == 1 ? "depth (m)" : "",
-            title  = r == 1 ? basin.name : "")
-        co = contourf!(ax, lat, depth, zm_grid[r][c];
-            levels = spec.levels, colormap = spec.cmap, nan_color = :lightgray,
-            extendlow = spec.cmap[1], extendhigh = spec.cmap[end])
-        r == 1 && c == 1 && (co_g4_v[] = co)
-        r == 3 && c == 1 && (co_g4_d[] = co)
-        c > 1 && hideydecorations!(ax;
-            ticklabels = true, label = true, ticks = false, grid = false)
-        r < 3 && hidexdecorations!(ax;
-            ticklabels = true, label = true, ticks = false, grid = false)
-    end
-end
-
-## Row identity labels in column 0.
-Label(g4[1, 0], "model";        rotation = π/2, font = :bold, fontsize = 16, tellheight = false)
-Label(g4[2, 0], "WOA";          rotation = π/2, font = :bold, fontsize = 16, tellheight = false)
-Label(g4[3, 0], "model − WOA";  rotation = π/2, font = :bold, fontsize = 16, tellheight = false)
-
-## Shared vertical colorbars — viridis spans rows 1+2, RdBu sits under row 3.
-cb_g4_v = Colorbar(g4[1:2, length(basin_specs) + 1], co_g4_v[];
-    label = "PO₄ (μM)", ticks = 0:1:3)
-cb_g4_v.height = Relative(0.85)
-cb_g4_d = Colorbar(g4[3, length(basin_specs) + 1], co_g4_d[];
-    label = "model − WOA (μM)", ticks = plus_minus_ticks)
-cb_g4_d.height = Relative(0.85)
-
-## Column sizing — narrow row-label / colorbar cols, basin columns
-## sized in proportion to their wet-latitude span (the same trick the
-## Makie how-to uses to avoid wasting plot width on dry latitudes).
-colsize!(g4, 0, Auto(0.15))
-for (c, xlim) in enumerate(xlim_per_basin)
-    colsize!(g4, c, Auto(xlim[2] - xlim[1]))
-end
-colsize!(g4, length(basin_specs) + 1, Auto(0.2))
-
-## ── G5: per-basin depth profiles — model vs WOA ─────────────────
-for (c, basin) in enumerate(basin_specs)
-    ax_p = Axis(g5[1, c];
-        xgridvisible = false, ygridvisible = false,
-        xlabel = "PO₄ (μM)",
         ylabel = c == 1 ? "depth (m)" : "",
-        yreversed = true,
-        yticks = gcdepthticks,
-        title = basin.name,
-        limits = (nothing, (0, maxdepth_round)))
-    prof_model = AIBECS.horizontalmean(DIPopt_μM, grd, basin.mask)
-    prof_obs   = AIBECS.horizontalmean(μWOA_μM,   grd, basin.mask)
-    lines!(ax_p, prof_model, depth;
-        color = basin.color, linewidth = 2, label = "model")
-    lines!(ax_p, prof_obs, depth;
-        color = basin.color, linewidth = 2, linestyle = :dash, label = "WOA")
-    c == 1 && axislegend(ax_p; position = :rb, framevisible = false)
-    c > 1 && hideydecorations!(ax_p;
-        ticklabels = true, label = true, ticks = false, grid = false)
+        title = r == 1 ? basin.name : "",
+        limits = (xlim[1], xlim[2], 0, maxdepth_round))
+    co = contourf!(ax, lat, depth, zm_grid[r][c];
+        levels = spec.levels, colormap = spec.cmap, nan_color = :lightgray,
+        extendlow = spec.cmap[1], extendhigh = spec.cmap[end])
+    r == 1 && c == 1 && (co_v[] = co)
+    r == 3 && c == 1 && (co_d[] = co)
+    c > 1 && hideydecorations!(ax; ticklabels = true, label = true, ticks = false, grid = false)
+    r < 3 && hidexdecorations!(ax; ticklabels = true, label = true, ticks = false, grid = false)
 end
-
-## Breathing room between the five outer grid blocks.
-colgap!(fig.layout, 1, 30)
-rowgap!(fig.layout, 1, 30)
-rowgap!(fig.layout, 2, 30)
-rowgap!(fig.layout, 3, 30)
-
+Label(fig[1, 0], "model";        rotation = π/2, font = :bold, fontsize = 16, tellheight = false)
+Label(fig[2, 0], "WOA";          rotation = π/2, font = :bold, fontsize = 16, tellheight = false)
+Label(fig[3, 0], "model − WOA";  rotation = π/2, font = :bold, fontsize = 16, tellheight = false)
+Colorbar(fig[1:2, length(basin_specs) + 1], co_v[];
+    label = "PO₄ (μM)", ticks = 0:1:3)
+Colorbar(fig[3, length(basin_specs) + 1], co_d[];
+    label = "model − WOA (μM)", ticks = plus_minus_ticks)
+colsize!(fig.layout, 0, Auto(0.15))
+for (c, xlim) in enumerate(xlim_per_basin)
+    colsize!(fig.layout, c, Auto(xlim[2] - xlim[1]))
+end
+colsize!(fig.layout, length(basin_specs) + 1, Auto(0.25))
 fig
 
-# Side-by-side parameter tables, initial vs. optimised:
+# ## Horizontal slices at 1000 m — model / WOA / diff
+
+sl_opt  = AIBECS.horizontalslice(DIPopt_μM, grd; depth = 1000)
+sl_obs  = AIBECS.horizontalslice(μWOA_μM,   grd; depth = 1000)
+sl_diff = sl_opt .- sl_obs
+
+function map_axis(grid_pos; title = "")
+    Axis(grid_pos;
+        backgroundcolor = :lightgray,
+        xgridvisible = false, ygridvisible = false,
+        xticks = lonticks, yticks = latticks,
+        title = title, limits = (0, 360, -90, 90))
+end
+
+fig = Figure(size = (1400, 500))
+ax_m = map_axis(fig[1, 1]; title = "optimised")
+co_m = contourf!(ax_m, lon, lat, sl_opt';
+    levels = dip_levels, colormap = dip_cmap, nan_color = :lightgray,
+    extendlow = dip_cmap[1], extendhigh = dip_cmap[end])
+ax_o = map_axis(fig[1, 2]; title = "WOA")
+contourf!(ax_o, lon, lat, sl_obs';
+    levels = dip_levels, colormap = dip_cmap, nan_color = :lightgray,
+    extendlow = dip_cmap[1], extendhigh = dip_cmap[end])
+ax_d = map_axis(fig[1, 3]; title = "optimised − WOA")
+co_dd = contourf!(ax_d, lon, lat, sl_diff';
+    levels = diff_levels, colormap = diff_cmap, nan_color = :lightgray,
+    extendlow = diff_cmap[1], extendhigh = diff_cmap[end])
+linkyaxes!(ax_m, ax_o, ax_d)
+hideydecorations!(ax_o; ticklabels = true, label = false, ticks = false, grid = false)
+hideydecorations!(ax_d; ticklabels = true, label = false, ticks = false, grid = false)
+cb_v = Colorbar(fig[2, 1:2], co_m; vertical = false, flipaxis = false,
+    label = "PO₄ @ 1000 m (μM)", ticks = 0:1:3)
+cb_v.width = Relative(0.7)
+cb_diff = Colorbar(fig[2, 3], co_dd; vertical = false, flipaxis = false,
+    label = "optimised − WOA (μM)", ticks = plus_minus_ticks)
+cb_diff.width = Relative(0.85)
+fig
+
+# ## Side-by-side parameter tables, initial vs optimised
 
 AIBECS.table(p₀)
 
@@ -579,60 +462,44 @@ AIBECS.table(p₀)
 
 AIBECS.table(p_opt)
 
+# ## Extra: cost-surface sweep + Newton trajectory
+#
+# Mostly diagnostic. Once you've converged, the optimal parameters are the
+# point — but the sweep + trajectory is useful when something goes wrong.
+# Convert the λ-space sweep grid and trajectory to physical (τ_DIP, τ_POP)
+# via `λ2p`, then a single `contourf!` + `scatterlines!` does it.
+
+τDIP_grid = [λ2p(OptParams, [λ1, λ₀[2]]).τ_DIP for λ1 in λ1_vec]
+τPOP_grid = [λ2p(OptParams, [λ₀[1], λ2]).τ_POP for λ2 in λ2_vec]
+τDIP_traj = [λ2p(OptParams, λ).τ_DIP for λ in λ_trajectory]
+τPOP_traj = [λ2p(OptParams, λ).τ_POP for λ in λ_trajectory]
+
+fig = Figure()
+ax = Axis(fig[1, 1];
+    xlabel = "τ_DIP (d)", ylabel = "τ_POP (d)",
+    xscale = log10, yscale = log10,
+    title = "√f(p) cost surface + Newton trajectory")
+co = contourf!(ax, τDIP_grid, τPOP_grid, sqrt.(F_grid);
+    levels = 20, colormap = cgrad(:BrBG; rev = true))
+scatterlines!(ax, τDIP_traj, τPOP_traj;
+    color = :red, linewidth = 2, linestyle = :dash, marker = :circle, markersize = 4)
+scatter!(ax, [τDIP_traj[end]], [τPOP_traj[end]];
+    marker = :star5, markersize = 22, color = :yellow,
+    strokecolor = :black, strokewidth = 1.5)
+annotation!(ax, 70, -40, τDIP_traj[1], τPOP_traj[1];
+    text = "first iterate", path = Ann.Paths.Corner())
+annotation!(ax, -70, +40, τDIP_traj[end], τPOP_traj[end];
+    text = "optimal solution", path = Ann.Paths.Corner(), color = :white)
+Colorbar(fig[1, 2], co; label = "√f(p)")
+fig
+
 # ## Where to next
 
 # This example only fits two parameters of a single-tracer mismatch
-# objective on a moderate-resolution circulation. AIBECS also exposes
-# the table-form `f_and_∇ₓf(ωs, ωp, grd, obs, ::Type{P})` for fitting
-# directly against `WorldOceanAtlasTools.observations(...)` tables and
-# the `f_and_∇ₓf(ωs, ωp, grd, modify, obs, ::Type{P})` form for
-# tracer-derived quantities (isotopes via δ-conversion, etc.); the
-# multi-tracer, multi-observation, multi-iteration fit lives in
-# [GNOM](https://github.com/MTEL-USC/GNOM).
-
-# Related, but not used here:
-#
-# - [`SciMLSensitivity.SteadyStateAdjoint`](https://docs.sciml.ai/SciMLSensitivity/stable/)
-#   computes a per-call adjoint gradient, with no cross-call caching and
-#   no Hessian — appropriate when the steady-state solve dominates and
-#   you only need the gradient.
-# - [`ImplicitDifferentiation.jl`](https://github.com/gdalle/ImplicitDifferentiation.jl)
-#   provides general implicit-function differentiation; no F-1 Hessian
-#   today.
-#
-# Both are good upstream PR targets to slot underneath the AIBECS
-# objective / gradient surface in the future.
-
-# ## Caveats and possible future directions
-
-# The setup above is fairly bespoke: AIBECS' parameter struct + a
-# hand-written `prior` method + F1Method's cached adjoint + a sibling
-# `LinearSolve` cache + the `Optimization.jl` frontend. It works, but
-# it is not the only — nor necessarily the best — way to attack
-# parameter estimation for steady-state biogeochemical models. A few
-# directions where AIBECS could grow:
-#
-# - **Probabilistic programming via [Turing.jl](https://turinglang.org/).**
-#   Today we declare priors with `@prior` (or by overloading `prior`
-#   directly) and the optimiser minimises `-log posterior` up to a
-#   constant. Wiring AIBECS parameter structs into a Turing `@model`
-#   would unlock full Bayesian inference (MCMC, variational families)
-#   over the steady-state solution, with the same priors driving both
-#   regimes. The F-1 gradient/Hessian would compose naturally with
-#   Turing's HMC / NUTS samplers.
-# - **Adopt the SciML parameter-estimation idioms.** The SciML stack
-#   (`SciMLSensitivity`, `DiffEqParamEstim`, `Optimization`) has a
-#   well-trodden pipeline for fitting `ODEProblem` / `SteadyStateProblem`
-#   parameters from data. Right now AIBECS bolts F1Method onto
-#   `Optimization` by hand. Restructuring the AIBECS objective surface
-#   so it slots into SciML's `build_loss_objective`-style helpers would
-#   let users mix AIBECS models with the rest of the SciML param-fitting
-#   ecosystem without bespoke glue.
-# - **First-class observation tables.** GNOM's table-form
-#   `f_and_∇ₓf(ωs, ωp, grd, obs, ::Type{P})` is the right shape for
-#   GEOTRACES-style cruise data; promoting it (and adding more
-#   adapters) would replace the volume-mean / variance shortcut used
-#   here with proper interpolation-aware misfits.
-#
-# Each of these would be a meaningful upstream PR; the current docs
-# example is closer to a worked sketch than a reference workflow.
+# objective on a moderate-resolution circulation; the multi-tracer,
+# multi-observation fit lives in [GNOM](https://github.com/MTEL-USC/GNOM).
+# See the [roadmap](@ref roadmap) for alternative parameter-estimation
+# backends (Turing, ImplicitDifferentiation, SciMLSensitivity), the
+# table-form `f_and_∇ₓf(ωs, ωp, grd, obs, ::Type{P})` for fitting against
+# `WorldOceanAtlasTools.observations(...)` tables, and other directions
+# where contributions are welcome.
