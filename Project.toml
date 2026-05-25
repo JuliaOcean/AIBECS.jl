@@ -52,7 +52,7 @@ AIBECSShapefileExt = ["Shapefile", "DataFrames"]
 
 [compat]
 ADTypes = "1.22.0"
-Bijectors = "0.14, 0.15"
+Bijectors = "0.14, 0.15, 0.16"
 DataDeps = "0.7"
 DataFrames = "1"
 DifferentiationInterface = "0.7.17"
