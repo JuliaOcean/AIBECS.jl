@@ -86,9 +86,9 @@ makedocs(
             "explanation/2_tracer_transport_operators.md",
             "explanation/solvers.md",
             "explanation/datasets.md",
-            "explanation/roadmap.md",
         ],
         "Reference" => ["reference/functions.md"],
+        "Roadmap" => ["roadmap.md"],
         "Publications" => pages("publications"),
     ],
     warnonly = [:missing_docs],   # internals are intentionally omitted from the curated reference page

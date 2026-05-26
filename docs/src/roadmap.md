@@ -38,6 +38,24 @@ like to see explored:
   users mix AIBECS models with the rest of the SciML param-fitting
   ecosystem without bespoke glue.
 
+## Alternative sensitivity backends
+
+The how-to uses F1Method because it caches the steady-state factors
+and exposes both gradient and Hessian. Two natural alternatives that
+would compose well with the AIBECS objective surface:
+
+- [`SciMLSensitivity.SteadyStateAdjoint`](https://docs.sciml.ai/SciMLSensitivity/stable/)
+  computes a per-call adjoint gradient with no cross-call caching and
+  no Hessian — appropriate when the steady-state solve dominates and
+  you only need the gradient.
+- [ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl)
+  provides general implicit-function differentiation; no F-1 Hessian
+  today, but the package is actively developed.
+
+Either would be a meaningful upstream PR — slotting underneath the
+AIBECS objective / gradient surface and letting users pick the
+sensitivity strategy at solve time.
+
 ## Simpler parameter representation
 
 The current [`AbstractParameters`](@ref AIBECS.AbstractParameters) machinery
@@ -70,24 +88,6 @@ glue. The existing pretty-printing, CSV round-tripping, and unit
 conversions would need to be re-implemented on top, but the surface area
 shrinks considerably.
 
-## Alternative sensitivity backends
-
-The how-to uses F1Method because it caches the steady-state factors
-and exposes both gradient and Hessian. Two natural alternatives that
-would compose well with the AIBECS objective surface:
-
-- [`SciMLSensitivity.SteadyStateAdjoint`](https://docs.sciml.ai/SciMLSensitivity/stable/)
-  computes a per-call adjoint gradient with no cross-call caching and
-  no Hessian — appropriate when the steady-state solve dominates and
-  you only need the gradient.
-- [ImplicitDifferentiation.jl](https://github.com/gdalle/ImplicitDifferentiation.jl)
-  provides general implicit-function differentiation; no F-1 Hessian
-  today, but the package is actively developed.
-
-Either would be a meaningful upstream PR — slotting underneath the
-AIBECS objective / gradient surface and letting users pick the
-sensitivity strategy at solve time.
-
 ## More circulations
 
 AIBECS currently ships OCIM0/1/2/2-48L, OCCA, Archer et al. (2000), the
@@ -96,7 +96,7 @@ Two natural extensions:
 
 - **More published transport matrices.** ECCO-derived and CMIP-derived
   matrices, ACCESS-OM2, MOM6, and any of the offline products coming out
-  of [OceanTransportMatrixBuilder.jl](https://github.com/JuliaOcean/OceanTransportMatrixBuilder.jl)
+  of [OceanTransportMatrixBuilder.jl](https://github.com/TMIP-code/OceanTransportMatrixBuilder.jl)
   would each be a self-contained PR — see the existing `OCIM*.jl` /
   `OCCA.jl` files for the shape (download via `DataDeps`, expose
   `T`, `grid`, `wet3D`, and the associated diagnostics).
@@ -104,6 +104,44 @@ Two natural extensions:
   `OCIM2.jl`-style file. A small `load_circulation(path)` that reads a
   standard layout (transport operator + grid + masks) would cut the
   boilerplate and make user-contributed circulations a one-file affair.
+
+## Regional circulation models
+
+All circulations shipped today are global. Ingesting *natively regional*
+transport matrices — e.g. from regional MOM6/ROMS runs with explicit
+open boundary conditions — would let AIBECS run biogeochemistry on a
+subdomain at much finer resolution than any global matrix can offer.
+[Schoonover et al. (2023)](https://doi.org/10.5194/gmd-16-2795-2023)
+is a good reference for the kind of regional (and high-resolution)
+offline transport this would target. The main scaffolding work is
+generalising boundary-condition handling so a prescribed open-boundary
+inflow (possibly time-varying) becomes a first-class concept alongside
+the existing surface and sediment boundaries.
+
+## High-resolution circulation models
+
+Whether AIBECS itself should handle eddy-resolving (¼° or finer) global
+circulations is an open question — at those resolutions direct
+factorisation is out of reach and GPU-resident iterative solvers
+become mandatory (see also the iterative-solvers section). The
+[ACCESS-OM2 × Oceananigans](https://github.com/TMIP-code/ACCESS-OM2_x_Oceananigans)
+project demonstrates feasibility: GPU + iterative solves of single
+tracers at ¼° in a periodic setting, with a target of 0.1° × 75 levels —
+roughly 1200× the size of OCIM2. Even if the full eddy-resolving regime
+ends up living outside AIBECS, the choices made there (matrix storage,
+solver/preconditioner pairs, GPU offload) should feed back into AIBECS
+once iterative solvers land.
+
+## Coarsening via lump-and-spray
+
+[OceanTransportMatrixBuilder.jl](https://github.com/TMIP-code/OceanTransportMatrixBuilder.jl)
+provides `lump_and_spray(wet3D, vol, T; di, dj, dk)` which returns
+`LUMP`, `SPRAY`, and a coarsened volume vector such that
+`LUMP * T * SPRAY` is a volume-conserving coarsened transport operator
+(and `LUMP * x` / `SPRAY * x_c` move tracer fields between the two
+grids). Wiring this into AIBECS so any shipped circulation can be
+coarsened on demand would unlock fast iteration on parameter sweeps and
+sensitivity studies before refining on the native grid.
 
 ## Non-ocean components
 
@@ -131,17 +169,6 @@ extended to handle the resulting block-sparse couplings (3D ↔ 2D surface,
 3D ↔ 0D atmosphere). Writing the automatic scaffolding for building
 the Jacobian rows/columns for these different-sized blocks is the bulk of the work.
 
-## Coarsening via lump-and-spray
-
-[OceanTransportMatrixBuilder.jl](https://github.com/JuliaOcean/OceanTransportMatrixBuilder.jl)
-provides `lump_and_spray(wet3D, vol, T; di, dj, dk)` which returns
-`LUMP`, `SPRAY`, and a coarsened volume vector such that
-`LUMP * T * SPRAY` is a volume-conserving coarsened transport operator
-(and `LUMP * x` / `SPRAY * x_c` move tracer fields between the two
-grids). Wiring this into AIBECS so any shipped circulation can be
-coarsened on demand would unlock fast iteration on parameter sweeps and
-sensitivity studies before refining on the native grid.
-
 ## Iterative linear solvers and preconditioners
 
 Steady-state solves currently rely on direct sparse solvers on the CPU
@@ -160,6 +187,75 @@ few solver/preconditioner pairs against the existing LU baseline on
 OCIM2 and the 48-layer variant; from there, exposing the choice through
 the `solve(...; alg=...)` interface follows the standard LinearSolve
 pattern.
+
+## Time stepping
+
+AIBECS is built around steady-state solves. A first-class time-stepping
+interface — integrating the same `AIBECSFunction` forward in time via
+the SciML ODE stack — would unlock transient runs, spin-up diagnostics,
+seasonal forcings, and natural coupling with non-steady components
+(slab atmospheres, sediments). Open design questions: how to expose the
+transport split (linear T + nonlinear sources) cleanly to IMEX schemes,
+how to share Jacobian assembly with the existing steady-state solver,
+and how to use a precomputed steady state as the initial condition.
+This entry is meant to open a discussion, not prescribe a design.
+
+## Pseudo-transient solvers for stiff problems
+
+Newton's method on `F(x) = 0` works well when the initial guess is good
+and the Jacobian is well-conditioned, but stiff source/sink terms,
+strongly nonlinear closures, or multiple co-existing equilibria can
+make it stall or pick the wrong branch. A robust fallback is
+*pseudo-transient continuation*: integrate `dx/dt = F(x)` toward steady
+state with an implicit scheme whose time step starts small and grows as
+the residual drops, approaching a Newton step in the limit.
+[SIAMFANLEquations.jl](https://github.com/ctkelley/SIAMFANLEquations.jl)
+already implements it (and Newton-Krylov cousins) and is a natural
+backend; SciML's `DynamicSS` family is another option. Either could
+slot in as an alternative algorithm under `solve(SteadyStateProblem(...))`.
+
+## Periodic (seasonally cyclic) solvers
+
+Steady-state solves assume time-invariant forcing. A complementary
+regime — much cheaper than fully time-stepping — is the *periodic*
+steady state: given a seasonally-cyclic transport (e.g. 12 monthly
+matrices) and seasonally-cyclic forcings, solve directly for the
+periodic orbit. Two references worth building on:
+
+- **CYCLOCIM** ([Huang, Primeau & DeVries, 2021](https://doi.org/10.1016/j.ocemod.2021.101762)) —
+  a 4-D variational assimilation system for the climatological seasonal
+  cycle of the ocean circulation, producing 12 monthly transport
+  matrices.
+- [Pasquier et al. (2025)](https://doi.org/10.1029/2025GL116799) —
+  uses a periodic-solve framework to compute deep-ocean transit-time
+  distributions and sequestration efficiency offline from climate-model
+  archives.
+
+A `solve_periodic` interface alongside the existing steady-state path
+(and any future time-stepping path) would open seasonally-resolved BGC
+studies that currently force users into long transient integrations.
+
+## Circulation diagnostic tutorials
+
+AIBECS already has everything needed to diagnose a circulation; three
+short tutorials would make this much more visible:
+
+- **Water-mass fractions.** Solve for a passive tracer with a
+  Dirichlet/restoring boundary condition (= 1 in a chosen surface
+  region, = 0 elsewhere); the steady interior values give the fraction
+  of each gridcell last in contact with the surface in that region.
+- **Adjoint tracers and mean time to reemergence.** Build the true
+  adjoint transport `V⁻¹ Tᵀ V` (the adjoint with respect to the
+  volume-weighted inner product `⟨x, y⟩ = xᵀ V y`, the discrete
+  equivalent of `∫ x y dV`), with a unit source everywhere and a fast
+  surface relaxation as sink; the steady solution is the mean time to
+  reemergence. The forward analogue with the same source/sink gives the
+  ideal age.
+- **Ventilation per unit area.** From the age `a` and reemergence-time
+  `r` fields, compute `calV↑ = vol · a · 1_surf / area` and
+  `calV↓ = vol · r · 1_surf / area`.
+  [Pasquier et al. (2024)](https://doi.org/10.1029/2024JC021043) uses
+  `calV↓` to diagnose deoxygenation pathways.
 
 ## Visualisation
 
