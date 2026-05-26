@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1779762804962,
+  "lastUpdate": 1779777599641,
   "repoUrl": "https://github.com/JuliaOcean/AIBECS.jl",
   "entries": {
     "AIBECS Solver Benchmarks (small)": [
@@ -4522,6 +4522,354 @@ window.BENCHMARK_DATA = {
           {
             "name": "OCIM0 / po4pop / CTKAlg + MKLPardisoIterate",
             "value": 12.191130623,
+            "unit": "s/solve",
+            "extra": "n=382338; max_rel_drift=5.733e-09; τ_yr=DIP=3.67e+10,POP=2.9e+07"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "briochemc@gmail.com",
+            "name": "Benoit Pasquier",
+            "username": "briochemc"
+          },
+          "committer": {
+            "email": "briochemc@gmail.com",
+            "name": "Benoit Pasquier",
+            "username": "briochemc"
+          },
+          "distinct": true,
+          "id": "453714410f20db9b12dbff1648b73c6bcfaa0adb",
+          "message": "docs(roadmap): expand and reorganize; promote to top-level section\n\nAdd roadmap entries for circulation diagnostic tutorials, time stepping,\npseudo-transient solvers, periodic (seasonally cyclic) solvers, regional\nand high-resolution circulation models. Reorder existing sections into\nparameter / circulation / solver / docs clusters. Move the page out of\nExplanation into its own top-level \"Roadmap\" group. Fix dead link\n(OceanTransportMatrixBuilder.jl moved from JuliaOcean to TMIP-code).\nBump version to 0.19.4.\n\nCo-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-05-26T16:14:09+10:00",
+          "tree_id": "0e860b34dde34daf1dd7ed9537efed48cc9e8199",
+          "url": "https://github.com/JuliaOcean/AIBECS.jl/commit/453714410f20db9b12dbff1648b73c6bcfaa0adb"
+        },
+        "date": 1779777592184,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "OCCA / idealage / CTKAlg + UMFPACK",
+            "value": 0.846999233,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=4.067e-11; τ_yr=age=8.29e+14"
+          },
+          {
+            "name": "OCCA / idealage / CTKAlg + KLU",
+            "value": 4.936199786,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=6.821e-11; τ_yr=age=5.28e+14"
+          },
+          {
+            "name": "OCCA / idealage / NewtonRaphson + UMFPACK",
+            "value": 1.118772026,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=4.067e-11; τ_yr=age=8.29e+14"
+          },
+          {
+            "name": "OCCA / idealage / NewtonRaphson + KLU",
+            "value": 5.353097373,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=6.821e-11; τ_yr=age=5.28e+14"
+          },
+          {
+            "name": "OCCA / idealage / NLsolveJL + Newton/UMFPACK",
+            "value": 1.158602406,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=4.067e-11; τ_yr=age=8.29e+14"
+          },
+          {
+            "name": "OCCA / idealage / NewtonRaphson + MKLPardisoFactorize",
+            "value": 1.171393764,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=7.276e-12; τ_yr=age=2.59e+15"
+          },
+          {
+            "name": "OCCA / idealage / NewtonRaphson + MKLPardisoIterate",
+            "value": 0.818426237,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=7.276e-12; τ_yr=age=2.59e+15"
+          },
+          {
+            "name": "OCCA / idealage / CTKAlg + MKLPardisoFactorize",
+            "value": 0.771153736,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=7.276e-12; τ_yr=age=2.59e+15"
+          },
+          {
+            "name": "OCCA / idealage / CTKAlg + MKLPardisoIterate",
+            "value": 0.761121561,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=7.276e-12; τ_yr=age=2.59e+15"
+          },
+          {
+            "name": "OCCA / radiocarbon / CTKAlg + UMFPACK",
+            "value": 0.764864516,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=4.098e-08; τ_yr=R=2.24e+13"
+          },
+          {
+            "name": "OCCA / radiocarbon / CTKAlg + KLU",
+            "value": 4.884212886,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=7.357e-08; τ_yr=R=1.71e+13"
+          },
+          {
+            "name": "OCCA / radiocarbon / NewtonRaphson + UMFPACK",
+            "value": 0.717554603,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=4.098e-08; τ_yr=R=2.24e+13"
+          },
+          {
+            "name": "OCCA / radiocarbon / NewtonRaphson + KLU",
+            "value": 4.961401904,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=7.357e-08; τ_yr=R=1.71e+13"
+          },
+          {
+            "name": "OCCA / radiocarbon / NLsolveJL + Newton/UMFPACK",
+            "value": 1.126806562,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=4.098e-08; τ_yr=R=2.24e+13"
+          },
+          {
+            "name": "OCCA / radiocarbon / NewtonRaphson + MKLPardisoFactorize",
+            "value": 0.822354307,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=2.235e-08; τ_yr=R=3.89e+13"
+          },
+          {
+            "name": "OCCA / radiocarbon / NewtonRaphson + MKLPardisoIterate",
+            "value": 0.818828853,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=2.235e-08; τ_yr=R=3.89e+13"
+          },
+          {
+            "name": "OCCA / radiocarbon / CTKAlg + MKLPardisoFactorize",
+            "value": 0.810388092,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=2.235e-08; τ_yr=R=3.89e+13"
+          },
+          {
+            "name": "OCCA / radiocarbon / CTKAlg + MKLPardisoIterate",
+            "value": 0.816416908,
+            "unit": "s/solve",
+            "extra": "n=84661; max_rel_drift=2.235e-08; τ_yr=R=3.89e+13"
+          },
+          {
+            "name": "OCCA / po4pop / CTKAlg + UMFPACK",
+            "value": 2.019438185,
+            "unit": "s/solve",
+            "extra": "n=169322; max_rel_drift=1.498e-07; τ_yr=DIP=5e+09,POP=2.5e+06"
+          },
+          {
+            "name": "OCCA / po4pop / CTKAlg + KLU",
+            "value": 4.922715356,
+            "unit": "s/solve",
+            "extra": "n=169322; max_rel_drift=1.498e-07; τ_yr=DIP=5e+09,POP=2.5e+06"
+          },
+          {
+            "name": "OCCA / po4pop / NewtonRaphson + UMFPACK",
+            "value": 3.43427619,
+            "unit": "s/solve",
+            "extra": "n=169322; max_rel_drift=1.811e-10; τ_yr=DIP=3.84e+12,POP=1.93e+09"
+          },
+          {
+            "name": "OCCA / po4pop / NewtonRaphson + KLU",
+            "value": 12.71981412,
+            "unit": "s/solve",
+            "extra": "n=169322; max_rel_drift=1.811e-10; τ_yr=DIP=3.84e+12,POP=1.93e+09"
+          },
+          {
+            "name": "OCCA / po4pop / NLsolveJL + Newton/UMFPACK",
+            "value": 4.289978388,
+            "unit": "s/solve",
+            "extra": "n=169322; max_rel_drift=1.811e-10; τ_yr=DIP=3.84e+12,POP=1.93e+09"
+          },
+          {
+            "name": "OCCA / po4pop / NewtonRaphson + MKLPardisoFactorize",
+            "value": 5.140586932,
+            "unit": "s/solve",
+            "extra": "n=169322; max_rel_drift=1.811e-10; τ_yr=DIP=3.84e+12,POP=1.93e+09"
+          },
+          {
+            "name": "OCCA / po4pop / NewtonRaphson + MKLPardisoIterate",
+            "value": 5.331363641,
+            "unit": "s/solve",
+            "extra": "n=169322; max_rel_drift=1.811e-10; τ_yr=DIP=3.84e+12,POP=1.93e+09"
+          },
+          {
+            "name": "OCCA / po4pop / CTKAlg + MKLPardisoFactorize",
+            "value": 2.329459261,
+            "unit": "s/solve",
+            "extra": "n=169322; max_rel_drift=1.498e-07; τ_yr=DIP=5e+09,POP=2.5e+06"
+          },
+          {
+            "name": "OCCA / po4pop / CTKAlg + MKLPardisoIterate",
+            "value": 2.291602786,
+            "unit": "s/solve",
+            "extra": "n=169322; max_rel_drift=1.498e-07; τ_yr=DIP=5e+09,POP=2.5e+06"
+          },
+          {
+            "name": "OCIM0 / idealage / CTKAlg + UMFPACK",
+            "value": 4.099085484,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=5.675e-10; τ_yr=age=1.29e+14"
+          },
+          {
+            "name": "OCIM0 / idealage / CTKAlg + KLU",
+            "value": 61.843552064,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=1.060e-09; τ_yr=age=8.37e+13"
+          },
+          {
+            "name": "OCIM0 / idealage / NewtonRaphson + UMFPACK",
+            "value": 4.931159885,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=5.675e-10; τ_yr=age=1.29e+14"
+          },
+          {
+            "name": "OCIM0 / idealage / NewtonRaphson + KLU",
+            "value": 62.731179664,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=1.060e-09; τ_yr=age=8.37e+13"
+          },
+          {
+            "name": "OCIM0 / idealage / NLsolveJL + Newton/UMFPACK",
+            "value": 4.354478901,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=5.675e-10; τ_yr=age=1.29e+14"
+          },
+          {
+            "name": "OCIM0 / idealage / NewtonRaphson + MKLPardisoFactorize",
+            "value": 10.194553795,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=3.507e-11; τ_yr=age=1.23e+15"
+          },
+          {
+            "name": "OCIM0 / idealage / NewtonRaphson + MKLPardisoIterate",
+            "value": 9.987008595,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=3.078e-11; τ_yr=age=1.26e+15"
+          },
+          {
+            "name": "OCIM0 / idealage / CTKAlg + MKLPardisoFactorize",
+            "value": 4.922450525,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=3.507e-11; τ_yr=age=1.23e+15"
+          },
+          {
+            "name": "OCIM0 / idealage / CTKAlg + MKLPardisoIterate",
+            "value": 5.05700644,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=3.078e-11; τ_yr=age=1.26e+15"
+          },
+          {
+            "name": "OCIM0 / radiocarbon / CTKAlg + UMFPACK",
+            "value": 4.713963899,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=3.134e-09; τ_yr=R=8.65e+13"
+          },
+          {
+            "name": "OCIM0 / radiocarbon / CTKAlg + KLU",
+            "value": 62.48025639,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=1.136e-08; τ_yr=R=5.49e+13"
+          },
+          {
+            "name": "OCIM0 / radiocarbon / NewtonRaphson + UMFPACK",
+            "value": 5.048626658,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=3.134e-09; τ_yr=R=8.65e+13"
+          },
+          {
+            "name": "OCIM0 / radiocarbon / NewtonRaphson + KLU",
+            "value": 61.206501794,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=1.136e-08; τ_yr=R=5.49e+13"
+          },
+          {
+            "name": "OCIM0 / radiocarbon / NLsolveJL + Newton/UMFPACK",
+            "value": 5.066694448,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=3.134e-09; τ_yr=R=8.65e+13"
+          },
+          {
+            "name": "OCIM0 / radiocarbon / NewtonRaphson + MKLPardisoFactorize",
+            "value": 10.330635826,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=1.062e-09; τ_yr=R=4.28e+14"
+          },
+          {
+            "name": "OCIM0 / radiocarbon / NewtonRaphson + MKLPardisoIterate",
+            "value": 10.498435661,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=1.022e-09; τ_yr=R=4.3e+14"
+          },
+          {
+            "name": "OCIM0 / radiocarbon / CTKAlg + MKLPardisoFactorize",
+            "value": 5.459131675,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=1.062e-09; τ_yr=R=4.28e+14"
+          },
+          {
+            "name": "OCIM0 / radiocarbon / CTKAlg + MKLPardisoIterate",
+            "value": 5.215914014,
+            "unit": "s/solve",
+            "extra": "n=191169; max_rel_drift=1.022e-09; τ_yr=R=4.29e+14"
+          },
+          {
+            "name": "OCIM0 / po4pop / CTKAlg + UMFPACK",
+            "value": 7.542030291,
+            "unit": "s/solve",
+            "extra": "n=382338; max_rel_drift=5.733e-09; τ_yr=DIP=3.68e+10,POP=2.9e+07"
+          },
+          {
+            "name": "OCIM0 / po4pop / CTKAlg + KLU",
+            "value": 62.130806688,
+            "unit": "s/solve",
+            "extra": "n=382338; max_rel_drift=5.733e-09; τ_yr=DIP=3.68e+10,POP=2.9e+07"
+          },
+          {
+            "name": "OCIM0 / po4pop / NewtonRaphson + UMFPACK",
+            "value": 11.155016365,
+            "unit": "s/solve",
+            "extra": "n=382338; max_rel_drift=1.017e-08; τ_yr=DIP=2.48e+10,POP=1.96e+07"
+          },
+          {
+            "name": "OCIM0 / po4pop / NewtonRaphson + KLU",
+            "value": 115.35190635,
+            "unit": "s/solve",
+            "extra": "n=382338; max_rel_drift=1.017e-08; τ_yr=DIP=2.48e+10,POP=1.96e+07"
+          },
+          {
+            "name": "OCIM0 / po4pop / NLsolveJL + Newton/UMFPACK",
+            "value": 13.397841851,
+            "unit": "s/solve",
+            "extra": "n=382338; max_rel_drift=1.017e-08; τ_yr=DIP=2.48e+10,POP=1.96e+07"
+          },
+          {
+            "name": "OCIM0 / po4pop / NewtonRaphson + MKLPardisoFactorize",
+            "value": 27.789635901,
+            "unit": "s/solve",
+            "extra": "n=382338; max_rel_drift=1.010e-07; τ_yr=DIP=3.9e+09,POP=2.71e+10"
+          },
+          {
+            "name": "OCIM0 / po4pop / NewtonRaphson + MKLPardisoIterate",
+            "value": 20.28044537,
+            "unit": "s/solve",
+            "extra": "n=382338; max_rel_drift=2.419e-07; τ_yr=DIP=1.85e+09,POP=1.96e+07"
+          },
+          {
+            "name": "OCIM0 / po4pop / CTKAlg + MKLPardisoFactorize",
+            "value": 10.45454327,
+            "unit": "s/solve",
+            "extra": "n=382338; max_rel_drift=7.898e-07; τ_yr=DIP=5.25e+08,POP=9.43e+06"
+          },
+          {
+            "name": "OCIM0 / po4pop / CTKAlg + MKLPardisoIterate",
+            "value": 11.459552921,
             "unit": "s/solve",
             "extra": "n=382338; max_rel_drift=5.733e-09; τ_yr=DIP=3.67e+10,POP=2.9e+07"
           }
