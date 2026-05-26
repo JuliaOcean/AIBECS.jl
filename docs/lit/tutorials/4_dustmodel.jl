@@ -91,8 +91,8 @@ G_dust(x, p) = s_dust
 import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
 @initial_value @units struct DustModelParameters{U} <: AbstractParameters{U}
-    w₀::U | 0.1 | u"km/yr"
-    w′::U | 0.1 | u"km/yr/km"
+    w₀::U        | 0.1 | u"km/yr"
+    w′::U        | 0.1 | u"km/yr/km"
     fsedremin::U | 5.0 | u"percent"
 end
 

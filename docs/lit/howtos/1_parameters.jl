@@ -139,8 +139,8 @@ v = vec(p)
 
 @initial_value @units @flattenable struct OptimizableParamsWithUnits{T} <: AbstractParameters{T}
     α::T | 1.0 | u"m/s" | true
-    β::T | 2.0 | u"d" | false
-    γ::T | 3.0 | u"km" | true
+    β::T | 2.0 |   u"d" | false
+    γ::T | 3.0 |  u"km" | true
 end
 p = OptimizableParamsWithUnits()
 

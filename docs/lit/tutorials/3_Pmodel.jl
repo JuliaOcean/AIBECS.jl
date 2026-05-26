@@ -96,14 +96,14 @@ import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
 using Unitful: m, d, s, yr, Myr, mol, mmol, μmol, μM
 @initial_value @units struct PmodelParameters{U} <: AbstractParameters{U}
-    w₀::U | 0.64 | m / d
-    w′::U | 0.13 | m / d / m
-    τ_DIP::U | 230.0 | d
-    k::U | 6.62 | μmol / m^3
-    z₀::U | 80.0 | m
-    τ_POP::U | 5.0 | d
-    τ_geo::U | 1.0 | Myr
-    DIP_geo::U | 2.12 | mmol / m^3
+    w₀::U      | 0.64  | m / d
+    w′::U      | 0.13  | m / d / m
+    τ_DIP::U   | 230.0 | d
+    k::U       | 6.62  | μmol / m^3
+    z₀::U      | 80.0  | m
+    τ_POP::U   | 5.0   | d
+    τ_geo::U   | 1.0   | Myr
+    DIP_geo::U | 2.12  | mmol / m^3
 end
 
 # Finally, thanks to the initial values we provided, we can instantiate the parameter vector succintly as

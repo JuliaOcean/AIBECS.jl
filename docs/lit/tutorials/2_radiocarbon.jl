@@ -31,9 +31,9 @@
 #nb # > We need not specify the value of the atmospheric radiocarbon concentration because it is not important for determining the age of a water parcel — only the relative concentration $\boldsymbol{R}/\overline{\boldsymbol{R}}_\mathsf{atm}$ matters.
 
 # We start by selecting the circulation for Radiocarbon.
-# .)
-#nb # (And this time, we are using the OCCA matrix by *Forget* [1](https://doi.org/10.1175/2009JPO4043.1).)
-#md # (And this time, we are using the OCCA matrix by *Forget* [^1].)
+
+#nb # (And this time, we are using the OCCA matrix by *Forget* (2010) [1](https://doi.org/10.1175/2009JPO4043.1).)
+#md # (And this time, we are using the OCCA matrix by *Forget* (2010) [^1].)
 
 #md # [^1]:
 #md #     Forget, G., 2010: Mapping Ocean Observations in a Dynamical Framework: A 2004–06 Ocean Atlas. J. Phys. Oceanogr., 40, 1201–1221, doi:[10.1175/2009JPO4043.1)](https://doi.org/10.1175/2009JPO4043.1)
@@ -63,9 +63,9 @@ import AIBECS: @units, units
 # We define the parameters using the dedicated API from the AIBECS, including keyword arguments and units this time
 
 @units struct RadiocarbonParameters{U} <: AbstractParameters{U}
-    λ::U | u"m/yr"
-    h::U | u"m"
-    τ::U | u"yr"
+    λ::U    | u"m/yr"
+    h::U    | u"m"
+    τ::U    | u"yr"
     Ratm::U | u"M"
 end
 

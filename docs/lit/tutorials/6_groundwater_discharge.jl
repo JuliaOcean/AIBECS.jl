@@ -81,8 +81,8 @@ G_gw(x, p) = s_gw(p) - decay(x, p)
 import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
 @initial_value @units struct GroundWatersParameters{U} <: AbstractParameters{U}
-    τ::U | 20.0 | u"yr"
-    C_gw::U | 1.0 | u"mol/m^3"
+    τ::U    | 20.0 | u"yr"
+    C_gw::U |  1.0 | u"mol/m^3"
 end
 
 # Finally, thanks to the initial values we provided, we can instantiate the parameter vector succinctly as
