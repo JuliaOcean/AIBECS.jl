@@ -38,6 +38,10 @@ features:
     title: Publications
     details: Publications and software using AIBECS.
     link: /publications/1_publications
+  - icon: 🗺️
+    title: Roadmap
+    details: Where AIBECS is headed, and where contributions would have the biggest impact.
+    link: /roadmap
 ---
 ```
 
