@@ -6,29 +6,29 @@
 
 | Algorithm | Time (s) | Max rel drift | τ (yr) | Converged |
 |---|---:|---:|---|:---:|
-| CTKAlg + UMFPACK | 1 | 4.70e-11 | age=8.3e+14 | ✓ |
+| CTKAlg + UMFPACK | 1 | 4.07e-11 | age=8.3e+14 | ✓ |
 | CTKAlg + KLU | 5 | 6.82e-11 | age=5.3e+14 | ✓ |
-| NewtonRaphson + UMFPACK | 1 | 4.70e-11 | age=8.3e+14 | ✓ |
+| NewtonRaphson + UMFPACK | 0.78 | 4.07e-11 | age=8.3e+14 | ✓ |
 | NewtonRaphson + KLU | 6 | 6.82e-11 | age=5.3e+14 | ✓ |
-| NLsolveJL + Newton/UMFPACK | 0.95 | 4.70e-11 | age=8.3e+14 | ✓ |
-| NewtonRaphson + MKLPardisoFactorize | 0.71 | 6.37e-12 | age=2.9e+15 | ✓ |
-| NewtonRaphson + MKLPardisoIterate | 0.71 | 6.37e-12 | age=2.9e+15 | ✓ |
-| CTKAlg + MKLPardisoFactorize | 0.71 | 6.37e-12 | age=2.9e+15 | ✓ |
-| CTKAlg + MKLPardisoIterate | 0.67 | 6.37e-12 | age=2.9e+15 | ✓ |
+| NLsolveJL + Newton/UMFPACK | 1 | 4.07e-11 | age=8.3e+14 | ✓ |
+| NewtonRaphson + MKLPardisoFactorize | 0.8 | 7.28e-12 | age=2.6e+15 | ✓ |
+| NewtonRaphson + MKLPardisoIterate | 0.78 | 7.28e-12 | age=2.6e+15 | ✓ |
+| CTKAlg + MKLPardisoFactorize | 0.76 | 7.28e-12 | age=2.6e+15 | ✓ |
+| CTKAlg + MKLPardisoIterate | 0.79 | 7.28e-12 | age=2.6e+15 | ✓ |
 
 ## OCCA / radiocarbon (n = 84661)
 
 | Algorithm | Time (s) | Max rel drift | τ (yr) | Converged |
 |---|---:|---:|---|:---:|
 | CTKAlg + UMFPACK | 1 | 4.10e-08 | R=2.2e+13 | ✓ |
-| CTKAlg + KLU | 5 | 7.36e-08 | R=1.7e+13 | ✓ |
+| CTKAlg + KLU | 6 | 7.36e-08 | R=1.7e+13 | ✓ |
 | NewtonRaphson + UMFPACK | 1 | 4.10e-08 | R=2.2e+13 | ✓ |
 | NewtonRaphson + KLU | 5 | 7.36e-08 | R=1.7e+13 | ✓ |
-| NLsolveJL + Newton/UMFPACK | 1 | 4.10e-08 | R=2.2e+13 | ✓ |
-| NewtonRaphson + MKLPardisoFactorize | 0.69 | 2.24e-08 | R=3.9e+13 | ✓ |
-| NewtonRaphson + MKLPardisoIterate | 0.77 | 2.24e-08 | R=4e+13 | ✓ |
-| CTKAlg + MKLPardisoFactorize | 0.7 | 2.24e-08 | R=3.9e+13 | ✓ |
-| CTKAlg + MKLPardisoIterate | 0.7 | 2.24e-08 | R=3.9e+13 | ✓ |
+| NLsolveJL + Newton/UMFPACK | 0.89 | 4.10e-08 | R=2.2e+13 | ✓ |
+| NewtonRaphson + MKLPardisoFactorize | 0.8 | 2.24e-08 | R=3.9e+13 | ✓ |
+| NewtonRaphson + MKLPardisoIterate | 1 | 2.24e-08 | R=3.9e+13 | ✓ |
+| CTKAlg + MKLPardisoFactorize | 0.81 | 2.24e-08 | R=3.9e+13 | ✓ |
+| CTKAlg + MKLPardisoIterate | 0.78 | 2.24e-08 | R=3.9e+13 | ✓ |
 
 ## OCCA / po4pop (n = 169322)
 
@@ -38,52 +38,52 @@
 | CTKAlg + KLU | 5 | 1.50e-07 | DIP=5e+09, POP=2.5e+06 | ✓ |
 | NewtonRaphson + UMFPACK | 4 | 1.81e-10 | DIP=3.8e+12, POP=1.9e+09 | ✓ |
 | NewtonRaphson + KLU | 14 | 1.81e-10 | DIP=3.8e+12, POP=1.9e+09 | ✓ |
-| NLsolveJL + Newton/UMFPACK | 5 | 1.81e-10 | DIP=3.8e+12, POP=1.9e+09 | ✓ |
-| NewtonRaphson + MKLPardisoFactorize | 4 | 1.81e-10 | DIP=3.8e+12, POP=1.9e+09 | ✓ |
-| NewtonRaphson + MKLPardisoIterate | 4 | 1.81e-10 | DIP=3.8e+12, POP=1.9e+09 | ✓ |
-| CTKAlg + MKLPardisoFactorize | 2 | 1.50e-07 | DIP=5e+09, POP=2.5e+06 | ✓ |
+| NLsolveJL + Newton/UMFPACK | 4 | 1.81e-10 | DIP=3.8e+12, POP=1.9e+09 | ✓ |
+| NewtonRaphson + MKLPardisoFactorize | 5 | 1.81e-10 | DIP=3.8e+12, POP=1.9e+09 | ✓ |
+| NewtonRaphson + MKLPardisoIterate | 5 | 1.81e-10 | DIP=3.8e+12, POP=1.9e+09 | ✓ |
+| CTKAlg + MKLPardisoFactorize | 3 | 1.50e-07 | DIP=5e+09, POP=2.5e+06 | ✓ |
 | CTKAlg + MKLPardisoIterate | 2 | 1.50e-07 | DIP=5e+09, POP=2.5e+06 | ✓ |
 
 ## OCIM0 / idealage (n = 191169)
 
 | Algorithm | Time (s) | Max rel drift | τ (yr) | Converged |
 |---|---:|---:|---|:---:|
-| CTKAlg + UMFPACK | 5 | 6.93e-10 | age=1.2e+14 | ✓ |
-| CTKAlg + KLU | 71 | 1.06e-09 | age=8.4e+13 | ✓ |
-| NewtonRaphson + UMFPACK | 5 | 6.93e-10 | age=1.2e+14 | ✓ |
-| NewtonRaphson + KLU | 68 | 1.06e-09 | age=8.4e+13 | ✓ |
-| NLsolveJL + Newton/UMFPACK | 5 | 6.93e-10 | age=1.2e+14 | ✓ |
-| NewtonRaphson + MKLPardisoFactorize | 8 | 3.13e-11 | age=1.2e+15 | ✓ |
-| NewtonRaphson + MKLPardisoIterate | 8 | 2.76e-11 | age=1.2e+15 | ✓ |
-| CTKAlg + MKLPardisoFactorize | 4 | 3.13e-11 | age=1.2e+15 | ✓ |
-| CTKAlg + MKLPardisoIterate | 4 | 2.76e-11 | age=1.2e+15 | ✓ |
+| CTKAlg + UMFPACK | 5 | 5.68e-10 | age=1.3e+14 | ✓ |
+| CTKAlg + KLU | 59 | 1.06e-09 | age=8.4e+13 | ✓ |
+| NewtonRaphson + UMFPACK | 5 | 5.68e-10 | age=1.3e+14 | ✓ |
+| NewtonRaphson + KLU | 58 | 1.06e-09 | age=8.4e+13 | ✓ |
+| NLsolveJL + Newton/UMFPACK | 5 | 5.68e-10 | age=1.3e+14 | ✓ |
+| NewtonRaphson + MKLPardisoFactorize | 10 | 3.51e-11 | age=1.2e+15 | ✓ |
+| NewtonRaphson + MKLPardisoIterate | 10 | 3.08e-11 | age=1.3e+15 | ✓ |
+| CTKAlg + MKLPardisoFactorize | 5 | 3.51e-11 | age=1.2e+15 | ✓ |
+| CTKAlg + MKLPardisoIterate | 5 | 3.08e-11 | age=1.3e+15 | ✓ |
 
 ## OCIM0 / radiocarbon (n = 191169)
 
 | Algorithm | Time (s) | Max rel drift | τ (yr) | Converged |
 |---|---:|---:|---|:---:|
-| CTKAlg + UMFPACK | 4 | 3.64e-09 | R=8.6e+13 | ✓ |
-| CTKAlg + KLU | 69 | 1.14e-08 | R=5.5e+13 | ✓ |
-| NewtonRaphson + UMFPACK | 5 | 3.64e-09 | R=8.6e+13 | ✓ |
-| NewtonRaphson + KLU | 68 | 1.14e-08 | R=5.5e+13 | ✓ |
-| NLsolveJL + Newton/UMFPACK | 5 | 3.64e-09 | R=8.6e+13 | ✓ |
-| NewtonRaphson + MKLPardisoFactorize | 8 | 2.56e-08 | R=7.7e+13 | ✓ |
-| NewtonRaphson + MKLPardisoIterate | 8 | 1.12e-09 | R=4.2e+14 | ✓ |
-| CTKAlg + MKLPardisoFactorize | 4 | 2.56e-08 | R=7.7e+13 | ✓ |
-| CTKAlg + MKLPardisoIterate | 4 | 1.31e-09 | R=4.3e+14 | ✓ |
+| CTKAlg + UMFPACK | 4 | 3.13e-09 | R=8.7e+13 | ✓ |
+| CTKAlg + KLU | 59 | 1.14e-08 | R=5.5e+13 | ✓ |
+| NewtonRaphson + UMFPACK | 4 | 3.13e-09 | R=8.7e+13 | ✓ |
+| NewtonRaphson + KLU | 58 | 1.14e-08 | R=5.5e+13 | ✓ |
+| NLsolveJL + Newton/UMFPACK | 5 | 3.13e-09 | R=8.7e+13 | ✓ |
+| NewtonRaphson + MKLPardisoFactorize | 9 | 1.06e-09 | R=4.3e+14 | ✓ |
+| NewtonRaphson + MKLPardisoIterate | 10 | 1.02e-09 | R=4.3e+14 | ✓ |
+| CTKAlg + MKLPardisoFactorize | 5 | 1.06e-09 | R=4.3e+14 | ✓ |
+| CTKAlg + MKLPardisoIterate | 5 | 1.02e-09 | R=4.3e+14 | ✓ |
 
 ## OCIM0 / po4pop (n = 382338)
 
 | Algorithm | Time (s) | Max rel drift | τ (yr) | Converged |
 |---|---:|---:|---|:---:|
-| CTKAlg + UMFPACK | 8 | 5.73e-09 | DIP=3.7e+10, POP=2.9e+07 | ✓ |
-| CTKAlg + KLU | 65 | 5.73e-09 | DIP=3.7e+10, POP=2.9e+07 | ✓ |
+| CTKAlg + UMFPACK | 7 | 5.73e-09 | DIP=3.7e+10, POP=2.9e+07 | ✓ |
+| CTKAlg + KLU | 59 | 5.73e-09 | DIP=3.7e+10, POP=2.9e+07 | ✓ |
 | NewtonRaphson + UMFPACK | 11 | 1.02e-08 | DIP=2.5e+10, POP=2e+07 | ✓ |
-| NewtonRaphson + KLU | 124 | 1.02e-08 | DIP=2.5e+10, POP=2e+07 | ✓ |
-| NLsolveJL + Newton/UMFPACK | 14 | 1.02e-08 | DIP=2.5e+10, POP=2e+07 | ✓ |
-| NewtonRaphson + MKLPardisoFactorize | 37 | 5.89e-07 | DIP=8.3e+08, POP=2e+09 | ✓ |
-| NewtonRaphson + MKLPardisoIterate | — | — | — | ✗ |
-| CTKAlg + MKLPardisoFactorize | 9 | 4.53e-07 | DIP=7.2e+08, POP=1.3e+07 | ✓ |
-| CTKAlg + MKLPardisoIterate | 10 | 5.73e-09 | DIP=3.7e+10, POP=2.9e+07 | ✓ |
+| NewtonRaphson + KLU | 113 | 1.02e-08 | DIP=2.5e+10, POP=2e+07 | ✓ |
+| NLsolveJL + Newton/UMFPACK | 13 | 1.02e-08 | DIP=2.5e+10, POP=2e+07 | ✓ |
+| NewtonRaphson + MKLPardisoFactorize | 27 | 1.01e-07 | DIP=3.9e+09, POP=2.7e+10 | ✓ |
+| NewtonRaphson + MKLPardisoIterate | 20 | 2.42e-07 | DIP=1.9e+09, POP=2e+07 | ✓ |
+| CTKAlg + MKLPardisoFactorize | 10 | 7.90e-07 | DIP=5.3e+08, POP=9.4e+06 | ✓ |
+| CTKAlg + MKLPardisoIterate | 12 | 5.73e-09 | DIP=3.7e+10, POP=2.9e+07 | ✓ |
 
-_Last updated: 2026-05-25T05:01:26.092, commit 45b8161a2f53cfd848aa00a3f2df797a299da5eb_
+_Last updated: 2026-05-26T02:33:17.515, commit adae72b4a284284128bb7bf458b644eb27b9955b_
