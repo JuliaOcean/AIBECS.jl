@@ -119,14 +119,16 @@ Recommended — VitePress dev server with hot reload (DocumenterVitepress-native
     1. julia --project=docs -e 'include("docs/make.jl")'    # generates VitePress sources
        (locally `build_vitepress` is automatically false — see the format above —
        so this step skips the production build and just emits the sources.)
-    2. julia --project=docs -e 'using DocumenterVitepress; DocumenterVitepress.dev_docs("docs/build/1")'
+    2. julia --project=docs -e 'using DocumenterVitepress; DocumenterVitepress.dev_docs("docs/build")'
     Browser opens at http://localhost:5173 with hot module reload.
     On any src/ edit: re-run step 1; the browser auto-refreshes.
 
-Note: since DocumenterVitepress 0.2, the local build lands in
-`docs/build/1/` (numbered subfolders, one per base — for local dev there
-is only one, with base = ""). That's why `dev_docs` points at `build/1`
-rather than `build/`.
+Note: `dev_docs` expects the generated markdown to live at
+`<builddir>/.documenter/`. In the current DocumenterVitepress release
+that is `docs/build/.documenter/`, so pass `docs/build`. (Older releases
+emitted numbered per-base subfolders like `docs/build/1/.documenter/`
+and required `dev_docs("docs/build/1")` — if you're on one of those,
+adjust accordingly.)
 
 Fast markdown-only iteration (skip @example/@repl/@setup/@eval evaluation):
     DRAFT=true julia --project=docs -e 'include("docs/make.jl")'
