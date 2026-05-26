@@ -174,9 +174,13 @@ the Jacobian rows/columns for these different-sized blocks is the bulk of the wo
 Steady-state solves currently rely on direct sparse solvers on the CPU
 [LinearSolve.jl](https://docs.sciml.ai/LinearSolve/stable/) (UMFPACK by
 default). That is the right choice for OCIM-sized problems,
-but it does not scale well, as both memory and factorisation time grow quickly
-with increasing resolution, and there is no GPU path (like CUDSS). Krylov-subspace
-solvers (GMRES, BiCGStab) from
+but it does not scale well, as both memory and factorisation time grow
+quickly with increasing resolution, and there is no GPU path. Nothing
+in the call chain — `SteadyStateProblem` → AIBECS state function →
+linear solve — is inherently CPU-only, so a GPU-aware factorisation
+like [CUDSS.jl](https://github.com/exanauts/CUDSS.jl) should in
+principle drop in, but this path has not been exercised.
+Krylov-subspace solvers (GMRES, BiCGStab) from
 [Krylov.jl](https://github.com/JuliaSmoothOptimizers/Krylov.jl) or
 [IterativeSolvers.jl](https://github.com/JuliaLinearAlgebra/IterativeSolvers.jl)
 would address both, but only with effective preconditioning: ILU(0),

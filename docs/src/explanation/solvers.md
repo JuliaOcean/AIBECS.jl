@@ -99,21 +99,3 @@ import Markdown
 Markdown.parse(Main.__LATEST_TIMINGS_SMALL_MD)
 ```
 
-## GPU execution (untested)
-
-The underlying call chain — `SteadyStateProblem` → AIBECS state
-function → LinearSolve factorisation — has no inherently CPU-only
-piece. Moving the sparse Jacobian and state vector to a GPU array
-type (via e.g. CUDA.jl) and using a GPU-aware factorisation from
-LinearSolve should in principle just work, but we have not exercised
-this path. Anyone interested in a GPU run should expect to discover
-and fix a few rough edges on the way.
-
-## Krylov solvers
-
-Iterative Krylov backends from LinearSolve (e.g. `KrylovJL_GMRES`,
-`KrylovJL_BICGSTAB`) are intentionally not in the supported matrix
-above: AIBECS does not ship a preconditioner suited to the
-steady-state advection–diffusion–reaction system, and unpreconditioned
-Krylov on these operators is uncompetitive with the sparse direct
-factorisations. Adding a preconditioner is a future direction.
