@@ -9,7 +9,8 @@
 # us also sweep the cost function in a 2D grid around the optimiser
 # trajectory and visualise the loss landscape directly.
 #
-# We use the SciML [Optimization.jl][1] frontend, with [F1Method.jl][2]
+# We use the SciML [Optimization.jl](https://docs.sciml.ai/Optimization/stable/)
+# frontend, with [F1Method.jl](https://github.com/briochemc/F1Method.jl)
 # supplying the cached steady-state gradient and Hessian, and share an
 # UMFPACK factorisation between F1Method's adjoint solve and AIBECS's
 # inner Newton step (warm-start trick) so the sweep stays cheap.
@@ -17,32 +18,24 @@
 # The API surface we touch:
 #
 # - `@flattenable @bounds @logscaled @prior` — declare which parameters
-#   are optimised and supply their priors;
+#   are optimised and supply their priors
 # - [`p2λ`](@ref) / [`λ2p`](@ref) — transform a parameter struct to/from
-#   an unconstrained flat vector;
+#   an unconstrained flat vector
 # - [`f_and_∇ₓf`](@ref) — build the volume-weighted mismatch objective
-#   and its analytical state Jacobian;
-# - `F1Method` — cached steady-state solve plus adjoint gradient and
-#   Hessian ([Pasquier et al., 2019](https://doi.org/10.5194/gmd-12-3537-2019));
-# - `Optimization.jl` — the SciML optimisation frontend, in the same way
-#   `LinearSolve.jl` is the SciML linear-solver frontend used elsewhere
-#   in AIBECS;
-# - [`LinearSolve.jl`](https://docs.sciml.ai/LinearSolve/stable/) — we
-#   share an UMFPACK factorisation between F1Method's adjoint solve and
-#   AIBECS's inner Newton step.
-#
-# See the [coupled PO₄–POP tutorial](@ref P-model) for the model
-# equations and [GNOM](https://github.com/MTEL-USC/GNOM) for the
-# converged multi-tracer / isotope fit this example is a thin slice of.
-#
-# [1]: https://docs.sciml.ai/Optimization/stable/
-# [2]: https://github.com/briochemc/F1Method.jl
+#   and its gradient w.r.t. the state vector x
+# - `F1Method` — gradient and Hessian
+#   ([Pasquier et al., 2019](https://doi.org/10.5194/gmd-12-3537-2019))
+# - `Optimization.jl` — the SciML optimisation frontend, wrapping
+#   many optimizers (we will use `NewtonTrustRegion`).
+# - [`LinearSolve.jl`](https://docs.sciml.ai/LinearSolve/stable/) — the SciML
+#   linear-solver frontend (we will use the default sparse UMFPACK), and share
+#   the factorisation between F1Method and AIBECS.
 
 # ## Re-build the P-model on OCCA
 
 # We reuse the source/sink terms from the P-model tutorial verbatim, just
 # swapping the circulation to OCCA so the resolution stays moderate
-# (~170k wet boxes × 2 tracers).
+# (~100k wet boxes × 2 tracers; OCIM2 is ~200k wet boxes for comparison).
 
 using AIBECS
 using JLD2 # required by `OCCA.load`
@@ -79,11 +72,9 @@ end
 
 # We layer the full optimisation metadata stack on top of the tutorial's
 # `PmodelParameters`. The leftmost macro consumes the leftmost column
-# (canonical example at `src/Parameters.jl`); the columns therefore are
-# `initial_value | units | flattenable | bounds | logscaled`. Only two
-# fields — `τ_DIP` and `τ_POP` — carry `flattenable = true`, so the
-# unconstrained vector `λ` has length 2 and the cost-surface sweep
-# below is a 2D contour plot.
+# (canonical example at `src/Parameters.jl`). Only
+# `τ_DIP` and `τ_POP` are optimised and marked as `flattenable`.
+# So we only pass a 2-element vector `λ` to the optimiser.
 
 import AIBECS: @initial_value, initial_value
 import AIBECS: @units, units
@@ -109,10 +100,21 @@ const ∞ = Inf
     DIP_geo::U |   2.12 | mmol/m^3 | false | (0, ∞) | false
 end
 
-# Derive priors from `(lb, ub) = bounds(T, s)` and the initial value, matching
+# We apply a penalty to the parameters. For this we
+# derive priors from `(lb, ub) = bounds(T, s)` and the initial value, matching
 # the convention in `test/parameters.jl` and GNOM: positive half-line gets a
 # LogNormal, the real line a wide Normal, and finite-interval parameters get a
 # LogitNormal stretched onto `(lb, ub)`.
+# Here we will only use the `LogNormal` priors but this gives you an idea
+# of how to set up different priors if you want to.
+
+#md # !!! note
+#md #     Under the hood AIBECS will perform a change of variables based
+#md #     on Turing.jl's Bijectors.jl extension to transform the
+#md #     constrained parameter space `(0, ∞)` into an unconstrained one,
+#md #     which is what the optimiser operates in. This is why we can use
+#md #     `LogNormal` and `LogitNormal` priors even though the optimiser
+#md #     only sees unconstrained vectors.
 
 function prior(::Type{T}, s::Symbol) where {T <: OptParams}
     flattenable(T, s) || return nothing
@@ -138,7 +140,7 @@ AIBECS.table(p₀)
 # ## State function in parameter-type form
 
 # Using the `AIBECSFunction(Ts, Gs, nb, ::Type{P})` form lets the SciML
-# solvers feed in a flat unconstrained vector `λ`; AIBECS will call
+# solvers feed in a flat parameter vector `λ`; AIBECS will call
 # `λ2p(OptParams, λ)` internally to reconstruct the struct.
 
 nb = sum(iswet(grd))
@@ -254,10 +256,7 @@ end
 
 # ## Diagnostics — setup
 #
-# We use `CairoMakie` (the headless backend used elsewhere in the docs
-# build — see the [Makie how-to](@ref plots-makie)), solve once at the
-# optimum, strip units, and pre-compute basin masks and the shared colour
-# scales that the figures below reuse.
+# We use `CairoMakie` (see also the [Makie how-to](@ref plots-makie)) for plotting.
 
 using CairoMakie
 using OceanBasins
@@ -324,7 +323,7 @@ ax = Axis(fig[1, 1];
     xgridvisible = false, ygridvisible = false,
     aspect = DataAspect(), limits = (0, 3, 0, 3))
 sc = scatter!(ax, μWOA_μM, DIPopt_μM;
-    markersize = 2, color = point_q, colormap = :plasma, colorrange = (0, 1))
+    markersize = 4, color = point_q, colormap = :plasma, colorrange = (0, 1))
 contour!(ax, d_kde.x, d_kde.y, d_kde.density;
     levels = levels, color = (:black, 0.5), linewidth = 1.2)
 lines!(ax, [0, 3], [0, 3]; color = :red, linestyle = :dash)
@@ -355,9 +354,6 @@ end
 fig
 
 # ## Per-basin zonal means — model / WOA / model − WOA
-#
-# Columns cropped to each basin's wet-cell latitude span and sized
-# proportionally — same trick as in [the Makie how-to](@ref plots-makie).
 
 row_specs = [
     (label = "model",         field = DIPopt_μM, levels = dip_levels,  cmap = dip_cmap),
