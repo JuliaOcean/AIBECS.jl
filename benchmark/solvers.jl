@@ -89,7 +89,7 @@ const TRACER_SETUPS = (
     # uses physics-based scales because the heuristic captures `u₀`'s
     # magnitude (DIP_geo for both tracers) rather than the steady-state
     # POP magnitude (≈ DIP_geo · τ_POP/τ_DIP, ~46× smaller).
-    # `tracer_names` is used to label per-tracer τ = ‖x‖_∞ / ‖F‖_∞ in the
+    # `tracer_names` is used to label per-tracer τ = ‖x‖∞ / ‖F‖∞ in the
     # output (see post-solve block below). The vector's length determines how
     # the state vector is sliced into per-tracer blocks (length(u) ÷ nt).
     idealage    = (label = "idealage",    build = build_idealage_problem,    scales = nothing,       tracer_names = ["age"]),
@@ -213,7 +213,7 @@ function format_diagnostic(case, F̃)
         @sprintf("‖F̃‖_2 = %.2e ≤ %.0e ? %s   [L2 (~√n × tighter than the others)]",
             L2, NL_ABSTOL, L2 ≤ NL_ABSTOL ? "✓" : "✗")
     else  # NewtonRaphson + * and CTKAlg + * — Inf-norm + AbsNormSafeBest
-        @sprintf("‖F̃‖_∞ = %.2e ≤ %.0e ? %s",
+        @sprintf("‖F̃‖∞ = %.2e ≤ %.0e ? %s",
             Linf, NL_ABSTOL, Linf ≤ NL_ABSTOL ? "✓" : "✗")
     end
 end
@@ -316,7 +316,7 @@ for (circ_label, loader) in TIERS[TIER]
             seconds = timed.time
             # `sol.u` and `F̃` are in scaled space (ũ ~ O(1) per component, F̃ ~
             # relative drift per component). The universal cross-solver metric
-            # `max-rel-drift = max_i |F_i / scale_F_i|` is exactly `‖F̃‖_∞`.
+            # `max-rel-drift = max_i |F_i / scale_F_i|` is exactly `‖F̃‖∞`.
             F̃ = sp_fresh.scaled.f.f(sol.u, sp_fresh.scaled.p)
             max_rel_drift = maximum(abs, F̃)
             converged = max_rel_drift < NL_ABSTOL

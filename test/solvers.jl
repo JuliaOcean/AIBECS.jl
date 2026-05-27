@@ -24,9 +24,11 @@ solver_cases = [
             prob = case.needs_nlprob ? AIBECS.nonlinearproblem(ssprob) : ssprob
             s = solve(prob, case.build())
             @test s isa SciMLBase.AbstractSciMLSolution
-            # Residual is small in absolute ∞-norm. NonlinearSolveBase's
-            # default abstol for Float64 is ~eps^0.8 ≈ 7e-13; 1e-6 leaves
-            # plenty of margin.
+            # Residual is small in absolute ∞-norm. CTKAlg's default
+            # `NormTerminationMode` with `reltol ≈ 1/(1 Myr in seconds)`
+            # ≈ 3.17e-14 converges well below 1e-6 for these toy
+            # problems; NonlinearSolve's `:regular` default (~eps^0.8
+            # ≈ 7e-13 absolute) is similarly loose against this margin.
             @test maximum(abs, fun.f(s.u, testp, 0)) ≤ 1.0e-6
         end
     end
@@ -51,10 +53,14 @@ solver_cases = [
         testp = p
         ssprob = SteadyStateProblem(fun, x, testp)
 
-        s_ok = solve(ssprob, CTKAlg())
+        # Success path: no @warn, successful retcode.
+        s_ok = @test_logs solve(ssprob, CTKAlg())
         @test SciMLBase.successful_retcode(s_ok.retcode)
 
-        s_short = solve(ssprob, CTKAlg(); maxItNewton = 1)
+        # MaxIters path: @warn fires, retcode = MaxIters.
+        s_short = @test_logs (:warn, r"CTKAlg did not converge") solve(
+            ssprob, CTKAlg(); maxItNewton = 1,
+        )
         @test s_short.retcode == SciMLBase.ReturnCode.MaxIters
     end
 

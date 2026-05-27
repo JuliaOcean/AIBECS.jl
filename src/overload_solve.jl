@@ -1,4 +1,5 @@
 using ForwardDiff: Dual
+using Unitful: s, Myr
 
 """
     CTKAlg{L} <: SciMLBase.AbstractSteadyStateAlgorithm
@@ -24,23 +25,48 @@ struct CTKAlg{L} <: SciMLBase.AbstractSteadyStateAlgorithm
 end
 CTKAlg(; linsolve = UMFPACKFactorization()) = CTKAlg(linsolve)
 
+# Default `reltol` for CTKAlg, expressed as the inverse of a physical
+# "steady-state" timescale τstop = 1 Myr in SI seconds. Since AIBECS state
+# variables `x` carry SI units of (concentration | age | …) and the residual
+# `F = ∂ₜx` carries (… / second), the ratio `‖F‖/‖x‖` is a rate in 1/s, and
+# the criterion `‖F‖/‖x‖ ≤ reltol` (i.e. `‖x‖/‖F‖ ≥ τstop`) reads as "the
+# system's typical change timescale exceeds τstop." 1 Myr is comfortably
+# beyond any ocean-tracer transient yet still achievable at Float64 precision
+# for typical AIBECS Jacobian conditioning.
+const τstop_default = ustrip(s, 1Myr)        # 1 Myr in seconds ≈ 3.16e13
+const reltol_default = 1 / τstop_default      # ≈ 3.17e-14
+
 """
     solve(prob::SciMLBase.AbstractSteadyStateProblem,
           alg::CTKAlg;
-          termination_condition = AbsNormSafeBestTerminationMode(Base.Fix1(maximum, abs)),
-          abstol = nothing,
-          reltol = nothing,
+          termination_condition = NormTerminationMode(Base.Fix1(maximum, abs)),
+          abstol = 0.0,
+          reltol = 1 / (1 Myr in seconds) ≈ 3.17e-14,
           preprint = "",
           maxItNewton = 50,
           linear_cache = nothing)
 
 Solves `prob` using an AIBECS-customized Newton–Chord–Shamanskii method with
 Armijo line search. Convergence is delegated to NonlinearSolveBase termination
-modes — the default mirrors `NonlinearSolve`'s `:regular` algorithm default
-(`AbsNormSafeBestTerminationMode` on the ∞-norm of the residual). Pass
-`abstol`/`reltol` to tighten or loosen, or pass any
-`AbstractNonlinearTerminationMode` (e.g. `NormTerminationMode(norm)`,
-`RelNormTerminationMode(norm)`) to swap criteria.
+modes.
+
+The default is `NormTerminationMode` on the ∞-norm of the residual, which
+terminates when either
+
+    ‖F‖∞ ≤ abstol           (absolute floor)
+    ‖F‖∞ ≤ reltol · ‖F + x‖∞  (relative; ≈ ‖F‖∞ ≤ reltol · ‖x‖∞ near steady state)
+
+is satisfied. With the default `abstol = 0` the active branch is the relative
+one. Why is this physically meaningful? Because`‖x‖/‖F‖` is the typical timescale
+on which `x` is still changing, so `‖F‖/‖x‖ ≤ reltol` means that timescale
+exceeds `τstop = 1 / reltol` seconds. The default `reltol ≈ 3.17e-14` corresponds
+to `τstop = 1 Myr`, which is comfortably beyond any ocean-tracer transient.
+
+Pass `abstol`/`reltol` to tighten or loosen, or pass any
+`AbstractNonlinearTerminationMode` (e.g. `AbsNormSafeBestTerminationMode(norm)`,
+`RelNormTerminationMode(norm)`) to swap criteria entirely.
+
+A warning (`@warn`) is emitted if the solver returns a non-success `retcode`.
 
 # Warm-starting via `linear_cache`
 
@@ -65,11 +91,11 @@ most one Newton iteration before the factorisation is refreshed.
 function SciMLBase.solve(
         prob::SciMLBase.AbstractSteadyStateProblem,
         alg::CTKAlg;
-        termination_condition = NonlinearSolveBase.AbsNormSafeBestTerminationMode(
+        termination_condition = NonlinearSolveBase.NormTerminationMode(
             Base.Fix1(maximum, abs)
         ),
-        abstol = nothing,
-        reltol = nothing,
+        abstol = 0.0,
+        reltol = reltol_default,
         preprint = "",
         maxItNewton = 50,
         linear_cache = nothing,
@@ -103,6 +129,10 @@ function SciMLBase.solve(
         preprint = preprint, maxItNewton = maxItNewton, linear_cache = linear_cache
     )
     resid = F(x_steady)
+    if !SciMLBase.successful_retcode(retcode)
+        residual_inf_norm = maximum(abs, resid)
+        @warn "CTKAlg did not converge to a successful retcode." retcode residual_inf_norm abstol reltol maxItNewton
+    end
     return SciMLBase.build_solution(prob, alg, x_steady, resid; retcode = retcode)
 end
 

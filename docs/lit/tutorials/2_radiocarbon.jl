@@ -92,8 +92,7 @@ p = RadiocarbonParameters(
 F = AIBECSFunction(T_OCCA, G)
 x = zeros(length(z)) # an initial guess
 prob = SteadyStateProblem(F, x, p)
-@unpack Ratm = p
-R = solve(prob, CTKAlg(); abstol = ustrip(upreferred(1e-8 * Ratm / 1u"yr"))).u
+R = solve(prob, CTKAlg()).u
 
 # This should take a few seconds on a laptop.
 # Once the radiocarbon concentration is computed, we can convert it into the corresponding age in years, via
