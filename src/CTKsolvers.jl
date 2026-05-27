@@ -106,6 +106,7 @@ end
 """
     NewtonChordShamanskii(F, ∇ₓF, xinit, linsolve_alg, tc_cache;
                           preprint="", maxItNewton=50)
+        -> (x, stats, retcode)
 
 Newton–Chord–Shamanskii solver for `F(x) = 0`, with Armijo line search and
 lazy Jacobian refresh.
@@ -119,6 +120,11 @@ built once from `linsolve_alg`; convergence is delegated to `tc_cache`, a
 
 This is the engine behind AIBECS's [`AIBECS.CTKAlg`](@ref) algorithm wrapper
 used by `SciMLBase.solve(::SteadyStateProblem)`.
+
+Returns the converged iterate `x`, a `stats` NamedTuple carrying
+`iterations` (number of quasi-Newton steps) and `jacobian_refreshes`
+(total Jacobian evaluations — the initial build plus each Shamanskii
+refresh), and the `SciMLBase.ReturnCode` verdict.
 
 Reference: C. T. Kelley (2003), *Solving Nonlinear Equations with Newton's
 Method*, SIAM, Frontiers in Applied Mathematics 1.
@@ -162,6 +168,11 @@ function NewtonChordShamanskii(
         linear_cache
     end
     age = 0
+    # Total Jacobian evaluations done by this solve: 1 for the initial build
+    # above (or the caller-supplied warm-started `linear_cache`, which we
+    # still count as a starting factorisation from the solver's POV), plus
+    # one per Shamanskii refresh inside the loop.
+    jacobian_refreshes = 1
     rShamᵢ = 0.0
     ArmijoFail = false
 
@@ -196,6 +207,7 @@ function NewtonChordShamanskii(
         else
             linsol.A = ∇ₓF(xᵢ)
             age = 0
+            jacobian_refreshes += 1
         end
 
         # Newton step via the LinearSolve cache.
@@ -215,7 +227,9 @@ function NewtonChordShamanskii(
                 Fᵢ .= Fᵢ₋₁
             else # else if J is fresh it's a complete failure
                 preprint ≠ "" ? println("Complete Failure") : nothing
-                return xᵢ, SciMLBase.ReturnCode.Unstable
+                return xᵢ,
+                    (iterations = i, jacobian_refreshes = jacobian_refreshes),
+                    SciMLBase.ReturnCode.Unstable
             end
         end
 
@@ -256,7 +270,8 @@ function NewtonChordShamanskii(
     else
         SciMLBase.ReturnCode.Default
     end
-    return xᵢ, retcode
+    stats = (iterations = i, jacobian_refreshes = jacobian_refreshes)
+    return xᵢ, stats, retcode
 end
 
 function print_marker(i)

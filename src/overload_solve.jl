@@ -37,6 +37,37 @@ const τstop_default = ustrip(s, 1Myr)        # 1 Myr in seconds ≈ 3.16e13
 const reltol_default = 1 / τstop_default      # ≈ 3.17e-14
 
 """
+    default_termination_condition() -> NamedTuple
+
+Return AIBECS's recommended termination configuration as a `NamedTuple`
+suitable for splatting into any `solve` call:
+
+```julia
+solve(prob, alg; AIBECS.default_termination_condition()..., maxiters = 50)
+```
+
+Produces the same stopping rule `CTKAlg` uses by default:
+`NormTerminationMode` on the ∞-norm of the residual,
+`reltol = 1 / τstop_default ≈ 3.17e-14` (i.e. steady-state timescale
+≥ 1 Myr), and `abstol = 0`.
+
+Splat it through to every solver that accepts `termination_condition` —
+`CTKAlg` and the NonlinearSolve algorithms (`NewtonRaphson`,
+`TrustRegion`, …) — so cross-solver comparisons share the same
+convergence criterion. `NLsolveJL` is the exception: its wrapper does
+not accept `termination_condition` and reports an L2 norm internally.
+"""
+function default_termination_condition()
+    return (;
+        termination_condition = NonlinearSolveBase.NormTerminationMode(
+            Base.Fix1(maximum, abs)
+        ),
+        abstol = 0.0,
+        reltol = reltol_default,
+    )
+end
+
+"""
     solve(prob::SciMLBase.AbstractSteadyStateProblem,
           alg::CTKAlg;
           termination_condition = NormTerminationMode(Base.Fix1(maximum, abs)),
@@ -124,7 +155,7 @@ function SciMLBase.solve(
     # `alg.linsolve` is set eagerly to `UMFPACKFactorization()` by the default
     # constructor — see `CTKAlg(; linsolve = UMFPACKFactorization())` above —
     # so no `=== nothing` branch is needed here.
-    x_steady, retcode = NewtonChordShamanskii(
+    x_steady, stats, retcode = NewtonChordShamanskii(
         F, ∇ₓF, x0, alg.linsolve, tc_cache;
         preprint = preprint, maxItNewton = maxItNewton, linear_cache = linear_cache
     )
@@ -133,10 +164,24 @@ function SciMLBase.solve(
         residual_inf_norm = maximum(abs, resid)
         @warn "CTKAlg did not converge to a successful retcode." retcode residual_inf_norm abstol reltol maxItNewton
     end
-    return SciMLBase.build_solution(prob, alg, x_steady, resid; retcode = retcode)
+    # Map CTKAlg's internal counts onto `SciMLBase.NLStats` so the harness
+    # reads stats uniformly across solvers. `nf` left at 0: F-call counting
+    # would need a wrapper around `F` (and a separate one inside
+    # `searchLineArmijo!`); not worth the complexity for now. CTKAlg does
+    # exactly one linear solve per Newton step, so `nsolve = nsteps`.
+    nl_stats = SciMLBase.NLStats(
+        0,                          # nf — not tracked
+        stats.jacobian_refreshes,   # njacs
+        stats.jacobian_refreshes,   # nfactors — every Jacobian refresh triggers a refactor
+        stats.iterations,           # nsolve — 1 linear solve per Newton step
+        stats.iterations,           # nsteps
+    )
+    return SciMLBase.build_solution(
+        prob, alg, x_steady, resid; retcode = retcode, stats = nl_stats,
+    )
 end
 
-export solve, SteadyStateProblem, CTKAlg
+export solve, SteadyStateProblem, CTKAlg, default_termination_condition
 
 # ── AD-through-the-solve via the implicit function theorem ───────────────────
 # Mirror of `NonlinearSolveBase.nonlinearsolve_forwarddiff_solve` (defined in

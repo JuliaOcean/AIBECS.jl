@@ -29,6 +29,33 @@ jobs:
       - uses: julia-actions/cache@v3
       - name: Install dependencies
         run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+
+      # Refresh the embedded solver benchmark (small-tier table + plots) on
+      # tag pushes only. The job runs `benchmark/solvers.jl`, which writes:
+      #   - benchmark/results/latest_timings_small.md
+      #   - docs/src/explanation/figures/bench_walltime_small.png
+      #   - docs/src/explanation/figures/bench_diagnostics_small.png
+      # The "Sync" step below copies the MD into the docs source tree so
+      # `docs/make.jl`'s `@eval` block can read it. Pinned to tag pushes
+      # because we do not need commit-by-commit perf tracking, only fresh
+      # numbers in each released doc build.
+      - name: Resolve benchmark env
+        if: startsWith(github.ref, 'refs/tags/')
+        run: julia --project=benchmark -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+
+      - name: Run small-tier benchmark
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          DATADEPS_ALWAYS_ACCEPT: "true"
+          GITHUB_SHA: ${{ github.sha }}
+          BENCH_TIER: small
+          BENCH_TRACERS: all
+        run: julia --project=benchmark benchmark/solvers.jl
+
+      - name: Sync latest timings into docs source tree
+        if: startsWith(github.ref, 'refs/tags/')
+        run: cp benchmark/results/latest_timings_small.md docs/src/explanation/latest_timings_small.md
+
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
