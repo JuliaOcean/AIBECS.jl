@@ -97,13 +97,12 @@ abstol, reltol)` triple [`CTKAlg`](@ref AIBECS.CTKAlg) uses by default
 (1 Myr in seconds) ≈ 3.17e-14` and `abstol = 0`. The criterion reads
 physically as "the system's typical change timescale exceeds 1 Myr."
 NonlinearSolve algorithms (`NewtonRaphson`, `TrustRegion`, …) accept
-this configuration directly; `NLsolveJL` is the one exception and
-runs on an L2-norm criterion (flagged in the plot below).
+this configuration directly.
 
 ## Small benchmark showcase
 
-The numbers below come from `benchmark/solvers.jl`, run on the
-maintainer's laptop. **This is not a solver-selection guide.**
+The numbers below come from `benchmark/solvers.jl`, regenerated on
+every docs CI build. **This is not a solver-selection guide.**
 Steady-state solver performance is highly problem-specific, and the
 suite below only covers a small set of AIBECS-shaped problems on
 single-tracer (`idealage`, `radiocarbon`) and two-tracer (`po4pop`)
@@ -115,28 +114,29 @@ The harness runs two orthogonal sweeps, both anchored at the AIBECS
 recommendation `CTKAlg + UMFPACK`:
 
 1. **Linear-solver sweep** — `CTKAlg` is held fixed as the nonlinear
-   engine, and the inner `linsolve` is varied (UMFPACK, KLU, and MKL
-   Pardiso on Linux CI).
+   engine, and the inner `linsolve` is varied (UMFPACK, KLU, Sparspak,
+   and MKL Pardiso on Linux CI).
 2. **Nonlinear-solver sweep** — `UMFPACK` is held fixed as the linear
    solver, and the outer nonlinear algorithm is varied (CTKAlg,
-   NewtonRaphson, NLsolveJL).
+   NewtonRaphson).
 
-Each figure below is a 2-row panel for one `(circulation, tracer)`
-cell — the top row plots wall time; the bottom row plots iteration,
-linear-solve, and Jacobian-refresh counts at the matching wall time
-(x-axis linked). Where the setup ships physics-based scales
-(`po4pop`), each algorithm gets two bars per row — filled (scaled,
-`nondimensionalize` applied) and open (unscaled). Single-tracer
-setups (`idealage`, `radiocarbon`) lack a meaningful scaling and
-show only the unscaled bar. Failed-retcode rows render at low alpha
-to fade out.
+Each figure below is a horizontal-bar panel for one `(circulation,
+tracer)` cell, with text annotations to the right of each bar showing
+Newton iterations (and Jacobian-refresh count when it differs — a
+sign of CTKAlg's Shamanskii recycling). Where the setup ships
+physics-based scales (`po4pop`), each algorithm gets two bars per row
+— filled (scaled, `nondimensionalize` applied) and open (unscaled).
+Single-tracer setups (`idealage`, `radiocarbon`) lack a meaningful
+scaling and show only one bar per algorithm row. Rows whose solver
+returned a non-success retcode are omitted from the figure (the
+table below still records them in the `Retcode` column).
 
 ### Linear-solver sweep
 
-`CTKAlg` held fixed; `linsolve` varied. KLU and MKL Pardiso are
-exercised here (and only here) — pairing slow linear solvers with
-multiple nonlinear wrappers would dominate run wall time without
-adding signal.
+`CTKAlg` held fixed; `linsolve` varied. KLU, Sparspak, and MKL
+Pardiso are exercised here (and only here) — pairing slow linear
+solvers with multiple nonlinear wrappers would dominate run wall
+time without adding signal.
 
 ![OCCA / idealage — linear sweep](./figures/bench_linear_OCCA_idealage_small.png)
 
@@ -152,11 +152,7 @@ adding signal.
 
 ### Nonlinear-solver sweep
 
-UMFPACK held fixed; nonlinear algorithm varied. `NLsolveJL` uses an
-L2-norm stopping rule rather than the shared ∞-norm relative-drift
-test — its bars/markers are still rendered the same colour but the
-verdict ("Retcode" column in the table below) is the safer cross-row
-comparison.
+UMFPACK held fixed; nonlinear algorithm varied.
 
 ![OCCA / idealage — nonlinear sweep](./figures/bench_nonlinear_OCCA_idealage_small.png)
 

@@ -54,8 +54,7 @@ Produces the same stopping rule `CTKAlg` uses by default:
 Splat it through to every solver that accepts `termination_condition` —
 `CTKAlg` and the NonlinearSolve algorithms (`NewtonRaphson`,
 `TrustRegion`, …) — so cross-solver comparisons share the same
-convergence criterion. `NLsolveJL` is the exception: its wrapper does
-not accept `termination_condition` and reports an L2 norm internally.
+convergence criterion.
 """
 function default_termination_condition()
     return (;

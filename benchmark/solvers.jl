@@ -18,9 +18,10 @@
 # axis from the recommended setup?":
 #
 #   - LINEAR_SWEEP   — vary the inner LinearSolve factorisation (UMFPACK,
-#                      KLU, MKL Pardiso) under fixed CTKAlg nonlinear.
+#                      KLU, Sparspak, and MKL Pardiso on Linux) under fixed
+#                      CTKAlg nonlinear.
 #   - NONLINEAR_SWEEP — vary the outer nonlinear algorithm (CTKAlg,
-#                      NewtonRaphson, NLsolveJL) under fixed UMFPACK linear.
+#                      NewtonRaphson) under fixed UMFPACK linear.
 #
 # `REFAlg` is the first row in both sweeps. It is timed once and rendered
 # in both output sections so each sweep can be read standalone.
@@ -30,10 +31,10 @@
 #       Two sub-tables per (circ, tracer), one per sweep. Consumed by
 #       `docs/make.jl` via the `@eval` block in `solvers.md`.
 #   - docs/src/explanation/figures/bench_<sweep>_<circ>_<tracer>_<tier>.png
-#       2x1 layout per cell (walltime bar chart on top, iter/Jacobian/
-#       linear-solve diagnostics scatter below, x-axis-linked). One PNG
-#       per (sweep, circ, tracer) — small/focused figures rather than
-#       one mega-plot per sweep.
+#       Single horizontal-bar panel per cell with Newton-iteration
+#       (and Jacobian-refresh, when different) counts annotated to the
+#       right of each bar. One PNG per (sweep, circ, tracer) — small,
+#       focused figures rather than one mega-plot per sweep.
 #
 # Scaling:
 #   The harness also runs each cell twice — once with `nondimensionalize`
@@ -46,6 +47,11 @@
 #   currently ships physics-based scales and gets both rows.
 #
 # Solvers intentionally omitted:
+# - NLsolveJL: the wrapper drops `reltol` (only maps `abstol → ftol`),
+#   so it cannot honour the shared physical-timescale stopping rule used
+#   by the other rows on unscaled cells. Compounded with NLsolve.jl
+#   itself being unmaintained (no commits in ~6 years), upstream fix is
+#   not realistic. Removed.
 # - NLSolversJL: its NonlinearSolve extension doesn't plumb `jac_prototype`
 #   through to NLSolvers.jl, which then allocates `J = similar(x, N, N)` dense
 #   (~57 GB at n≈84k). Skip until upstream lands.
@@ -71,8 +77,8 @@ using Unitful: m, d, yr, Myr, mmol, μmol
 using CairoMakie
 import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
-import NLsolve               # activates NonlinearSolveNLsolveExt
 import Pardiso               # activates LinearSolvePardisoExt; needed for MKLPardiso* constructors
+import Sparspak              # activates LinearSolveSparspakExt so SparspakFactorization() resolves
 
 CairoMakie.activate!(type = "png")
 
@@ -121,16 +127,7 @@ const TRACER_SETUPS = (
 # === Algorithm sweeps ======================================================
 # `family` classifies the wrapper kind for the stats-extraction routine.
 # CTKAlg surfaces stats via `sol.stats::SciMLBase.NLStats` (populated in
-# `src/overload_solve.jl`); NewtonRaphson surfaces them via the same field;
-# NLsolveJL wraps the original NLsolve result on `sol.original`.
-
-# NLsolveJL's default `linsolve = (x, A, b) -> copyto!(x, A \ b)` falls
-# through to Julia's generic sparse solve. Routing the per-step solve through
-# LinearSolve.jl / UMFPACK matches NewtonRaphson + UMFPACK's linear-algebra
-# path so the wrapper benchmark exercises NLsolve's nonlinear logic against
-# the same factorization the native row uses.
-nlsolve_linsolve_umfpack(x, A, b) =
-    (copyto!(x, solve(LinearProblem(A, b), UMFPACKFactorization()).u); x)
+# `src/overload_solve.jl`); NewtonRaphson surfaces them via the same field.
 
 # MKL Pardiso rows are platform-conditional. `Pardiso.mkl_is_available()`
 # returns true on Linux (where MKL_jll ships native binaries) and false on
@@ -157,6 +154,7 @@ const REFAlg = (
 const LINEAR_SWEEP = [
     REFAlg,
     (label = "CTKAlg + KLU", alg = CTKAlg(linsolve = KLUFactorization()), family = :ctk, needs_nlprob = false),
+    (label = "CTKAlg + Sparspak", alg = CTKAlg(linsolve = SparspakFactorization()), family = :ctk, needs_nlprob = false),
     (PARDISO_AVAILABLE ? [
         (label = "CTKAlg + MKLPardisoFactorize", alg = CTKAlg(linsolve = MKLPardisoFactorize(; nprocs = PARDISO_NPROCS)), family = :ctk, needs_nlprob = false),
         (label = "CTKAlg + MKLPardisoIterate",   alg = CTKAlg(linsolve = MKLPardisoIterate(; nprocs = PARDISO_NPROCS)),   family = :ctk, needs_nlprob = false),
@@ -166,8 +164,7 @@ const LINEAR_SWEEP = [
 # Nonlinear-solver sweep — UMFPACK fixed, outer nonlinear algorithm varied.
 const NONLINEAR_SWEEP = [
     REFAlg,
-    (label = "NewtonRaphson + UMFPACK",    alg = NewtonRaphson(linsolve = UMFPACKFactorization()),                       family = :nr,      needs_nlprob = true),
-    (label = "NLsolveJL + Newton/UMFPACK", alg = NLsolveJL(method = :newton, linsolve = nlsolve_linsolve_umfpack),        family = :nlsolve, needs_nlprob = true),
+    (label = "NewtonRaphson + UMFPACK", alg = NewtonRaphson(linsolve = UMFPACKFactorization()), family = :nr, needs_nlprob = true),
 ]
 
 const SWEEPS = (
@@ -212,8 +209,7 @@ const TRACER_KEYS = TRACERS === :all ? collect(keys(TRACER_SETUPS)) :
 # ∞-norm relative-drift criterion with `abstol = 0` and
 # `reltol = 1 / (1 Myr in seconds) ≈ 3.17e-14`. Splatted into every solver
 # that accepts `termination_condition`, so cross-solver comparisons share
-# the same stopping rule. NLsolveJL is the lone exception: it rejects
-# `termination_condition` and is L2-norm-only.
+# the same stopping rule.
 const DTC = default_termination_condition()
 # 20 (not 10): CTKAlg's Shamanskii update reuses stale Jacobians and so can
 # legitimately take more Newton iterations than a Jacobian-every-step
@@ -222,31 +218,43 @@ const DTC = default_termination_condition()
 # 10 would penalise that pattern by max-itering it before convergence.
 const MAXITERS = 20
 
-const KWARGS_BY_FAMILY = Dict(
-    :ctk => (; DTC..., maxItNewton = MAXITERS, preprint = "    "),
-    :nr  => (; DTC..., maxiters = MAXITERS, show_trace = Val(true), trace_level = TraceMinimal()),
-    # NLsolveJL: scalar abstol/reltol only, applied to the L2 norm (not
-    # directly comparable to the ∞-norm criterion the other rows share).
-    # The matching plot fades NLsolveJL bars to flag this.
-    :nlsolve => (; abstol = DTC.abstol, reltol = DTC.reltol, maxiters = MAXITERS, show_trace = Val(true), trace_level = TraceMinimal()),
-)
-kwargs_for(case) = KWARGS_BY_FAMILY[case.family]
+# `ABSTOL_SCALED` is set on the scaled problem because, in scaled space, the
+# residual `F̃ = F / scale_F` is dimensionless by construction — it literally
+# *is* the per-component relative drift (what the display column
+# `max_rel_drift` already shows). `NormTerminationMode` tests
+#   ‖F̃‖∞ ≤ max(reltol · ‖F̃ + ũ‖∞, abstol),
+# so `abstol = 1e-8` reads cleanly as "every component's drift ≤ 1e-8". The
+# alternative — `reltol · ‖F̃ + ũ‖∞` — is unreliable in early iterations,
+# where `‖F̃‖∞` can dominate the sum and the relative criterion becomes
+# `‖F̃‖∞ ≤ reltol · ‖F̃‖∞` (i.e. trivially false until `‖F̃‖∞ < ‖ũ‖∞`).
+#
+# Threshold pick: 1e-8 matches the `max_rel_drift` display threshold and
+# corresponds, in physical time, to τstop ≈ τ_min / 1e-8 (≈ 100·τ_POP for
+# pmodel — comfortably past any transient). Unscaled solves keep
+# DTC.reltol (the physical-timescale criterion).
+const ABSTOL_SCALED = 1.0e-8
+
+ctk_kwargs(abstol, reltol) = (; DTC..., abstol, reltol, maxItNewton = MAXITERS, preprint = "    ")
+nr_kwargs(abstol, reltol)  = (; DTC..., abstol, reltol, maxiters = MAXITERS, show_trace = Val(true), trace_level = TraceMinimal())
+
+# Uniform tolerance pair across both families:
+#   - unscaled → (abstol = 0,             reltol = DTC.reltol)  (physical timescale)
+#   - scaled   → (abstol = ABSTOL_SCALED, reltol = 0)            (per-component drift)
+function kwargs_for(case; scaled::Bool)
+    abstol = scaled ? ABSTOL_SCALED : DTC.abstol
+    reltol = scaled ? 0.0           : DTC.reltol
+    return case.family === :ctk ? ctk_kwargs(abstol, reltol) :
+           case.family === :nr  ? nr_kwargs(abstol, reltol) :
+           error("unknown family $(case.family)")
+end
 
 # === Stats extraction ======================================================
-# Returns `(iterations, jacobian_refreshes, linear_solves)` as
-# `Union{Int, Missing}`. CTKAlg + NewtonRaphson populate `sol.stats` (a
-# `SciMLBase.NLStats`); NLsolveJL surfaces only `iterations` via
-# `sol.original`. CTKAlg sets `nf = 0` (not tracked) — we don't read it.
-function extract_stats(case, sol)
-    if case.family === :ctk || case.family === :nr
-        s = sol.stats
-        return (iterations = s.nsteps, jacobian_refreshes = s.njacs, linear_solves = s.nsolve)
-    elseif case.family === :nlsolve
-        iter = sol.original === nothing ? missing : sol.original.iterations
-        return (iterations = iter, jacobian_refreshes = missing, linear_solves = missing)
-    else
-        return (iterations = missing, jacobian_refreshes = missing, linear_solves = missing)
-    end
+# Returns `(iterations, jacobian_refreshes, linear_solves)`. Both CTKAlg and
+# NewtonRaphson populate `sol.stats` (a `SciMLBase.NLStats`); CTKAlg sets
+# `nf = 0` (not tracked) — we don't read it.
+function extract_stats(sol)
+    s = sol.stats
+    return (iterations = s.nsteps, jacobian_refreshes = s.njacs, linear_solves = s.nsolve)
 end
 
 # === Per-case problem builder =============================================
@@ -338,7 +346,7 @@ for (circ_label, loader) in TIERS[TIER]
             row_label = "$(circ_label) / $(setup.label) / $(case.label) [$(scaled ? "scaled" : "unscaled")]"
             vprintln("[$row_label] solve (n=$n)…")
             sp = build_scaled(setup, ssprob; scaled = scaled)
-            kwargs = kwargs_for(case)
+            kwargs = kwargs_for(case; scaled = scaled)
 
             # Two-pass measurement: warmup pays first-call JIT, then a fresh
             # problem is built so the timed solve sees no cached state.
@@ -371,7 +379,7 @@ for (circ_label, loader) in TIERS[TIER]
             u_orig, F_orig = residual_orig_units(sol, sp, ssprob)
             max_rel_drift = maximum(abs(F_orig[i]) / ref_scale_F[i] for i in eachindex(F_orig))
             converged = max_rel_drift < 1.0e-6
-            stats = extract_stats(case, sol)
+            stats = extract_stats(sol)
             τ_seconds = per_tracer_τ(u_orig, F_orig, v_cells, setup.tracer_names)
             τ_str = join(
                 ("$(name)=$(@sprintf("%.2g", ustrip(t * u"s" |> u"yr"))) yr"
@@ -488,121 +496,125 @@ end
 vprintln("\nWrote Markdown table to ", MD_PATH)
 
 # === Plots ================================================================
-# One PNG per `(sweep, circ, tracer)`. Each figure is a 2x1 layout:
-#   top    — horizontal wall-time bars (one or two per algorithm row
-#            depending on `scaled` availability for this setup).
-#   bottom — diagnostics scatter using the unscaled-row counts: square =
-#            Newton iter, diamond = linear solves, cross = J refreshes.
-# Failed-retcode rows render at alpha = 0.3 so they're visually muted.
+# One PNG per `(sweep, circ, tracer)` — single horizontal-bar panel.
+# Conventions:
+#   - Two bars per algorithm row (scaled filled, unscaled open) *only*
+#     when scaled rows exist for this setup (i.e. `po4pop`); single-tracer
+#     setups get one centred bar per algorithm row.
+#   - Failed-retcode rows are omitted from the figure entirely (the table
+#     still shows the failure in its `Retcode` column).
+#   - Text label to the right of every bar reports Newton iterations, and
+#     also the Jacobian-refresh count when it differs from iterations (this
+#     identifies CTKAlg's Shamanskii recycling: iter > J means stale Jacobians
+#     were reused).
+#   - Scaled/unscaled legend appears only on the `po4pop` cells (where both
+#     bars exist), placed inside the axis via `axislegend`.
 
-const ALPHA_OK_SCALED   = 0.85
-const ALPHA_OK_UNSCALED = 0.35
-const ALPHA_FAIL        = 0.3
+const ALPHA_SCALED   = 0.85
+const ALPHA_UNSCALED = 0.35
 
-# Apply (ok? alpha → fail alpha) downgrade so failed rows fade out.
-α(scaled, ok) = ok ? (scaled ? ALPHA_OK_SCALED : ALPHA_OK_UNSCALED) : ALPHA_FAIL
+# Compact bar annotation: `"5"` if iter == J (or J missing), `"5 (J=3)"` if
+# different. iter > J means Shamanskii kept the Jacobian stale across (iter−J)
+# Newton steps — CTKAlg's defining win when it works.
+function bar_label(r)
+    iter = r.iterations
+    ismissing(iter) && return ""
+    j = r.jacobian_refreshes
+    return (ismissing(j) || j == iter) ? "$(iter)" : "$(iter) (J=$(j))"
+end
 
 # Build one figure for the given sweep × cell.
 function plot_cell(sweep, circ, tracer, rows; path)
     sweep_rows = rows_for_sweep(rows, sweep)
+    # Drop failed-retcode rows entirely from the figure (the table still
+    # records them).
+    sweep_rows = filter(row_success, sweep_rows)
     isempty(sweep_rows) && return nothing
-    # Algorithm ordering follows the sweep's declared order (REFAlg first).
     alg_order = [c.label for c in SWEEPS[sweep].cases]
     nalg = length(alg_order)
     n = first(rows).n
+    has_scaled = any(r -> r.scaled, sweep_rows)
 
-    # 2x1 stack: walltime top, diagnostics bottom. Height scales with #algs.
-    fig_height = 180 + nalg * 64
+    fig_height = 110 + nalg * 64
     fig = Figure(size = (820, fig_height))
-
-    ax_t = Axis(fig[1, 1];
+    ax = Axis(fig[1, 1];
         title = "$(SWEEPS[sweep].title) — $(circ) / $(tracer)  (n = $n)",
-        xlabel = "", ylabel = "",
-        yticks = (1:nalg, alg_order),
-        xtickformat = xs -> [@sprintf("%.1f", x) for x in xs],
-    )
-    ax_d = Axis(fig[2, 1];
         xlabel = "Wall time (s)", ylabel = "",
         yticks = (1:nalg, alg_order),
         xtickformat = xs -> [@sprintf("%.1f", x) for x in xs],
     )
 
-    # Wall-time bars.
-    for (j, label) in enumerate(alg_order)
-        for scaled in (true, false)
-            match = filter(r -> r.alg == label && r.scaled == scaled, sweep_rows)
-            isempty(match) && continue
-            r = first(match)
-            isnan(r.seconds) && continue
-            ok = row_success(r)
-            # Centre the two bars at y = j ± 0.18; if the setup only ran
-            # one (unscaled), keep it centred at y = j.
-            has_both = any(rr -> rr.alg == label && rr.scaled, sweep_rows) &&
-                       any(rr -> rr.alg == label && !rr.scaled, sweep_rows)
-            y = has_both ? j + (scaled ? -0.18 : 0.18) : j
-            barplot!(
-                ax_t, [r.seconds], [y];
-                direction = :x, width = has_both ? 0.32 : 0.6,
-                color = (:steelblue, α(scaled, ok)),
-                strokecolor = :black, strokewidth = 0.5,
-            )
-        end
-    end
-
-    # Diagnostics scatter — unscaled rows only (or the only-row in the
-    # idealage/radiocarbon case where scaled was skipped).
-    for (j, label) in enumerate(alg_order)
-        match = filter(r -> r.alg == label && !r.scaled, sweep_rows)
-        # If unscaled isn't present (shouldn't happen with current setup)
-        # fall through to the scaled row instead so the panel isn't empty.
-        if isempty(match)
-            match = filter(r -> r.alg == label, sweep_rows)
-        end
+    # Collect bars. When `has_scaled` is false (single-tracer setups), all
+    # bars are unscaled and we skip dodge so each bar is centred at `y = j`
+    # at full width — otherwise Makie's `n_dodge = 1` produces an oddly
+    # narrow bar.
+    bar_y    = Int[]
+    bar_x    = Float64[]
+    bar_dodge = Int[]
+    bar_color = Tuple{Symbol, Float64}[]
+    bar_meta = NamedTuple[]   # rows aligned with the bar arrays, for annotation
+    for (j, label) in enumerate(alg_order), (k, scaled) in ((1, true), (2, false))
+        match = filter(r -> r.alg == label && r.scaled == scaled, sweep_rows)
         isempty(match) && continue
-        r = first(match)
-        isnan(r.seconds) && continue
-        ok = row_success(r)
-        a = ok ? 0.7 : ALPHA_FAIL
-        for (sym, color, getter) in (
-                (:rect,    :steelblue,  rr -> rr.iterations),
-                (:diamond, :darkorange, rr -> rr.linear_solves),
-                (:xcross,  :firebrick,  rr -> rr.jacobian_refreshes),
-            )
-            v = getter(r)
-            ismissing(v) && continue
-            scatter!(
-                ax_d, [r.seconds], [j];
-                marker = sym, color = (color, a), markersize = 18,
-                strokewidth = 0.6, strokecolor = :black,
-            )
-            text!(
-                ax_d, r.seconds, j;
-                text = string(Int(round(v))), align = (:center, :center),
-                fontsize = 9, color = (:black, a),
-            )
-        end
+        r = first(match); isnan(r.seconds) && continue
+        push!(bar_y, j)
+        push!(bar_x, r.seconds)
+        push!(bar_dodge, k)
+        push!(bar_color, (:steelblue, scaled ? ALPHA_SCALED : ALPHA_UNSCALED))
+        push!(bar_meta, (j = j, scaled = scaled, seconds = r.seconds, row = r))
+    end
+    isempty(bar_x) && (save(path, fig); return path)
+
+    if has_scaled
+        barplot!(
+            ax, bar_y, bar_x;
+            direction = :x,
+            dodge = bar_dodge, n_dodge = 2,
+            color = bar_color,
+            strokecolor = :black, strokewidth = 0.5,
+        )
+    else
+        barplot!(
+            ax, bar_y, bar_x;
+            direction = :x,
+            color = bar_color,
+            strokecolor = :black, strokewidth = 0.5,
+        )
     end
 
-    ax_t.yreversed = true
-    ax_d.yreversed = true
-    xlims!(ax_t, low = 0)
-    xlims!(ax_d, low = 0)
-    linkxaxes!(ax_t, ax_d)
-    rowgap!(fig.layout, 1, 6)
-    # Compact legend for both panels.
-    Legend(
-        fig[3, 1],
-        [
-            PolyElement(color = (:steelblue, ALPHA_OK_SCALED)),
-            PolyElement(color = (:steelblue, ALPHA_OK_UNSCALED)),
-            PolyElement(color = (:steelblue, ALPHA_FAIL)),
-            MarkerElement(marker = :rect,    color = (:steelblue, 0.7), markersize = 14),
-            MarkerElement(marker = :diamond, color = (:darkorange, 0.7), markersize = 14),
-            MarkerElement(marker = :xcross,  color = (:firebrick, 0.7), markersize = 14),
-        ],
-        ["scaled", "unscaled", "failed retcode", "Newton iter", "Lin solves", "Jac refreshes"],
-        orientation = :horizontal, nbanks = 2, framevisible = false,
-    )
+    # Annotate each bar with iter/J counts. Match the dodge y-offset Makie
+    # uses internally: with `n_dodge = 2` and width 0.8 (default), each
+    # sub-bar lives at `j ± 0.2`.
+    dodge_offset(k) = has_scaled ? (k == 1 ? -0.2 : 0.2) : 0.0
+    for m in bar_meta
+        label = bar_label(m.row)
+        isempty(label) && continue
+        y = m.j + dodge_offset(m.scaled ? 1 : 2)
+        text!(
+            ax, m.seconds, y;
+            text = "  " * label,
+            align = (:left, :center),
+            fontsize = 10,
+        )
+    end
+
+    ax.yreversed = true
+    # Pad the right side so the iter/J annotations don't get clipped.
+    bar_xmax = maximum(bar_x)
+    xlims!(ax, 0, bar_xmax * 1.25)
+
+    if has_scaled
+        axislegend(
+            ax,
+            [
+                PolyElement(color = (:steelblue, ALPHA_SCALED)),
+                PolyElement(color = (:steelblue, ALPHA_UNSCALED)),
+            ],
+            ["scaled", "unscaled"];
+            position = :rb, framevisible = false,
+        )
+    end
+
     save(path, fig)
     return path
 end
