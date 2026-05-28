@@ -259,9 +259,10 @@ function NewtonChordShamanskii(
         @printf("‖F(x)‖ = %.2e\n", NFᵢ)
     end
 
-    # Mirror NonlinearSolveBase: prefer the termination cache's verdict (so
-    # callers see `StalledSuccess` / `Stalled` from `AbsNormSafeBest`),
-    # else `MaxIters` if the Newton budget ran out.
+    # Mirror NonlinearSolveBase: prefer the termination cache's verdict so
+    # non-Success codes propagate (e.g. `Stalled` / `StalledSuccess` when
+    # the caller opts into `AbsNormSafeBestTerminationMode`), else
+    # `MaxIters` if the Newton budget ran out.
     retcode = if terminated
         tc_cache.retcode == SciMLBase.ReturnCode.Default ?
             SciMLBase.ReturnCode.Success : tc_cache.retcode

@@ -220,18 +220,18 @@ const MAXITERS = 20
 
 # `ABSTOL_SCALED` is set on the scaled problem because, in scaled space, the
 # residual `F̃ = F / scale_F` is dimensionless by construction — it literally
-# *is* the per-component relative drift (what the display column
-# `max_rel_drift` already shows). `NormTerminationMode` tests
+# *is* the per-component relative drift. `NormTerminationMode` tests
 #   ‖F̃‖∞ ≤ max(reltol · ‖F̃ + ũ‖∞, abstol),
 # so `abstol = 1e-8` reads cleanly as "every component's drift ≤ 1e-8". The
 # alternative — `reltol · ‖F̃ + ũ‖∞` — is unreliable in early iterations,
 # where `‖F̃‖∞` can dominate the sum and the relative criterion becomes
 # `‖F̃‖∞ ≤ reltol · ‖F̃‖∞` (i.e. trivially false until `‖F̃‖∞ < ‖ũ‖∞`).
 #
-# Threshold pick: 1e-8 matches the `max_rel_drift` display threshold and
-# corresponds, in physical time, to τstop ≈ τ_min / 1e-8 (≈ 100·τ_POP for
-# pmodel — comfortably past any transient). Unscaled solves keep
-# DTC.reltol (the physical-timescale criterion).
+# Threshold pick: 1e-8 in scaled space is tight enough that the unscaled
+# physical-timescale verdict applied uniformly downstream — implied
+# τ = ‖x‖∞ / ‖F‖∞ ≥ τstop = 1 Myr — is comfortably cleared whenever the
+# setup's physics-based `scale_F` reflects per-component reaction rates.
+# Unscaled solves keep DTC.reltol (the physical-timescale criterion).
 const ABSTOL_SCALED = 1.0e-8
 
 ctk_kwargs(abstol, reltol) = (; DTC..., abstol, reltol, maxItNewton = MAXITERS, preprint = "    ")
@@ -258,9 +258,10 @@ function extract_stats(sol)
 end
 
 # === Per-case problem builder =============================================
-# Re-run between solves to clear any state the previous solve cached on the
-# problem (e.g. LinearSolve symbolic factorisations, NonlinearSolve internal
-# caches keyed off `prob` identity).
+# Returns the (possibly NonlinearProblem-wrapped) problem to hand to `solve`.
+# Called twice per row (warmup + timed); `solve` allocates a fresh internal
+# cache per call, so no JIT-warmed factorisation carries over between them
+# even though the underlying problem object is reused.
 function fresh_problem(ssprob_unscaled, case, sp_or_nothing)
     src = sp_or_nothing === nothing ? ssprob_unscaled : sp_or_nothing.scaled
     return case.needs_nlprob ? AIBECS.nonlinearproblem(src) : src
@@ -290,7 +291,8 @@ end
 # an ocean tracer.
 function per_tracer_τ(u_orig, F_orig, v_cells, tracer_names)
     nt = length(tracer_names)
-    nb_per = length(u_orig) ÷ nt
+    nb_per, rem = divrem(length(u_orig), nt)
+    rem == 0 || error("per_tracer_τ: length(u_orig) = $(length(u_orig)) not divisible by nt = $nt")
     sumv = sum(v_cells)
     vwnorm(y) = sqrt(sum(v_cells[i] * abs2(y[i]) for i in eachindex(y)) / sumv)
     return map(1:nt) do j
@@ -378,7 +380,12 @@ for (circ_label, loader) in TIERS[TIER]
             seconds = timed.time
             u_orig, F_orig = residual_orig_units(sol, sp, ssprob)
             max_rel_drift = maximum(abs(F_orig[i]) / ref_scale_F[i] for i in eachindex(F_orig))
-            converged = max_rel_drift < 1.0e-6
+            # Consistent post-hoc verdict in original units: implied steady-
+            # state timescale ‖x‖∞ / ‖F‖∞ ≥ 1 Myr. Matches the reltol the
+            # unscaled solvers are configured with (DTC.reltol = 1/τstop), so
+            # scaled and unscaled rows are judged against the same physical
+            # criterion regardless of which space the solve ran in.
+            converged = maximum(abs, F_orig) ≤ DTC.reltol * maximum(abs, u_orig)
             stats = extract_stats(sol)
             τ_seconds = per_tracer_τ(u_orig, F_orig, v_cells, setup.tracer_names)
             τ_str = join(

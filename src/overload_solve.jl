@@ -168,10 +168,14 @@ function SciMLBase.solve(
     # would need a wrapper around `F` (and a separate one inside
     # `searchLineArmijo!`); not worth the complexity for now. CTKAlg does
     # exactly one linear solve per Newton step, so `nsolve = nsteps`.
+    # `nfactors = njacs` is exact for direct factorisations
+    # (UMFPACK / KLU / Sparspak / `MKLPardisoFactorize`) and an overcount
+    # for `MKLPardisoIterate`, which iterates on existing factors rather
+    # than refactoring on each Jacobian refresh.
     nl_stats = SciMLBase.NLStats(
         0,                          # nf — not tracked
         stats.jacobian_refreshes,   # njacs
-        stats.jacobian_refreshes,   # nfactors — every Jacobian refresh triggers a refactor
+        stats.jacobian_refreshes,   # nfactors — see comment above
         stats.iterations,           # nsolve — 1 linear solve per Newton step
         stats.iterations,           # nsteps
     )
