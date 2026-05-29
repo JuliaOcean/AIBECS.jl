@@ -10,12 +10,17 @@
 # and from DOP) between DOP and POP, with the only basin-scale source/sink
 # being the slow geological restoring on DIP.
 #
-# Pathway:
-# DIP $\xrightarrow{U_\mathsf{DIP}}$ $\{\sigma \to \mathsf{DOP},\ (1-\sigma) \to \mathsf{POP}\}$,
-# DOP $\xrightarrow{U_\mathsf{DOP}}$ $\{\sigma \to \mathsf{DOP},\ (1-\sigma) \to \mathsf{POP}\}$
-# (the $\sigma$-loop nets to no DOP loss),
-# POP $\xrightarrow{D_\mathsf{POP}}$ DOP, and
-# DOP $\xrightarrow{R_\mathsf{DOP}}$ DIP.
+# ```mermaid
+# flowchart LR
+#     geo([DIP_geo]) -- "1 / τ_geo" --> DIP
+#     DIP -- "σ · U_DIP" --> DOP
+#     DIP -- "(1 - σ) · U_DIP" --> POP
+#     DOP -- "(1 - σ) · U_DOP" --> POP
+#     POP -- "D_POP" --> DOP
+#     DOP -- "R_DOP" --> DIP
+# ```
+#
+# (The σ · U_DOP self-loop on DOP nets to zero and is omitted.)
 #
 # We use the OCCA circulation here (smaller than OCIM, lighter for CI docs).
 
