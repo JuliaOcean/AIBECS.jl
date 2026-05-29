@@ -29,6 +29,32 @@ jobs:
       - uses: julia-actions/cache@v3
       - name: Install dependencies
         run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+
+      # Refresh the embedded solver benchmark (small-tier table + plots).
+      # Run on *every* doc build — not just tag pushes — because the
+      # benchmark outputs (12 figure PNGs and `latest_timings_small.md`)
+      # are not tracked in git. Without this step, Documenter's
+      # cross-reference check on `explanation/solvers.md` fails on missing
+      # image links. The harness writes:
+      #   - benchmark/results/latest_timings_small.md
+      #   - docs/src/explanation/figures/bench_<sweep>_<circ>_<tracer>_small.png
+      #     (12 files per tier — one per (sweep, circulation, tracer) cell)
+      # The "Sync" step below copies the MD into the docs source tree so
+      # `docs/make.jl`'s `@eval` block can read it.
+      - name: Resolve benchmark env
+        run: julia --project=benchmark -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+
+      - name: Run small-tier benchmark
+        env:
+          DATADEPS_ALWAYS_ACCEPT: "true"
+          GITHUB_SHA: ${{ github.sha }}
+          BENCH_TIER: small
+          BENCH_TRACERS: all
+        run: julia --project=benchmark benchmark/solvers.jl
+
+      - name: Sync latest timings into docs source tree
+        run: cp benchmark/results/latest_timings_small.md docs/src/explanation/latest_timings_small.md
+
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
