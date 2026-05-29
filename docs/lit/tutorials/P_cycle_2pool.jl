@@ -1,5 +1,5 @@
 #---------------------------------------------------------
-# # [A coupled PO₄–POP model](@id P-model)
+# # [P-cycle: 2 pools (DIP+POP)](@id P-cycle-2pool)
 #---------------------------------------------------------
 
 # In this tutorial we will explicitly simulate 2 tracers whose distributions control and feed back on each other.

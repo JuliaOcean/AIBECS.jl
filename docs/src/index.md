@@ -12,7 +12,7 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /tutorials/1_ideal_age
+      link: /tutorials/ideal_age
     - theme: alt
       text: View on GitHub
       link: https://github.com/JuliaOcean/AIBECS.jl
@@ -21,15 +21,15 @@ features:
   - icon: 📖
     title: Tutorials
     details: Step-by-step introductions to AIBECS, from ideal age to coupled models.
-    link: /tutorials/1_ideal_age
+    link: /tutorials/ideal_age
   - icon: 🧭
     title: How-to Guides
     details: Goal-oriented walk-throughs for specific tasks like plotting and fluxes.
-    link: /howtos/1_parameters
+    link: /howtos/parameters
   - icon: 💡
     title: Explanation
     details: In-depth discussion of the concepts behind AIBECS.
-    link: /explanation/1_concept
+    link: /explanation/concept
   - icon: 📚
     title: Reference
     details: Function docstrings and API reference.
@@ -37,7 +37,7 @@ features:
   - icon: 📑
     title: Publications
     details: Publications and software using AIBECS.
-    link: /publications/1_publications
+    link: /publications/publications
   - icon: 🗺️
     title: Roadmap
     details: Where AIBECS is headed, and where contributions would have the biggest impact.
