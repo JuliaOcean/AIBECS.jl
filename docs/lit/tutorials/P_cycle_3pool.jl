@@ -5,40 +5,28 @@
 # This tutorial expands the [previous 2-pool DIP+POP P-cycle](@ref P-cycle-2pool)
 # to also track dissolved organic phosphorus (DOP). Phosphorus is conserved
 # exactly across the three pools: every mole removed by any uptake or
-# dissolution/remineralization is allocated to one of DIP, DOP, or POP. A
-# single shared fraction $\sigma$ partitions both uptake pathways (from DIP
-# and from DOP) between DOP and POP, with the only basin-scale source/sink
-# being the slow geological restoring on DIP.
-#
-# ```mermaid
-# flowchart LR
-#     geo([DIP_geo]) -- "1 / τ_geo" --> DIP
-#     DIP -- "σ · U_DIP" --> DOP
-#     DIP -- "(1 - σ) · U_DIP" --> POP
-#     DOP -- "(1 - σ) · U_DOP" --> POP
-#     POP -- "D_POP" --> DOP
-#     DOP -- "R_DOP" --> DIP
-# ```
-#
-# (The σ · U_DOP self-loop on DOP nets to zero and is omitted.)
-#
-# We use the OCCA circulation here (smaller than OCIM, lighter for CI docs).
+# dissolution/remineralization is allocated to one of DIP, DOP, or POP. Both
+# DIP and DOP are taken up by phytoplankton, and a shared fraction $\sigma$
+# of each uptake is routed to DOP with the remaining $(1 - \sigma)$ routed
+# to POP. The only basin-scale source/sink is a slow geological restoring
+# on DIP.
+
+# We use the OCIM0 circulation.
 
 using AIBECS
-using JLD2                                        # required by `OCCA.load`
+using JLD2                                        # required by `OCIM0.load`
 using Unitful
 using Unitful: m, d, yr, Myr, mol, mmol, μmol, NoUnits
 import AIBECS: @units, units
 import AIBECS: @initial_value, initial_value
 
-# --- Circulation -----------------------------------------------------------
+# The dissolved phases (DIP, DOP) ride the OCIM0 circulation; the particulate
+# phase (POP) sinks with depth-dependent speed $w(z) = w_0 + w' z$.
 
-grd, T_OCCA = OCCA.load()
-T_DIP(p) = T_OCCA
-T_DOP(p) = T_OCCA
+grd, T_OCIM0 = OCIM0.load()
+T_DIP(p) = T_OCIM0
+T_DOP(p) = T_OCIM0
 T_POP(p) = transportoperator(grd, z -> w(z, p))
-
-# --- Process rates ---------------------------------------------------------
 
 function w(z, p)
     @unpack w₀, w′ = p
@@ -46,6 +34,9 @@ function w(z, p)
 end
 
 z = depthvec(grd)
+
+# Uptake by phytoplankton (DIP and DOP), saturating in concentration and
+# restricted to the euphotic layer $z \le z_0$:
 
 function U_DIP(DIP, p)
     @unpack τ_DIP, k_DIP, z₀ = p
@@ -57,6 +48,8 @@ function U_DOP(DOP, p)
     return @. DOP / τ_DOPup * DOP / (DOP + k_DOP) * (z ≤ z₀) * (DOP ≥ 0)
 end
 
+# Remineralization (DOP → DIP) and dissolution (POP → DOP), linear:
+
 function R_DOP(DOP, p)
     @unpack τ_DOPrem = p
     return DOP / τ_DOPrem
@@ -67,7 +60,8 @@ function D_POP(POP, p)
     return POP / τ_POPdiss
 end
 
-# --- Source/sink (P-conserving) -------------------------------------------
+# The per-pool source/sink terms — note the shared $\sigma$ in the uptake
+# partition, and the geological restoring on DIP:
 
 function G_DIP(DIP, DOP, POP, p)
     @unpack DIP_geo, τ_geo = p
@@ -84,7 +78,7 @@ function G_POP(DIP, DOP, POP, p)
     return @. (1 - σ) * $U_DIP(DIP, p) + (1 - σ) * $U_DOP(DOP, p) - $D_POP(POP, p)
 end
 
-# --- Parameters ------------------------------------------------------------
+# Parameters:
 
 @initial_value @units struct PmodelParameters{U} <: AbstractParameters{U}
     w₀::U        | 0.64   | m / d
@@ -103,44 +97,55 @@ end
 
 p = PmodelParameters()
 
-# --- Build and solve -------------------------------------------------------
+# Build and solve:
 
 nb = sum(iswet(grd))
 F = AIBECSFunction((T_DIP, T_DOP, T_POP), (G_DIP, G_DOP, G_POP), nb)
-
 @unpack DIP_geo = p
 x0 = DIP_geo * ones(3nb)
 prob = SteadyStateProblem(F, x0, p)
-sol = solve(prob, CTKAlg(), preprint = " ").u
+sol = solve(prob, CTKAlg(), preprint = " ")
 
-DIP, DOP, POP = state_to_tracers(sol, grd)
+# The `sol` value above carries the retcode, stats, and the residual norm —
+# use it to confirm convergence before unpacking the state.
 
-# --- Plot: single figure, 3 zonal-average panels --------------------------
+DIP, DOP, POP = state_to_tracers(sol.u, grd)
+
+# We plot zonal averages of the 3 tracers (rows) across the Atlantic,
+# Pacific, and Indian basins (columns), with one colorbar per row on
+# the right.
 
 using CairoMakie
 using MakieExtra
+using OceanBasins
 using Unitful: ustrip
 CairoMakie.activate!(type = "png")
 
-# Disambiguate Makie vs. MakieExtra `get_ticks` for explicit (positions, labels)
-# under a SymLog/AsinhScale colorbar — both packages provide a method that
-# matches that combo, so we pin it: an explicit (positions, labels) tuple is
-# always used verbatim, regardless of scale.
 Makie.get_ticks(t::Tuple{Any, Any},
                 ::Union{MakieExtra.SymLog, MakieExtra.AsinhScale},
                 ::Makie.Automatic, vmin, vmax) = t
 
+OCEANS = oceanpolygons()
+masks = (
+    Atlantic = isatlantic(latvec(grd), lonvec(grd), OCEANS),
+    Pacific  = ispacific( latvec(grd), lonvec(grd), OCEANS),
+    Indian   = isindian(  latvec(grd), lonvec(grd), OCEANS),
+)
+basins = (:Atlantic, :Pacific, :Indian)
+
 lat = ustrip.(grd.lat)
 depth = ustrip.(grd.depth)
 latticks = (-90:30:90, ["90°S", "60°S", "30°S", "0°", "30°N", "60°N", "90°N"])
-
-zm_DIP = AIBECS.zonalmean(DIP * u"mol/m^3", grd, 1)
-zm_DOP = AIBECS.zonalmean(DOP * u"mol/m^3", grd, 1)
-zm_POP = AIBECS.zonalmean(POP * u"mol/m^3", grd, 1)
-
 maxdepth = ceil(maximum(depth) / 1000) * 1000
 
-# Snap hi/n to a 1/2/5 × 10^k "nice" step and return level boundaries starting at 0.
+function wetlatrange(zm, pad = 5)
+    haswet = [any(!isnan, view(zm, i, :)) for i in eachindex(lat)]
+    wetidx = findall(haswet)
+    isempty(wetidx) && return (-90.0, 90.0)
+    return (max(-90, lat[first(wetidx)] - pad),
+            min( 90, lat[last(wetidx)]  + pad))
+end
+
 function nicelevels(data; n = 10)
     hi = maximum(filter(isfinite, vec(data)))
     raw = hi / n
@@ -149,8 +154,6 @@ function nicelevels(data; n = 10)
     return collect(0:nice:(ceil(hi / nice) * nice))
 end
 
-# Log-ish ladder: 0 plus multiples of {1, 2, 5} × 10^k spanning ~`decades`
-# decades below max(data).
 function logishlevels(data; decades = 3)
     hi = maximum(filter(isfinite, vec(data)))
     hi_pow = Int(ceil(log10(hi)))
@@ -168,62 +171,72 @@ end
 ticklabel(x) = isinteger(x) ? string(Int(x)) : string(round(x; sigdigits = 3))
 symlog_thresh(levels) = (nz = filter(>(0), levels); isempty(nz) ? 1.0 : minimum(nz))
 
-data_DIP = ustrip.(u"μmol/m^3", zm_DIP)
-data_DOP = ustrip.(u"nM", zm_DOP)
-data_POP = ustrip.(u"nM", zm_POP)
+zm_data = Dict(
+    (:DIP, b) => ustrip.(u"μM", AIBECS.zonalmean(DIP * u"mol/m^3", grd, masks[b])) for b in basins
+)
+merge!(zm_data, Dict(
+    (:DOP, b) => ustrip.(u"nM", AIBECS.zonalmean(DOP * u"mol/m^3", grd, masks[b])) for b in basins
+))
+merge!(zm_data, Dict(
+    (:POP, b) => ustrip.(u"nM", AIBECS.zonalmean(POP * u"mol/m^3", grd, masks[b])) for b in basins
+))
 
-levels_DIP = nicelevels(data_DIP; n = 10)
-levels_DOP = logishlevels(data_DOP)
-levels_POP = logishlevels(data_POP)
+allvals(t) = vcat((vec(zm_data[(t, b)]) for b in basins)...)
+levels_DIP = nicelevels(allvals(:DIP); n = 10)
+levels_DOP = logishlevels(allvals(:DOP))
+levels_POP = logishlevels(allvals(:POP))
 
-panels = [
-    (label = "A", name = "DIP", data = data_DIP,
-     base_cmap = :viridis, levels = levels_DIP, scale = identity,
-     cblabel = rich("DIP (µmol m", superscript("−3"), ")")),
-    (label = "B", name = "DOP", data = data_DOP,
-     base_cmap = :magma, levels = levels_DOP,
-     scale = SymLog(symlog_thresh(levels_DOP)),
-     cblabel = "DOP (nM)"),
-    (label = "C", name = "POP", data = data_POP,
-     base_cmap = :cividis, levels = levels_POP,
-     scale = SymLog(symlog_thresh(levels_POP)),
-     cblabel = "POP (nM)"),
+xlim_basin = Dict(b => wetlatrange(zm_data[(:DIP, b)]) for b in basins)
+
+rows = [
+    (name = :DIP, levels = levels_DIP, base_cmap = :viridis, scale = identity,
+     cblabel = rich("DIP (µM)")),
+    (name = :DOP, levels = levels_DOP, base_cmap = :magma,
+     scale = SymLog(symlog_thresh(levels_DOP)), cblabel = "DOP (nM)"),
+    (name = :POP, levels = levels_POP, base_cmap = :cividis,
+     scale = SymLog(symlog_thresh(levels_POP)), cblabel = "POP (nM)"),
 ]
 
-fig = Figure(size = (820, 1000))
-for (i, panel) in enumerate(panels)
-    ax = Axis(fig[i, 1];
-        backgroundcolor = :lightgray,
-        xticks = latticks,
-        ylabel = "Depth (m)",
-        xlabel = i == 3 ? "Latitude" : "",
-        yreversed = true,
-        limits = (nothing, nothing, 0, maxdepth),
-        xautolimitmargin = (0.0, 0.0),
-        yautolimitmargin = (0.0, 0.0))
-    i < 3 && hidexdecorations!(ax;
-        ticklabels = true, label = true, ticks = false, grid = false)
-    cmap = cgrad(panel.base_cmap, length(panel.levels) - 1; categorical = true)
-    cf = CairoMakie.contourf!(ax, lat, depth, panel.data;
-        levels = panel.levels, colormap = cmap, nan_color = :lightgray,
-        extendlow = cmap[1], extendhigh = cmap[end],
-        colorscale = panel.scale)
-    if panel.scale === identity
-        cbticks = panel.levels[1:2:end]
-        Colorbar(fig[i, 2], cf;
-            label = panel.cblabel,
+fig = Figure(size = (1400, 950))
+for (i, row) in enumerate(rows)
+    cmap = cgrad(row.base_cmap, length(row.levels) - 1; categorical = true)
+    cf_last = nothing
+    for (j, b) in enumerate(basins)
+        ax = Axis(fig[i, j];
+            backgroundcolor = :lightgray,
+            xticks = latticks,
+            yreversed = true,
+            limits = (xlim_basin[b][1], xlim_basin[b][2], 0, maxdepth),
+            xautolimitmargin = (0.0, 0.0),
+            yautolimitmargin = (0.0, 0.0),
+            xlabel = i == 3 ? "Latitude" : "",
+            ylabel = j == 1 ? "Depth (m)" : "",
+            title = i == 1 ? string(b) : "")
+        i < 3 && hidexdecorations!(ax;
+            ticklabels = true, label = true, ticks = false, grid = false)
+        j > 1 && hideydecorations!(ax;
+            ticklabels = true, label = true, ticks = false, grid = false)
+        cf_last = CairoMakie.contourf!(ax, lat, depth, zm_data[(row.name, b)];
+            levels = row.levels, colormap = cmap, nan_color = :lightgray,
+            extendlow = cmap[1], extendhigh = cmap[end],
+            colorscale = row.scale)
+    end
+    if row.scale === identity
+        cbticks = row.levels[1:2:end]
+        Colorbar(fig[i, length(basins) + 1], cf_last;
+            label = row.cblabel,
             ticks = (cbticks, ticklabel.(cbticks)))
     else
-        Colorbar(fig[i, 2], cf;
-            label = panel.cblabel,
+        Colorbar(fig[i, length(basins) + 1], cf_last;
+            label = row.cblabel,
             ticks = BaseMulTicks([1]),
             minorticks = BaseMulTicks(2:9),
             minorticksvisible = true)
     end
-    text!(ax, 0, 0; text = "$(panel.label). $(panel.name) zonal mean",
-        space = :relative,
-        align = (:left, :bottom), offset = (6, 6),
-        font = :bold, color = :black, fontsize = 19)
+end
+
+for (j, b) in enumerate(basins)
+    colsize!(fig.layout, j, Auto(xlim_basin[b][2] - xlim_basin[b][1]))
 end
 
 fig

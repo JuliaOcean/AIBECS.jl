@@ -92,7 +92,12 @@ makedocs(
         "Roadmap" => ["roadmap.md"],
         "Publications" => pages("publications"),
     ],
-    warnonly = [:missing_docs],   # internals are intentionally omitted from the curated reference page
+    # `:missing_docs` is silenced always (internals are intentionally omitted
+    # from the curated reference page). `RELAX=true` downgrades every other
+    # error to a warning — useful in DRAFT mode when the benchmark figures
+    # (`docs/src/explanation/figures/*.png`) haven't been generated and
+    # Documenter would otherwise hard-fail on the missing image cross-refs.
+    warnonly = get(ENV, "RELAX", "false") == "true" ? true : [:missing_docs],
     format = DocumenterVitepress.MarkdownVitepress(
         repo = "https://github.com/JuliaOcean/AIBECS.jl",
         devbranch = "main",
@@ -132,10 +137,13 @@ and required `dev_docs("docs/build/1")` — if you're on one of those,
 adjust accordingly.)
 
 Fast markdown-only iteration (skip @example/@repl/@setup/@eval evaluation):
-    DRAFT=true julia --project=docs -e 'include("docs/make.jl")'
+    DRAFT=true RELAX=true julia --project=docs -e 'include("docs/make.jl")'
     Code blocks render as plain code — useful when you only want to check
     page structure, prose, layout, or link targets. Drop `DRAFT=true` to
-    evaluate code blocks again.
+    evaluate code blocks again. `RELAX=true` downgrades errors to warnings
+    so Documenter doesn't hard-fail on missing image cross-refs (e.g. the
+    benchmark figures referenced from `explanation/solvers.md` that aren't
+    generated in a DRAFT build).
 
 Note on `LiveServer.servedocs`: it auto-rebuilds on src/ changes but cannot
 preview a VitePress site correctly (asset paths are absolute under
