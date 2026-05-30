@@ -90,6 +90,7 @@ julia = "1.10"
 [extras]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
@@ -111,4 +112,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WorldOceanAtlasTools = "04f20302-f1b9-11e8-29d9-7d841cb0a64a"
 
 [targets]
-test = ["ADTypes", "Bijectors", "DataFrames", "DifferentiationInterface", "Distances", "Distributions", "DualNumbers", "FiniteDiff", "Interpolations", "JLD2", "LinearSolve", "MAT", "NCDatasets", "NonlinearSolve", "Plots", "RecipesBase", "Shapefile", "SparseConnectivityTracer", "SparseMatrixColorings", "Test", "WorldOceanAtlasTools"]
+test = ["ADTypes", "Bijectors", "DataFrames", "DifferentiationInterface", "Distances", "Distributions", "DualNumbers", "FiniteDiff", "Interpolations", "JLD2", "LinearSolve", "MAT", "NCDatasets", "NonlinearSolve", "Plots", "CairoMakie", "RecipesBase", "Shapefile", "SparseConnectivityTracer", "SparseMatrixColorings", "Test", "WorldOceanAtlasTools"]

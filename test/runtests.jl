@@ -24,6 +24,7 @@ using Interpolations # AIBECSRecipesBaseExt (RatioAtStation recipe)
 using RecipesBase    # plotting recipes
 using NonlinearSolve # AIBECSNonlinearSolveExt
 using LinearSolve    # AIBECSNonlinearSolveExt
+import CairoMakie
 
 # For CI, make sure the downloads do not hang
 ENV["DATADEPS_ALWAYS_ACCEPT"] = true
@@ -43,7 +44,6 @@ end
         include("particles.jl")
     end
 end
-
 
 # Dedicated sparse-Jacobian test on OCCA only — OCIM1 builds a reference
 # Jacobian via SCT+ForwardDiff that is too heavy for GitHub-hosted Linux
@@ -86,3 +86,9 @@ test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000, :Haine_and_H
 end
 
 include("AO.jl")
+
+@testset "Makie recipes" begin
+    results=AIBECS.demo.demo1()
+    f=CairoMakie.plot(results,depth=2000)
+    @test isa(f,Makie.FigureAxisPlot)
+end
