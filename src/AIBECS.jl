@@ -38,6 +38,8 @@ include("Archer_etal_2000.jl")
 include("TwoBoxModel.jl")
 include("Primeau_2x2x2.jl")
 include("Haine_and_Hall_2025.jl")
+include("demo.jl")
+
 export OCIM0, OCIM1, OCIM2, OCIM2_48L, OCCA
 export Archer_etal_2000, TwoBoxModel
 export Primeau_2x2x2, Haine_and_Hall_2025
