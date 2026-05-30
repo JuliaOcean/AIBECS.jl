@@ -1,20 +1,22 @@
 module AIBECSMakieExt
 
 import AIBECS, Makie
-import AIBECS: plothorizontalslice
+import AIBECS.demo: SteadyStateSolution
 import Unitful: ustrip, upreferred
+import Makie: plot
 
 """
+    plot(results::SteadyStateSolution; depth = 2000, kwargs...)
 
 ```
 using AIBECS, GLMakie, JLD2
 results=AIBECS.demo.demo1()
-@unpack age_in_yrs,grd = results
-AIBECS.plothorizontalslice(age_in_yrs,grd,depth=2000)
+plot(results)
 ```
 """
-function AIBECS.plothorizontalslice(x, grd; depth = nothing, kwargs...)
-    tmp=AIBECS.horizontalslice(x, grd; depth = 2000);
+function plot(results::SteadyStateSolution; 
+    depth = 2000, kwargs...)
+    tmp=AIBECS.horizontalslice(results.state, results.grd; depth = depth);
     Makie.heatmap(ustrip(tmp))
 end
 

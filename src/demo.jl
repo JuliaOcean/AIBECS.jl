@@ -7,6 +7,12 @@ struct IdealAgeParameters{U} <: AbstractParameters{U}
     z₀::U
 end
 
+struct SteadyStateSolution
+    grd::OceanGrid
+    prob::SteadyStateProblem
+    state::AIBECS.SciMLBase.NonlinearSolution
+end
+
 function demo1()
     grd, TOCIM2 = OCIM2.load()
 
@@ -26,7 +32,7 @@ function demo1()
     age = solve(prob, CTKAlg())
     age_in_yrs = age * u"s" .|> u"yr"
 
-    (grd=grd,prob=prob,age=age,age_in_yrs=age_in_yrs)
+    SteadyStateSolution(grd,prob,age)
 end
 
 end
