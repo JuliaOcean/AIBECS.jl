@@ -45,6 +45,13 @@ end
     end
 end
 
+
+@testset "Makie recipes" begin
+    results=AIBECS.demo.demo1()
+    f=CairoMakie.plot(results,depth=2000)
+    @test isa(f,CairoMakie.Makie.FigureAxisPlot)
+end
+
 # Dedicated sparse-Jacobian test on OCCA only — OCIM1 builds a reference
 # Jacobian via SCT+ForwardDiff that is too heavy for GitHub-hosted Linux
 # runners (job 75020877154 in run 25557565007 was killed mid-build).
@@ -86,9 +93,3 @@ test_everything = [:Primeau_2x2x2, :TwoBoxModel, :Archer_etal_2000, :Haine_and_H
 end
 
 include("AO.jl")
-
-@testset "Makie recipes" begin
-    results=AIBECS.demo.demo1()
-    f=CairoMakie.plot(results,depth=2000)
-    @test isa(f,Makie.FigureAxisPlot)
-end
