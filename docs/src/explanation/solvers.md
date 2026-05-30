@@ -82,15 +82,91 @@ see the how-to for the full pattern. The helper attaches the sparse
 Jacobian buffer type so LinearSolve's UMFPACK / KLU factorisations
 allocate sparse buffers instead of erroring on a dense default.
 
-## Latest benchmark results
+## Stopping rule used in the benchmark
 
-Auto-generated from `benchmark/solvers.jl`; the timings below are wall
-clock for one steady-state solve on each circulation/tracer pair, on
-the maintainer's laptop. The small-tier suite covers `OCCA` and
-`OCIM0` — enough for relative comparisons across the available
-algorithm/factorisation pairs without needing a workstation.
-(`Primeau_2x2x2` is used elsewhere as a smoke-test circulation but is
-too small to time meaningfully, so it's not in the benchmark tier.)
+To keep the comparison apples-to-apples, every solver below is invoked
+with the same termination configuration, exposed as a helper:
+
+```julia
+solve(prob, alg; AIBECS.default_termination_condition()...)
+```
+
+`default_termination_condition()` returns the `(termination_condition,
+abstol, reltol)` triple [`CTKAlg`](@ref AIBECS.CTKAlg) uses by default
+— `NormTerminationMode` on the residual ∞-norm with `reltol = 1 /
+(1 Myr in seconds) ≈ 3.17e-14` and `abstol = 0`. The criterion reads
+physically as "the system's typical change timescale exceeds 1 Myr."
+NonlinearSolve algorithms (`NewtonRaphson`, `TrustRegion`, …) accept
+this configuration directly.
+
+## Small benchmark showcase
+
+The numbers below come from `benchmark/solvers.jl`, regenerated on
+every docs CI build. **This is not a solver-selection guide.**
+Steady-state solver performance is highly problem-specific, and the
+suite below only covers a small set of AIBECS-shaped problems on
+single-tracer (`idealage`, `radiocarbon`) and two-tracer (`po4pop`)
+setups with `OCCA` and `OCIM0`. Use these as evidence that
+`CTKAlg() + UMFPACKFactorization()` tends to win **in the cases
+benchmarked here** — not as a prescription for arbitrary tracer setups.
+
+The harness runs two orthogonal sweeps, both anchored at the AIBECS
+recommendation `CTKAlg + UMFPACK`:
+
+1. **Linear-solver sweep** — `CTKAlg` is held fixed as the nonlinear
+   engine, and the inner `linsolve` is varied (UMFPACK, KLU, Sparspak,
+   and MKL Pardiso on Linux CI).
+2. **Nonlinear-solver sweep** — `UMFPACK` is held fixed as the linear
+   solver, and the outer nonlinear algorithm is varied (CTKAlg,
+   NewtonRaphson).
+
+Each figure below is a horizontal-bar panel for one `(circulation,
+tracer)` cell, with text annotations to the right of each bar showing
+Newton iterations (and Jacobian-refresh count when it differs — a
+sign of CTKAlg's Shamanskii recycling). Where the setup ships
+physics-based scales (`po4pop`), each algorithm gets two bars per row
+— filled (scaled, `nondimensionalize` applied) and open (unscaled).
+Single-tracer setups (`idealage`, `radiocarbon`) lack a meaningful
+scaling and show only one bar per algorithm row. Rows whose solver
+returned a non-success retcode are omitted from the figure (the
+table below still records them in the `Retcode` column).
+
+### Linear-solver sweep
+
+`CTKAlg` held fixed; `linsolve` varied. KLU, Sparspak, and MKL
+Pardiso are exercised here (and only here) — pairing slow linear
+solvers with multiple nonlinear wrappers would dominate run wall
+time without adding signal.
+
+![OCCA / idealage — linear sweep](./figures/bench_linear_OCCA_idealage_small.png)
+
+![OCCA / radiocarbon — linear sweep](./figures/bench_linear_OCCA_radiocarbon_small.png)
+
+![OCCA / po4pop — linear sweep](./figures/bench_linear_OCCA_po4pop_small.png)
+
+![OCIM0 / idealage — linear sweep](./figures/bench_linear_OCIM0_idealage_small.png)
+
+![OCIM0 / radiocarbon — linear sweep](./figures/bench_linear_OCIM0_radiocarbon_small.png)
+
+![OCIM0 / po4pop — linear sweep](./figures/bench_linear_OCIM0_po4pop_small.png)
+
+### Nonlinear-solver sweep
+
+UMFPACK held fixed; nonlinear algorithm varied.
+
+![OCCA / idealage — nonlinear sweep](./figures/bench_nonlinear_OCCA_idealage_small.png)
+
+![OCCA / radiocarbon — nonlinear sweep](./figures/bench_nonlinear_OCCA_radiocarbon_small.png)
+
+![OCCA / po4pop — nonlinear sweep](./figures/bench_nonlinear_OCCA_po4pop_small.png)
+
+![OCIM0 / idealage — nonlinear sweep](./figures/bench_nonlinear_OCIM0_idealage_small.png)
+
+![OCIM0 / radiocarbon — nonlinear sweep](./figures/bench_nonlinear_OCIM0_radiocarbon_small.png)
+
+![OCIM0 / po4pop — nonlinear sweep](./figures/bench_nonlinear_OCIM0_po4pop_small.png)
+
+### Tabular timings
 
 ```@eval
 import Markdown
@@ -98,4 +174,20 @@ import Markdown
 # inside an @eval block resolves to the build directory, not the source dir).
 Markdown.parse(Main.__LATEST_TIMINGS_SMALL_MD)
 ```
+
+## Future work
+
+Conditional on what the benchmark above shows:
+
+- If the scaled-vs-unscaled comparison shows scaling materially
+  helps in practice, promote
+  [`benchmark/dimensional_scaling.jl`](https://github.com/JuliaOcean/AIBECS.jl/blob/main/benchmark/dimensional_scaling.jl)
+  to a supported `src/` API with docstring + export, and add a
+  matching how-to walking users through `nondimensionalize`.
+- A "speed vs problem size" log-log scaling plot, which would require
+  the harness to sweep tiers/grid resolutions in a single run (not
+  currently supported).
+- A CTKAlg-specific linear-solve counter, wrapping `linear_cache`, if
+  the iteration / Jacobian-refresh counts alone do not tell the perf
+  story clearly.
 

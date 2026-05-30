@@ -64,6 +64,28 @@ solver_cases = [
         @test s_short.retcode == SciMLBase.ReturnCode.MaxIters
     end
 
+    @testset "CTKAlg stats" begin
+        testp = p
+        ssprob = SteadyStateProblem(fun, x, testp)
+        s = solve(ssprob, CTKAlg())
+        @test s.stats isa SciMLBase.NLStats
+        @test s.stats.nsteps > 0
+        # Documented mapping: every Jacobian refresh refactors with the
+        # direct-LU linsolves used here, so `nfactors == njacs`.
+        @test s.stats.nfactors == s.stats.njacs
+    end
+
+    @testset "default_termination_condition" begin
+        dtc = default_termination_condition()
+        @test keys(dtc) == (:termination_condition, :abstol, :reltol)
+        @test dtc.abstol == 0.0
+        @test dtc.reltol > 0
+        # Splattable into solve(...) without erroring.
+        ssprob = SteadyStateProblem(fun, x, p)
+        s = solve(ssprob, CTKAlg(); dtc...)
+        @test SciMLBase.successful_retcode(s.retcode)
+    end
+
     @testset "CTKAlg warm-start via linear_cache" begin
         testp = p
         ssprob = SteadyStateProblem(fun, x, testp)

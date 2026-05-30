@@ -1,7 +1,8 @@
 @info "Running test/setup.jl — circulation, grid, transport matrix" Circulation
-# Load the circulation and grid
-grd, T_Circulation_unit = Circulation.load()
-T_Circulation = ustrip.(T_Circulation_unit) # strip units for now
+# Load the circulation and grid. Every shipped `load()` (toy + OCIM* + OCCA)
+# returns a plain `SparseMatrixCSC{Float64}` today — the toy circulations
+# strip units inside `CG.T_advection`, the JLD2-backed ones strip on load.
+grd, T_Circulation = Circulation.load()
 
 # Define useful constants and arrays
 iwet = indices_of_wet_boxes(grd)

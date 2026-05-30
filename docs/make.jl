@@ -62,28 +62,29 @@ makedocs(
     pages = Any[
         "Home" => "index.md",
         "Tutorials" => [
-            "tutorials/1_ideal_age.md",
-            "tutorials/2_radiocarbon.md",
-            "tutorials/3_Pmodel.md",
-            "tutorials/4_dustmodel.md",
-            "tutorials/5_river_discharge.md",
-            "tutorials/6_groundwater_discharge.md",
+            "tutorials/ideal_age.md",
+            "tutorials/radiocarbon.md",
+            "tutorials/P_cycle_2pool.md",
+            "tutorials/P_cycle_3pool.md",
+            "tutorials/dustmodel.md",
+            "tutorials/river_discharge.md",
+            "tutorials/groundwater_discharge.md",
         ],
         "How-to guides" => [
-            "howtos/1_parameters.md",
-            "howtos/2_plot.md",
-            "howtos/2b_plot_makie.md",
-            "howtos/3_cruiseplot.md",
-            "howtos/4_parameter_optimization.md",
-            "howtos/5_fluxes.md",
-            "howtos/6_sinking_particles.md",
-            "howtos/7_etopo.md",
-            "howtos/8_nonlinearsolve.md",
+            "howtos/parameters.md",
+            "howtos/plot.md",
+            "howtos/plot_makie.md",
+            "howtos/cruiseplot.md",
+            "howtos/parameter_optimization.md",
+            "howtos/fluxes.md",
+            "howtos/sinking_particles.md",
+            "howtos/etopo.md",
+            "howtos/nonlinearsolve.md",
             "howtos/analytical_derivatives.md",
         ],
         "Explanation" => [
-            "explanation/1_concept.md",
-            "explanation/2_tracer_transport_operators.md",
+            "explanation/concept.md",
+            "explanation/tracer_transport_operators.md",
             "explanation/solvers.md",
             "explanation/datasets.md",
         ],
@@ -91,7 +92,12 @@ makedocs(
         "Roadmap" => ["roadmap.md"],
         "Publications" => pages("publications"),
     ],
-    warnonly = [:missing_docs],   # internals are intentionally omitted from the curated reference page
+    # `:missing_docs` is silenced always (internals are intentionally omitted
+    # from the curated reference page). `RELAX=true` downgrades every other
+    # error to a warning — useful in DRAFT mode when the benchmark figures
+    # (`docs/src/explanation/figures/*.png`) haven't been generated and
+    # Documenter would otherwise hard-fail on the missing image cross-refs.
+    warnonly = get(ENV, "RELAX", "false") == "true" ? true : [:missing_docs],
     format = DocumenterVitepress.MarkdownVitepress(
         repo = "https://github.com/JuliaOcean/AIBECS.jl",
         devbranch = "main",
@@ -131,10 +137,13 @@ and required `dev_docs("docs/build/1")` — if you're on one of those,
 adjust accordingly.)
 
 Fast markdown-only iteration (skip @example/@repl/@setup/@eval evaluation):
-    DRAFT=true julia --project=docs -e 'include("docs/make.jl")'
+    DRAFT=true RELAX=true julia --project=docs -e 'include("docs/make.jl")'
     Code blocks render as plain code — useful when you only want to check
     page structure, prose, layout, or link targets. Drop `DRAFT=true` to
-    evaluate code blocks again.
+    evaluate code blocks again. `RELAX=true` downgrades errors to warnings
+    so Documenter doesn't hard-fail on missing image cross-refs (e.g. the
+    benchmark figures referenced from `explanation/solvers.md` that aren't
+    generated in a DRAFT build).
 
 Note on `LiveServer.servedocs`: it auto-rebuilds on src/ changes but cannot
 preview a VitePress site correctly (asset paths are absolute under
