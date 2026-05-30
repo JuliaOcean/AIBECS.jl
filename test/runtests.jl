@@ -49,6 +49,8 @@ end
 @testset "Makie recipes" begin
     results=AIBECS.demo.demo1()
     f=CairoMakie.plot(results,depth=2000)
+    f=CairoMakie.plot(results,lon=-90)
+    f=CairoMakie.plot(results,lat=20)
     @test isa(f,CairoMakie.Makie.FigureAxisPlot)
 end
 
