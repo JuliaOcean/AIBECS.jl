@@ -51,7 +51,7 @@ end
     f=CairoMakie.plot(results,depth=2000)
     f=CairoMakie.plot(results,lon=-90)
     f=CairoMakie.plot(results,lat=20)
-    @test isa(f,CairoMakie.Makie.FigureAxisPlot)
+    @test isa(f,CairoMakie.Makie.Figure)
 end
 
 # Dedicated sparse-Jacobian test on OCCA only — OCIM1 builds a reference
