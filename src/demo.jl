@@ -13,6 +13,14 @@ struct SteadyStateSolution
     state::AIBECS.SciMLBase.NonlinearSolution
 end
 
+"""
+    AIBECS.demo.demo1()
+
+- load matrix 
+- solve for ideal age
+- compute age_in_yrs
+- return SteadyStateSolution
+"""
 function demo1()
     grd, TOCIM2 = OCIM2.load()
 

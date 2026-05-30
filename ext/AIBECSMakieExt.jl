@@ -11,12 +11,16 @@ import Makie: plot
 ```
 using AIBECS, GLMakie, JLD2
 results=AIBECS.demo.demo1()
-plot(results)
+plot(results,depth=2000)
 ```
 """
 function plot(results::SteadyStateSolution; 
-    depth = 2000, kwargs...)
-    tmp=AIBECS.horizontalslice(results.state, results.grd; depth = depth);
+    depth = nothing, kwargs...)
+    if !isnothing(depth)
+        tmp=AIBECS.horizontalslice(results.state, results.grd; depth = depth);
+    else
+        error("unknown option")
+    end
     Makie.heatmap(ustrip(tmp))
 end
 
