@@ -32,6 +32,7 @@ Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
@@ -43,6 +44,7 @@ AIBECSDataFramesExt = "DataFrames"
 AIBECSDistributionsExt = ["Distributions", "Bijectors"]
 AIBECSETOPOExt = ["Distances", "NCDatasets"]
 AIBECSJLD2Ext = "JLD2"
+AIBECSMakieExt = ["Makie"]
 AIBECSNCDatasetsExt = "NCDatasets"
 AIBECSNonlinearSolveExt = "NonlinearSolve"
 AIBECSOCIM2_48LExt = ["MAT", "NCDatasets"]
@@ -66,6 +68,7 @@ ForwardDiff = "0.10, 1.3"
 Interpolations = "0.15, 0.16"
 JLD2 = "0.5, 0.6"
 LinearSolve = "3"
+Makie = "0.24"
 MAT = "0.10, 0.12"
 MD5 = "0.2.3"
 MetadataArrays = "0.1"
@@ -87,6 +90,7 @@ julia = "1.10"
 [extras]
 ADTypes = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
 Bijectors = "76274a88-744f-5084-9051-94815aaf08c4"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DifferentiationInterface = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
@@ -108,4 +112,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WorldOceanAtlasTools = "04f20302-f1b9-11e8-29d9-7d841cb0a64a"
 
 [targets]
-test = ["ADTypes", "Bijectors", "DataFrames", "DifferentiationInterface", "Distances", "Distributions", "DualNumbers", "FiniteDiff", "Interpolations", "JLD2", "LinearSolve", "MAT", "NCDatasets", "NonlinearSolve", "Plots", "RecipesBase", "Shapefile", "SparseConnectivityTracer", "SparseMatrixColorings", "Test", "WorldOceanAtlasTools"]
+test = ["ADTypes", "Bijectors", "DataFrames", "DifferentiationInterface", "Distances", "Distributions", "DualNumbers", "FiniteDiff", "Interpolations", "JLD2", "LinearSolve", "MAT", "NCDatasets", "NonlinearSolve", "Plots", "CairoMakie", "RecipesBase", "Shapefile", "SparseConnectivityTracer", "SparseMatrixColorings", "Test", "WorldOceanAtlasTools"]
